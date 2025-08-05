@@ -236,10 +236,14 @@ export const validateProductionData = async () => {
       issues.push(`Found ${orphanedComments.length} orphaned comments`);
     }
     
-    // Check for orphaned reactions
-    const { data: orphanedReactions } = await supabase.rpc('check_orphaned_reactions');
+    // Check for orphaned reactions (reactions without valid target posts)
+    const { data: orphanedReactions } = await supabase
+      .from('reactions')
+      .select('id')
+      .eq('target_type', 'post')
+      .not('target_id', 'in', `(SELECT id FROM posts)`);
     
-    if (orphanedReactions && Array.isArray(orphanedReactions) && orphanedReactions.length > 0) {
+    if (orphanedReactions && orphanedReactions.length > 0) {
       issues.push(`Found ${orphanedReactions.length} orphaned reactions`);
     }
     
