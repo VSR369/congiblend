@@ -20,6 +20,11 @@ interface CreatePostData {
   media_urls?: string[];
   thumbnail_url?: string;
   duration?: number;
+  poll_data?: {
+    options: Array<{ text: string; votes: number }>;
+    multiple_choice: boolean;
+    expires_at?: string;
+  };
   metadata?: any;
 }
 
@@ -98,6 +103,7 @@ serve(async (req) => {
           videos: postData.videos || null,
           media_urls: postData.media_urls || null,
           thumbnail_url: postData.thumbnail_url || null,
+          poll_data: postData.poll_data || null,
           metadata: {
             hashtags,
             mentions,
@@ -247,6 +253,119 @@ serve(async (req) => {
           }
         );
       }
+    }
+
+    // VOTE ON POLL ENDPOINT
+    if (req.method === 'POST' && pathParts.length >= 3 && pathParts[pathParts.length - 1] === 'vote') {
+      const postId = pathParts[pathParts.length - 2];
+      const { option_index } = await req.json();
+
+      // Validate option_index
+      if (typeof option_index !== 'number' || option_index < 0) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid option index' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check if user already voted on this poll
+      const { data: existingVote, error: voteCheckError } = await supabase
+        .from('votes')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('post_id', postId)
+        .single();
+
+      if (voteCheckError && voteCheckError.code !== 'PGRST116') {
+        console.error('Vote check error:', voteCheckError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to check existing vote' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (existingVote) {
+        return new Response(
+          JSON.stringify({ error: 'User has already voted on this poll' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Get the current poll data
+      const { data: post, error: postError } = await supabase
+        .from('posts')
+        .select('poll_data')
+        .eq('id', postId)
+        .single();
+
+      if (postError || !post || !post.poll_data) {
+        return new Response(
+          JSON.stringify({ error: 'Poll not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Validate option index against poll options
+      if (option_index >= post.poll_data.options.length) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid option index for this poll' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check if poll has expired
+      if (post.poll_data.expires_at && new Date(post.poll_data.expires_at) < new Date()) {
+        return new Response(
+          JSON.stringify({ error: 'Poll has expired' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Record the vote
+      const { error: voteError } = await supabase
+        .from('votes')
+        .insert({
+          user_id: userId,
+          post_id: postId,
+          option_index: option_index
+        });
+
+      if (voteError) {
+        console.error('Vote creation error:', voteError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to record vote' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Update poll data with new vote count
+      const updatedPollData = { ...post.poll_data };
+      updatedPollData.options[option_index].votes += 1;
+
+      const { error: updateError } = await supabase
+        .from('posts')
+        .update({ poll_data: updatedPollData })
+        .eq('id', postId);
+
+      if (updateError) {
+        console.error('Poll update error:', updateError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to update poll data' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          voted: true,
+          option_index: option_index,
+          poll_data: updatedPollData
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     return new Response(

@@ -2969,6 +2969,7 @@ export type Database = {
           is_pinned: boolean | null
           media_urls: string[] | null
           metadata: Json | null
+          poll_data: Json | null
           post_type: string | null
           reactions_count: number | null
           shares_count: number | null
@@ -2988,6 +2989,7 @@ export type Database = {
           is_pinned?: boolean | null
           media_urls?: string[] | null
           metadata?: Json | null
+          poll_data?: Json | null
           post_type?: string | null
           reactions_count?: number | null
           shares_count?: number | null
@@ -3007,6 +3009,7 @@ export type Database = {
           is_pinned?: boolean | null
           media_urls?: string[] | null
           metadata?: Json | null
+          poll_data?: Json | null
           post_type?: string | null
           reactions_count?: number | null
           shares_count?: number | null
@@ -3762,6 +3765,41 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      votes: {
+        Row: {
+          created_at: string
+          id: string
+          option_index: number
+          post_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_index: number
+          post_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_index?: number
+          post_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "votes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
