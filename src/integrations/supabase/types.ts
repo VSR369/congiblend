@@ -2999,11 +2999,13 @@ export type Database = {
           content: string
           created_at: string | null
           event_data: Json | null
+          hashtags: string[] | null
           id: string
           images: string[] | null
           is_archived: boolean | null
           is_pinned: boolean | null
           media_urls: string[] | null
+          mentions: string[] | null
           metadata: Json | null
           poll_data: Json | null
           post_type: string | null
@@ -3022,11 +3024,13 @@ export type Database = {
           content: string
           created_at?: string | null
           event_data?: Json | null
+          hashtags?: string[] | null
           id?: string
           images?: string[] | null
           is_archived?: boolean | null
           is_pinned?: boolean | null
           media_urls?: string[] | null
+          mentions?: string[] | null
           metadata?: Json | null
           poll_data?: Json | null
           post_type?: string | null
@@ -3045,11 +3049,13 @@ export type Database = {
           content?: string
           created_at?: string | null
           event_data?: Json | null
+          hashtags?: string[] | null
           id?: string
           images?: string[] | null
           is_archived?: boolean | null
           is_pinned?: boolean | null
           media_urls?: string[] | null
+          mentions?: string[] | null
           metadata?: Json | null
           poll_data?: Json | null
           post_type?: string | null
