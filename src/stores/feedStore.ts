@@ -172,6 +172,27 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
+        // Check if user exists in users table, if not create them
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+
+        if (!existingUser) {
+          // Create user record
+          await supabase
+            .from('users')
+            .insert({
+              id: user.id,
+              username: user.email?.split('@')[0] || 'user',
+              display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
+              email: user.email || '',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+        }
+
         const { error } = await supabase
           .from('posts')
           .insert({
@@ -179,7 +200,10 @@ export const useFeedStore = create<FeedState>((set, get) => {
             content: data.content,
             post_type: data.type,
             visibility: data.visibility,
-            images: data.media?.map(file => URL.createObjectURL(file)) || null
+            hashtags: data.hashtags || [],
+            mentions: data.mentions || [],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           });
 
         if (error) throw error;
