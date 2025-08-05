@@ -18,3 +18,6 @@ verify_jwt = false
 
 [functions.comments]
 verify_jwt = false
+
+[functions.shares]
+verify_jwt = false
