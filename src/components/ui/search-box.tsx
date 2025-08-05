@@ -99,7 +99,7 @@ export const SearchBox = ({
     ? [...new Set(filteredSuggestions.map(s => s.category).filter(Boolean))]
     : []
 
-  const hasContent = query.trim() || showRecent || showPopular
+  const hasContent = Boolean(query.trim()) || showRecent || showPopular
 
   return (
     <div className={cn("relative w-full max-w-2xl", className)}>
