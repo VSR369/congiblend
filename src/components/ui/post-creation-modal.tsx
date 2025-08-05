@@ -26,6 +26,19 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
   const [mentions, setMentions] = React.useState<string[]>([]);
   const [isPosting, setIsPosting] = React.useState(false);
   const [selectedFiles, setSelectedFiles] = React.useState<File[]>([]);
+  const [pollOptions, setPollOptions] = React.useState<string[]>(['', '']);
+  const [eventData, setEventData] = React.useState({
+    title: '',
+    location: '',
+    start_date: '',
+    max_attendees: ''
+  });
+  const [jobData, setJobData] = React.useState({
+    title: '',
+    company: '',
+    location: '',
+    salary: ''
+  });
 
   const { createPost } = useFeedStore();
 
@@ -38,6 +51,11 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
     { type: "event", label: "Event", icon: Calendar, description: "Announce events" },
     { type: "job", label: "Job", icon: Briefcase, description: "Post job openings" },
   ];
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setSelectedFiles(files);
+  };
 
   const handleSubmit = async () => {
     if (!content.trim()) return;
@@ -53,6 +71,41 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
         visibility: "public",
         media: selectedFiles.length > 0 ? selectedFiles : undefined,
       };
+
+      // Add poll data if it's a poll post
+      if (activeTab === 'poll' && pollOptions.some(opt => opt.trim())) {
+        postData.poll = {
+          question: content.trim(),
+          options: pollOptions
+            .filter(opt => opt.trim())
+            .map(text => ({ id: '', text: text.trim(), votes: 0, percentage: 0 })),
+          allowMultiple: false
+        };
+      }
+
+      // Add event data if it's an event post
+      if (activeTab === 'event') {
+        postData.event = {
+          title: eventData.title,
+          description: content.trim(),
+          startDate: new Date(eventData.start_date),
+          location: eventData.location,
+          maxAttendees: eventData.max_attendees ? parseInt(eventData.max_attendees) : undefined
+        };
+      }
+
+      // Add job data if it's a job post
+      if (activeTab === 'job') {
+        postData.job = {
+          title: jobData.title,
+          company: jobData.company,
+          location: jobData.location,
+          type: 'full-time',
+          description: content.trim(),
+          requirements: [],
+          salary: jobData.salary
+        };
+      }
 
       // Validate data before submitting
       const validatedData = postSchema.parse({
@@ -70,6 +123,9 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
       setHashtags([]);
       setMentions([]);
       setSelectedFiles([]);
+      setPollOptions(['', '']);
+      setEventData({ title: '', location: '', start_date: '', max_attendees: '' });
+      setJobData({ title: '', company: '', location: '', salary: '' });
       setActiveTab("text");
       onClose();
       
@@ -121,14 +177,25 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
             />
             <div className="space-y-2">
               <label className="text-sm font-medium">Poll Options</label>
-              {Array.from({ length: 2 }).map((_, i) => (
+              {pollOptions.map((option, i) => (
                 <Input
                   key={i}
+                  value={option}
+                  onChange={(e) => {
+                    const newOptions = [...pollOptions];
+                    newOptions[i] = e.target.value;
+                    setPollOptions(newOptions);
+                  }}
                   placeholder={`Option ${i + 1}`}
                   className="w-full"
                 />
               ))}
-              <Button variant="outline" size="sm" className="w-full">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full"
+                onClick={() => setPollOptions([...pollOptions, ''])}
+              >
                 Add Option
               </Button>
             </div>
@@ -145,10 +212,27 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
               className="min-h-24"
             />
             <div className="grid grid-cols-2 gap-4">
-              <Input placeholder="Event title" />
-              <Input placeholder="Location" />
-              <Input type="datetime-local" />
-              <Input type="number" placeholder="Max attendees" />
+              <Input 
+                placeholder="Event title"
+                value={eventData.title}
+                onChange={(e) => setEventData({...eventData, title: e.target.value})}
+              />
+              <Input 
+                placeholder="Location"
+                value={eventData.location}
+                onChange={(e) => setEventData({...eventData, location: e.target.value})}
+              />
+              <Input 
+                type="datetime-local"
+                value={eventData.start_date}
+                onChange={(e) => setEventData({...eventData, start_date: e.target.value})}
+              />
+              <Input 
+                type="number" 
+                placeholder="Max attendees"
+                value={eventData.max_attendees}
+                onChange={(e) => setEventData({...eventData, max_attendees: e.target.value})}
+              />
             </div>
           </div>
         );
@@ -163,10 +247,26 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
               className="min-h-24"
             />
             <div className="grid grid-cols-2 gap-4">
-              <Input placeholder="Job title" />
-              <Input placeholder="Company" />
-              <Input placeholder="Location" />
-              <Input placeholder="Salary range" />
+              <Input 
+                placeholder="Job title"
+                value={jobData.title}
+                onChange={(e) => setJobData({...jobData, title: e.target.value})}
+              />
+              <Input 
+                placeholder="Company"
+                value={jobData.company}
+                onChange={(e) => setJobData({...jobData, company: e.target.value})}
+              />
+              <Input 
+                placeholder="Location"
+                value={jobData.location}
+                onChange={(e) => setJobData({...jobData, location: e.target.value})}
+              />
+              <Input 
+                placeholder="Salary range"
+                value={jobData.salary}
+                onChange={(e) => setJobData({...jobData, salary: e.target.value})}
+              />
             </div>
           </div>
         );
@@ -193,11 +293,37 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
                 <p className="text-sm text-muted-foreground">
                   Drag and drop {activeTab === "image" ? "images" : "videos"} here, or click to browse
                 </p>
-                <Button variant="outline" size="sm">
-                  Choose Files
-                </Button>
-              </div>
-            </div>
+                <input
+                  type="file"
+                  multiple
+                  accept={activeTab === "image" ? "image/*" : "video/*"}
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                 >
+                   Choose Files
+                 </Button>
+               </div>
+               {selectedFiles.length > 0 && (
+                 <div className="mt-4">
+                   <p className="text-sm text-muted-foreground mb-2">
+                     Selected files: {selectedFiles.length}
+                   </p>
+                   <div className="space-y-1">
+                     {selectedFiles.map((file, index) => (
+                       <div key={index} className="text-xs text-muted-foreground">
+                         {file.name} ({Math.round(file.size / 1024)}KB)
+                       </div>
+                     ))}
+                   </div>
+                 </div>
+               )}
+             </div>
           </div>
         );
 

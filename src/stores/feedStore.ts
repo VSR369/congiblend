@@ -88,34 +88,25 @@ export const useFeedStore = create<FeedState>((set, get) => {
       set({ loading: true });
 
       try {
-        // Get posts with author information
-        const { data: postsData, error: postsError } = await supabase
-          .from('posts')
-          .select(`
-            *,
-            user:user_id (
-              id,
-              username,
-              display_name,
-              avatar_url,
-              is_verified
-            )
-          `)
-          .eq('visibility', 'public')
-          .order('created_at', { ascending: false })
-          .limit(20);
+        // Use the posts edge function for consistent data fetching
+        const { data: { session } } = await supabase.auth.getSession();
+        const { data: feedData, error: postsError } = await supabase.functions.invoke('posts/feed', {
+          headers: session?.access_token ? {
+            Authorization: `Bearer ${session.access_token}`,
+          } : {},
+        });
 
         if (postsError) throw postsError;
 
         // Transform posts to our format
-        const transformedPosts = postsData?.map((dbPost) => 
-          transformDbPost(dbPost, dbPost.user)
+        const transformedPosts = feedData?.posts?.map((post: any) => 
+          transformDbPost(post, post.author)
         ) || [];
 
         set({ 
           posts: reset ? transformedPosts : [...state.posts, ...transformedPosts],
           loading: false,
-          hasMore: transformedPosts.length === 20
+          hasMore: feedData?.pagination?.hasMore || false
         });
 
         // Set up real-time subscription for new posts (only once)
@@ -172,39 +163,61 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
-        // Check if user exists in users table, if not create them
-        const { data: existingUser } = await supabase
-          .from('users')
-          .select('id')
-          .eq('id', user.id)
-          .single();
+        // Get the session token for API calls
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session?.access_token) throw new Error('No access token');
 
-        if (!existingUser) {
-          // Create user record
-          await supabase
-            .from('users')
-            .insert({
-              id: user.id,
-              username: user.email?.split('@')[0] || 'user',
-              display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
-              email: user.email || '',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            });
+        // Upload media files if present
+        let mediaUrls: string[] = [];
+        if (data.media && data.media.length > 0) {
+          for (const file of data.media) {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+            
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('post-media')
+              .upload(fileName, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+              .from('post-media')
+              .getPublicUrl(uploadData.path);
+
+            mediaUrls.push(publicUrl);
+          }
         }
 
-        const { error } = await supabase
-          .from('posts')
-          .insert({
-            user_id: user.id,
+        // Use the posts edge function for consistent post creation
+        const { data: newPost, error } = await supabase.functions.invoke('posts', {
+          body: {
             content: data.content,
             post_type: data.type,
             visibility: data.visibility,
-            hashtags: data.hashtags || [],
-            mentions: data.mentions || [],
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
+            media_urls: mediaUrls,
+            poll_data: data.poll ? {
+              options: data.poll.options.map(opt => ({ text: opt.text, votes: 0 })),
+              multiple_choice: data.poll.allowMultiple || false,
+              expires_at: data.poll.expiresAt?.toISOString()
+            } : undefined,
+            event_data: data.event ? {
+              title: data.event.title,
+              description: data.event.description,
+              start_date: data.event.startDate.toISOString(),
+              end_date: data.event.endDate?.toISOString(),
+              location: data.event.location,
+              is_virtual: data.event.isVirtual,
+              max_attendees: data.event.maxAttendees
+            } : undefined,
+            metadata: {
+              hashtags: data.hashtags,
+              mentions: data.mentions
+            }
+          },
+          headers: {
+            Authorization: `Bearer ${sessionData.session.access_token}`,
+          },
+        });
 
         if (error) throw error;
 
