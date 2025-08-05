@@ -3532,6 +3532,73 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_skill_profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_verified: boolean | null
+          proficiency_level: string | null
+          skill_name: string
+          user_id: string
+          years_experience: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_verified?: boolean | null
+          proficiency_level?: string | null
+          skill_name: string
+          user_id: string
+          years_experience?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_verified?: boolean | null
+          proficiency_level?: string | null
+          skill_name?: string
+          user_id?: string
+          years_experience?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_skill_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_skills: {
         Row: {
           created_at: string | null
@@ -3584,11 +3651,14 @@ export type Database = {
           cover_url: string | null
           created_at: string | null
           display_name: string | null
+          email: string | null
+          headline: string | null
           id: string
           is_active: boolean | null
           is_verified: boolean | null
           last_seen_at: string | null
           location: string | null
+          password_hash: string | null
           updated_at: string | null
           username: string
           website: string | null
@@ -3599,11 +3669,14 @@ export type Database = {
           cover_url?: string | null
           created_at?: string | null
           display_name?: string | null
+          email?: string | null
+          headline?: string | null
           id: string
           is_active?: boolean | null
           is_verified?: boolean | null
           last_seen_at?: string | null
           location?: string | null
+          password_hash?: string | null
           updated_at?: string | null
           username: string
           website?: string | null
@@ -3614,11 +3687,14 @@ export type Database = {
           cover_url?: string | null
           created_at?: string | null
           display_name?: string | null
+          email?: string | null
+          headline?: string | null
           id?: string
           is_active?: boolean | null
           is_verified?: boolean | null
           last_seen_at?: string | null
           location?: string | null
+          password_hash?: string | null
           updated_at?: string | null
           username?: string
           website?: string | null
@@ -3916,7 +3992,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "user" | "creator" | "business" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4043,6 +4119,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["user", "creator", "business", "admin"],
+    },
   },
 } as const

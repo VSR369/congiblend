@@ -10,6 +10,7 @@ export default {
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.(js|jsx|ts|tsx)',
     '<rootDir>/src/**/?(*.)(test|spec).(js|jsx|ts|tsx)',
+    '<rootDir>/src/test/**/*.test.js',
   ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',

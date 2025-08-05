@@ -1,1 +1,8 @@
 project_id = "cmtehutbazgfjoksmkly"
+
+# Functions configuration
+[functions.auth]
+verify_jwt = false
+
+[functions.profiles]
+verify_jwt = false
