@@ -14,11 +14,12 @@ const supabase = createClient(
 interface CreatePostData {
   content: string;
   visibility: 'public' | 'connections' | 'private';
-  post_type: 'text' | 'image' | 'video' | 'article' | 'poll' | 'event' | 'job' | 'carousel';
+  post_type: 'text' | 'image' | 'video' | 'article' | 'poll' | 'event' | 'job' | 'carousel' | 'audio' | 'podcast';
   images?: string[];
   videos?: string[];
   media_urls?: string[];
   thumbnail_url?: string;
+  duration?: number;
   metadata?: any;
 }
 

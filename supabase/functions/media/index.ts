@@ -14,6 +14,7 @@ const supabase = createClient(
 // File size limits
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_AUDIO_SIZE = 50 * 1024 * 1024; // 50MB
 
 // Allowed MIME types
 const ALLOWED_IMAGE_TYPES = [
@@ -31,10 +32,20 @@ const ALLOWED_VIDEO_TYPES = [
   'video/avi'
 ];
 
+const ALLOWED_AUDIO_TYPES = [
+  'audio/mp3',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/ogg',
+  'audio/aac',
+  'audio/m4a'
+];
+
 // Helper function to determine media type
-const getMediaType = (mimeType: string): 'image' | 'video' | 'invalid' => {
+const getMediaType = (mimeType: string): 'image' | 'video' | 'audio' | 'invalid' => {
   if (ALLOWED_IMAGE_TYPES.includes(mimeType)) return 'image';
   if (ALLOWED_VIDEO_TYPES.includes(mimeType)) return 'video';
+  if (ALLOWED_AUDIO_TYPES.includes(mimeType)) return 'audio';
   return 'invalid';
 };
 
@@ -136,14 +147,15 @@ serve(async (req) => {
       if (mediaType === 'invalid') {
         return new Response(
           JSON.stringify({ 
-            error: 'Invalid file type. Only images and videos are allowed.' 
+            error: 'Invalid file type. Only images, videos, and audio files are allowed.' 
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       // Validate file size based on type
-      const maxSize = mediaType === 'video' ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+      const maxSize = mediaType === 'video' ? MAX_VIDEO_SIZE : 
+                     mediaType === 'audio' ? MAX_AUDIO_SIZE : MAX_IMAGE_SIZE;
       if (file.size > maxSize) {
         const maxSizeMB = maxSize / (1024 * 1024);
         return new Response(
@@ -155,7 +167,9 @@ serve(async (req) => {
       // Generate unique filename
       const timestamp = Date.now();
       const randomString = Math.random().toString(36).substring(2, 15);
-      const fileExtension = file.name.split('.').pop()?.toLowerCase() || (mediaType === 'video' ? 'mp4' : 'jpg');
+      const fileExtension = file.name.split('.').pop()?.toLowerCase() || 
+                           (mediaType === 'video' ? 'mp4' : 
+                            mediaType === 'audio' ? 'mp3' : 'jpg');
       const fileName = `${userId}/${timestamp}-${randomString}.${fileExtension}`;
 
       try {
@@ -185,6 +199,7 @@ serve(async (req) => {
           .getPublicUrl(fileName);
 
         let thumbnailUrl = null;
+        let duration = null;
         
         // For videos, generate thumbnail and create processing record
         if (mediaType === 'video') {
@@ -213,6 +228,31 @@ serve(async (req) => {
           });
         }
 
+        // For audio files, simulate duration extraction
+        if (mediaType === 'audio') {
+          // In production, you would extract actual duration from audio file
+          // For demo, generate a random duration between 30 seconds and 10 minutes
+          duration = Math.floor(Math.random() * (600 - 30) + 30);
+
+          // Create processing record for audio
+          await supabase.from('media_processing').insert({
+            user_id: userId,
+            original_filename: file.name,
+            media_type: mediaType,
+            storage_path: fileName,
+            video_url: null, // Not applicable for audio
+            thumbnail_url: null, // Not applicable for audio
+            processing_status: 'completed',
+            processing_progress: 100,
+            metadata: {
+              size: file.size,
+              duration: duration,
+              bitrate: null, // Would be extracted in production
+              format: fileExtension
+            }
+          });
+        }
+
         // Build response based on media type
         const response = {
           success: true,
@@ -226,6 +266,8 @@ serve(async (req) => {
         if (mediaType === 'video') {
           response.video_url = publicUrlData.publicUrl;
           response.thumbnail_url = thumbnailUrl;
+        } else if (mediaType === 'audio') {
+          response.duration = duration;
         }
 
         return new Response(

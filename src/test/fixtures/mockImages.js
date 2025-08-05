@@ -9,6 +9,13 @@ export const testVideoBuffer = Buffer.from([
   0x61, 0x76, 0x63, 0x31, 0x6D, 0x70, 0x34, 0x31
 ]);
 
+// Mock audio buffer (MP3 header bytes)
+export const testAudioBuffer = Buffer.from([
+  0xFF, 0xFB, 0x90, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+]);
+
 export const mockImageFiles = {
   'test-image.jpg': testImageBuffer,
   'image1.jpg': testImageBuffer,
@@ -22,10 +29,16 @@ export const mockVideoFiles = {
   'video2.mp4': testVideoBuffer
 };
 
+export const mockAudioFiles = {
+  'voice-note.mp3': testAudioBuffer,
+  'podcast-episode.mp3': testAudioBuffer,
+  'audio-file.mp3': testAudioBuffer
+};
+
 // Mock fs module for tests
 export const mockFs = {
   readFileSync: (filename) => {
     const basename = filename.split('/').pop();
-    return mockVideoFiles[basename] || mockImageFiles[basename] || testImageBuffer;
+    return mockAudioFiles[basename] || mockVideoFiles[basename] || mockImageFiles[basename] || testImageBuffer;
   }
 };
