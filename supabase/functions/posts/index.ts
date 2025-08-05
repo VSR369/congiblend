@@ -6,10 +6,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-)
+// Create authenticated Supabase client function
+const createAuthenticatedClient = (token: string) => {
+  return createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    }
+  )
+}
 
 interface CreatePostData {
   content: string;
@@ -76,12 +86,16 @@ serve(async (req) => {
 
     const token = authHeader.split(' ')[1];
     
+    // Create authenticated Supabase client
+    const authenticatedSupabase = createAuthenticatedClient(token);
+    
     // Verify the token and get user
-    const { data: sessionData, error: sessionError } = await supabase.auth.getUser(token);
+    const { data: sessionData, error: sessionError } = await authenticatedSupabase.auth.getUser();
     
     if (sessionError || !sessionData.user) {
+      console.error('Authentication error:', sessionError);
       return new Response(
-        JSON.stringify({ error: 'Invalid token' }),
+        JSON.stringify({ error: 'Invalid or expired token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -105,7 +119,7 @@ serve(async (req) => {
       const mentions = extractMentions(postData.content);
 
       // Create the post
-      const { data: newPost, error: postError } = await supabase
+      const { data: newPost, error: postError } = await authenticatedSupabase
         .from('posts')
         .insert({
           user_id: userId,
@@ -174,7 +188,7 @@ serve(async (req) => {
       const offset = (page - 1) * limit;
 
       // Get posts with author information
-      const { data: posts, error: postsError } = await supabase
+      const { data: posts, error: postsError } = await authenticatedSupabase
         .from('posts')
         .select(`
           *,
@@ -241,7 +255,7 @@ serve(async (req) => {
       const postId = pathParts[pathParts.length - 1];
       
       if (postId !== 'feed') {
-        const { data: post, error: postError } = await supabase
+        const { data: post, error: postError } = await authenticatedSupabase
           .from('posts')
           .select(`
             *,
@@ -276,7 +290,7 @@ serve(async (req) => {
         // If it's an event post, get RSVP counts
         let eventCounts = {};
         if (post.post_type === 'event') {
-          const { data: rsvpCounts, error: rsvpError } = await supabase
+          const { data: rsvpCounts, error: rsvpError } = await authenticatedSupabase
             .from('event_rsvps')
             .select('status')
             .eq('post_id', postId);
@@ -331,7 +345,7 @@ serve(async (req) => {
       }
 
       // Check if user already voted on this poll
-      const { data: existingVote, error: voteCheckError } = await supabase
+      const { data: existingVote, error: voteCheckError } = await authenticatedSupabase
         .from('votes')
         .select('id')
         .eq('user_id', userId)
@@ -354,7 +368,7 @@ serve(async (req) => {
       }
 
       // Get the current poll data
-      const { data: post, error: postError } = await supabase
+      const { data: post, error: postError } = await authenticatedSupabase
         .from('posts')
         .select('poll_data')
         .eq('id', postId)
@@ -384,7 +398,7 @@ serve(async (req) => {
       }
 
       // Record the vote
-      const { error: voteError } = await supabase
+      const { error: voteError } = await authenticatedSupabase
         .from('votes')
         .insert({
           user_id: userId,
@@ -404,7 +418,7 @@ serve(async (req) => {
       const updatedPollData = { ...post.poll_data };
       updatedPollData.options[option_index].votes += 1;
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await authenticatedSupabase
         .from('posts')
         .update({ poll_data: updatedPollData })
         .eq('id', postId);
@@ -445,7 +459,7 @@ serve(async (req) => {
       }
 
       // Get the event post to validate it exists and is an event
-      const { data: post, error: postError } = await supabase
+      const { data: post, error: postError } = await authenticatedSupabase
         .from('posts')
         .select('post_type, event_data')
         .eq('id', postId)
@@ -460,7 +474,7 @@ serve(async (req) => {
 
       // Check if event has capacity restrictions
       if (status === 'attending' && post.event_data?.max_attendees) {
-        const { count: attendingCount, error: countError } = await supabase
+        const { count: attendingCount, error: countError } = await authenticatedSupabase
           .from('event_rsvps')
           .select('*', { count: 'exact', head: true })
           .eq('post_id', postId)
@@ -483,7 +497,7 @@ serve(async (req) => {
       }
 
       // Insert or update RSVP
-      const { error: rsvpError } = await supabase
+      const { error: rsvpError } = await authenticatedSupabase
         .from('event_rsvps')
         .upsert({
           user_id: userId,
