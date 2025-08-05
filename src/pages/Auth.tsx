@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
+import { createTestUsers } from '@/utils/create-test-users';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [creatingTestUsers, setCreatingTestUsers] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +61,18 @@ const Auth = () => {
       toast.error(error.message || 'An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateTestUsers = async () => {
+    setCreatingTestUsers(true);
+    try {
+      await createTestUsers();
+      toast.success('Test users created successfully!');
+    } catch (error) {
+      toast.error('Failed to create test users');
+    } finally {
+      setCreatingTestUsers(false);
     }
   };
 
@@ -130,6 +144,18 @@ const Auth = () => {
             </Button>
             
             <Separator />
+            
+            {isLogin && (
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full" 
+                onClick={handleCreateTestUsers}
+                disabled={creatingTestUsers}
+              >
+                {creatingTestUsers ? 'Creating...' : 'Create Test Users'}
+              </Button>
+            )}
             
             <div className="text-center text-sm">
               {isLogin ? (
