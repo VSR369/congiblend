@@ -184,6 +184,16 @@ serve(async (req) => {
             display_name,
             avatar_url,
             is_verified
+          ),
+          shared_post:shared_post_id (
+            *,
+            author:user_id (
+              id,
+              username,
+              display_name,
+              avatar_url,
+              is_verified
+            )
           )
         `)
         .eq('visibility', 'public')
@@ -204,6 +214,7 @@ serve(async (req) => {
         author_id: post.user_id,
         reaction_count: post.reactions_count,
         comment_count: post.comments_count,
+        share_count: post.shares_count,
         hashtags: post.metadata?.hashtags || [],
         mentions: post.metadata?.mentions || []
       })) || [];
@@ -240,6 +251,16 @@ serve(async (req) => {
               display_name,
               avatar_url,
               is_verified
+            ),
+            shared_post:shared_post_id (
+              *,
+              author:user_id (
+                id,
+                username,
+                display_name,
+                avatar_url,
+                is_verified
+              )
             )
           `)
           .eq('id', postId)
@@ -274,6 +295,7 @@ serve(async (req) => {
           author_id: post.user_id,
           reaction_count: post.reactions_count,
           comment_count: post.comments_count,
+          share_count: post.shares_count,
           hashtags: post.metadata?.hashtags || [],
           mentions: post.metadata?.mentions || []
         };

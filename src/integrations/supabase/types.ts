@@ -3007,7 +3007,9 @@ export type Database = {
           metadata: Json | null
           poll_data: Json | null
           post_type: string | null
+          quote_content: string | null
           reactions_count: number | null
+          shared_post_id: string | null
           shares_count: number | null
           thumbnail_url: string | null
           updated_at: string | null
@@ -3028,7 +3030,9 @@ export type Database = {
           metadata?: Json | null
           poll_data?: Json | null
           post_type?: string | null
+          quote_content?: string | null
           reactions_count?: number | null
+          shared_post_id?: string | null
           shares_count?: number | null
           thumbnail_url?: string | null
           updated_at?: string | null
@@ -3049,7 +3053,9 @@ export type Database = {
           metadata?: Json | null
           poll_data?: Json | null
           post_type?: string | null
+          quote_content?: string | null
           reactions_count?: number | null
+          shared_post_id?: string | null
           shares_count?: number | null
           thumbnail_url?: string | null
           updated_at?: string | null
@@ -3058,6 +3064,13 @@ export type Database = {
           visibility?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_shared_post_id_fkey"
+            columns: ["shared_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_user_id_fkey"
             columns: ["user_id"]
