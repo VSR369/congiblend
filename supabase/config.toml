@@ -15,3 +15,6 @@ verify_jwt = false
 
 [functions.reactions]
 verify_jwt = false
+
+[functions.comments]
+verify_jwt = false
