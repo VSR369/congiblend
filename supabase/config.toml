@@ -12,3 +12,6 @@ verify_jwt = false
 
 [functions.media]
 verify_jwt = false
+
+[functions.reactions]
+verify_jwt = false
