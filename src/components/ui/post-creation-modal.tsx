@@ -9,6 +9,8 @@ import { Badge } from "./badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 import { Progress } from "./loading";
 import { useFeedStore } from "@/stores/feedStore";
+import { postSchema } from "@/schemas/post";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { PostType, CreatePostData } from "@/types/feed";
 
@@ -52,6 +54,15 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
         media: selectedFiles.length > 0 ? selectedFiles : undefined,
       };
 
+      // Validate data before submitting
+      const validatedData = postSchema.parse({
+        content: postData.content,
+        visibility: postData.visibility,
+        type: postData.type,
+        hashtags: postData.hashtags,
+        mentions: postData.mentions,
+      });
+
       await createPost(postData);
       
       // Reset form
@@ -61,8 +72,16 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
       setSelectedFiles([]);
       setActiveTab("text");
       onClose();
+      
+      toast.success("Post created successfully!");
     } catch (error) {
       console.error("Failed to create post:", error);
+      
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to create post. Please try again.");
+      }
     } finally {
       setIsPosting(false);
     }

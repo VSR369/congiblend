@@ -68,7 +68,7 @@
     "vite-plugin-pwa": "^1.0.2",
     "workbox-precaching": "^7.3.0",
     "workbox-routing": "^7.3.0",
-    "zod": "^3.25.76",
+    "zod": "^4.0.14",
     "zustand": "^5.0.7"
   },
   "devDependencies": {

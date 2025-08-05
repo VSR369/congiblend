@@ -3,10 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MoreHorizontal, MessageCircle, Share2, Bookmark, Flag, Heart } from "lucide-react";
 import { formatRelativeTime } from "@/utils/formatters";
 import { ReactionButton, ReactionPicker } from "./reaction-system";
+import { PostErrorBoundary } from "./post-error-boundary";
 import { Button } from "./button";
 import { Avatar } from "./avatar";
 import { Badge } from "./badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./dropdown-menu";
+import { useOptimisticReaction } from "@/hooks/useOptimisticReaction";
 import { useFeedStore } from "@/stores/feedStore";
 import { cn } from "@/lib/utils";
 import type { Post, ReactionType } from "@/types/feed";
@@ -19,18 +21,19 @@ interface PostCardProps {
 export const PostCard = ({ post, className }: PostCardProps) => {
   const [showReactionPicker, setShowReactionPicker] = React.useState(false);
   const [showComments, setShowComments] = React.useState(false);
-  const { toggleReaction, toggleSave, sharePost } = useFeedStore();
+  const { toggleSave, sharePost } = useFeedStore();
+  const reactionMutation = useOptimisticReaction();
 
   const handleReactionClick = () => {
     if (post.userReaction) {
-      toggleReaction(post.id, post.userReaction);
+      reactionMutation.mutate({ postId: post.id, reactionType: post.userReaction });
     } else {
       setShowReactionPicker(!showReactionPicker);
     }
   };
 
   const handleReactionSelect = (reaction: ReactionType) => {
-    toggleReaction(post.id, reaction);
+    reactionMutation.mutate({ postId: post.id, reactionType: reaction });
     setShowReactionPicker(false);
   };
 
@@ -199,11 +202,12 @@ export const PostCard = ({ post, className }: PostCardProps) => {
   };
 
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={cn("bg-card border rounded-lg p-6 space-y-4", className)}
-    >
+    <PostErrorBoundary>
+      <motion.article
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={cn("bg-card border rounded-lg p-6 space-y-4", className)}
+      >
       {/* Post Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-start space-x-3">
@@ -402,6 +406,7 @@ export const PostCard = ({ post, className }: PostCardProps) => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.article>
+      </motion.article>
+    </PostErrorBoundary>
   );
 };
