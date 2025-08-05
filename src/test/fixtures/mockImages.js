@@ -2,6 +2,13 @@
 // For testing purposes, we'll simulate image data
 export const testImageBuffer = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
 
+// Mock video buffer (MP4 header bytes)
+export const testVideoBuffer = Buffer.from([
+  0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6F, 0x6D,
+  0x00, 0x00, 0x02, 0x00, 0x69, 0x73, 0x6F, 0x6D, 0x69, 0x73, 0x6F, 0x32,
+  0x61, 0x76, 0x63, 0x31, 0x6D, 0x70, 0x34, 0x31
+]);
+
 export const mockImageFiles = {
   'test-image.jpg': testImageBuffer,
   'image1.jpg': testImageBuffer,
@@ -9,10 +16,16 @@ export const mockImageFiles = {
   'image3.jpg': testImageBuffer
 };
 
+export const mockVideoFiles = {
+  'test-video.mp4': testVideoBuffer,
+  'video1.mp4': testVideoBuffer,
+  'video2.mp4': testVideoBuffer
+};
+
 // Mock fs module for tests
 export const mockFs = {
   readFileSync: (filename) => {
     const basename = filename.split('/').pop();
-    return mockImageFiles[basename] || testImageBuffer;
+    return mockVideoFiles[basename] || mockImageFiles[basename] || testImageBuffer;
   }
 };

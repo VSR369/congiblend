@@ -2536,6 +2536,62 @@ export type Database = {
         }
         Relationships: []
       }
+      media_processing: {
+        Row: {
+          created_at: string | null
+          id: string
+          media_type: string
+          metadata: Json | null
+          original_filename: string
+          processing_error: string | null
+          processing_progress: number | null
+          processing_status: string | null
+          storage_path: string
+          thumbnail_url: string | null
+          updated_at: string | null
+          user_id: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          media_type: string
+          metadata?: Json | null
+          original_filename: string
+          processing_error?: string | null
+          processing_progress?: number | null
+          processing_status?: string | null
+          storage_path: string
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          user_id: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          media_type?: string
+          metadata?: Json | null
+          original_filename?: string
+          processing_error?: string | null
+          processing_progress?: number | null
+          processing_status?: string | null
+          storage_path?: string
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          user_id?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_processing_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_status_change_alerts: {
         Row: {
           alert_processed: boolean
@@ -2916,6 +2972,7 @@ export type Database = {
           post_type: string | null
           reactions_count: number | null
           shares_count: number | null
+          thumbnail_url: string | null
           updated_at: string | null
           user_id: string
           videos: string[] | null
@@ -2934,6 +2991,7 @@ export type Database = {
           post_type?: string | null
           reactions_count?: number | null
           shares_count?: number | null
+          thumbnail_url?: string | null
           updated_at?: string | null
           user_id: string
           videos?: string[] | null
@@ -2952,6 +3010,7 @@ export type Database = {
           post_type?: string | null
           reactions_count?: number | null
           shares_count?: number | null
+          thumbnail_url?: string | null
           updated_at?: string | null
           user_id?: string
           videos?: string[] | null

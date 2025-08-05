@@ -18,6 +18,7 @@ interface CreatePostData {
   images?: string[];
   videos?: string[];
   media_urls?: string[];
+  thumbnail_url?: string;
   metadata?: any;
 }
 
@@ -95,6 +96,7 @@ serve(async (req) => {
           images: postData.images || null,
           videos: postData.videos || null,
           media_urls: postData.media_urls || null,
+          thumbnail_url: postData.thumbnail_url || null,
           metadata: {
             hashtags,
             mentions,
