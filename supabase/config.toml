@@ -6,3 +6,6 @@ verify_jwt = false
 
 [functions.profiles]
 verify_jwt = false
+
+[functions.posts]
+verify_jwt = false
