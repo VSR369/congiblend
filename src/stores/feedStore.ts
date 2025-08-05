@@ -88,25 +88,34 @@ export const useFeedStore = create<FeedState>((set, get) => {
       set({ loading: true });
 
       try {
-        // Use the posts edge function for consistent data fetching
-        const { data: { session } } = await supabase.auth.getSession();
-        const { data: feedData, error: postsError } = await supabase.functions.invoke('posts/feed', {
-          headers: session?.access_token ? {
-            Authorization: `Bearer ${session.access_token}`,
-          } : {},
-        });
+        // Use direct database query for now, since edge function routing needs fix
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select(`
+            *,
+            user:user_id (
+              id,
+              username,
+              display_name,
+              avatar_url,
+              is_verified
+            )
+          `)
+          .eq('visibility', 'public')
+          .order('created_at', { ascending: false })
+          .limit(20);
 
         if (postsError) throw postsError;
 
         // Transform posts to our format
-        const transformedPosts = feedData?.posts?.map((post: any) => 
-          transformDbPost(post, post.author)
+        const transformedPosts = postsData?.map((dbPost) => 
+          transformDbPost(dbPost, dbPost.user)
         ) || [];
 
         set({ 
           posts: reset ? transformedPosts : [...state.posts, ...transformedPosts],
           loading: false,
-          hasMore: feedData?.pagination?.hasMore || false
+          hasMore: transformedPosts.length === 20
         });
 
         // Set up real-time subscription for new posts (only once)
