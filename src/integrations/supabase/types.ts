@@ -438,6 +438,41 @@ export type Database = {
           },
         ]
       }
+      event_rsvps: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_rsvps_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       experiences: {
         Row: {
           company_id: string | null
@@ -2963,6 +2998,7 @@ export type Database = {
           comments_count: number | null
           content: string
           created_at: string | null
+          event_data: Json | null
           id: string
           images: string[] | null
           is_archived: boolean | null
@@ -2983,6 +3019,7 @@ export type Database = {
           comments_count?: number | null
           content: string
           created_at?: string | null
+          event_data?: Json | null
           id?: string
           images?: string[] | null
           is_archived?: boolean | null
@@ -3003,6 +3040,7 @@ export type Database = {
           comments_count?: number | null
           content?: string
           created_at?: string | null
+          event_data?: Json | null
           id?: string
           images?: string[] | null
           is_archived?: boolean | null

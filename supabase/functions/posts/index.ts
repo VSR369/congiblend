@@ -25,6 +25,19 @@ interface CreatePostData {
     multiple_choice: boolean;
     expires_at?: string;
   };
+  event_data?: {
+    title: string;
+    description?: string;
+    start_date: string;
+    end_date?: string;
+    location?: string;
+    virtual_link?: string;
+    max_attendees?: number;
+    is_virtual?: boolean;
+    is_hybrid?: boolean;
+    ticket_price?: number;
+    organizer?: string;
+  };
   metadata?: any;
 }
 
@@ -104,6 +117,7 @@ serve(async (req) => {
           media_urls: postData.media_urls || null,
           thumbnail_url: postData.thumbnail_url || null,
           poll_data: postData.poll_data || null,
+          event_data: postData.event_data || null,
           metadata: {
             hashtags,
             mentions,
@@ -238,15 +252,41 @@ serve(async (req) => {
           );
         }
 
+        // If it's an event post, get RSVP counts
+        let eventCounts = {};
+        if (post.post_type === 'event') {
+          const { data: rsvpCounts, error: rsvpError } = await supabase
+            .from('event_rsvps')
+            .select('status')
+            .eq('post_id', postId);
+
+          if (!rsvpError && rsvpCounts) {
+            eventCounts = {
+              attending_count: rsvpCounts.filter(r => r.status === 'attending').length,
+              interested_count: rsvpCounts.filter(r => r.status === 'interested').length,
+              not_attending_count: rsvpCounts.filter(r => r.status === 'not_attending').length
+            };
+          }
+        }
+
+        const responsePost = {
+          ...post,
+          author_id: post.user_id,
+          reaction_count: post.reactions_count,
+          comment_count: post.comments_count,
+          hashtags: post.metadata?.hashtags || [],
+          mentions: post.metadata?.mentions || []
+        };
+
+        // Add event counts to event_data if it's an event
+        if (post.post_type === 'event' && post.event_data) {
+          responsePost.event_data = {
+            ...post.event_data,
+            ...eventCounts
+          };
+        }
         return new Response(
-          JSON.stringify({
-            ...post,
-            author_id: post.user_id,
-            reaction_count: post.reactions_count,
-            comment_count: post.comments_count,
-            hashtags: post.metadata?.hashtags || [],
-            mentions: post.metadata?.mentions || []
-          }),
+          JSON.stringify(responsePost),
           { 
             status: 200, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -360,6 +400,87 @@ serve(async (req) => {
           voted: true,
           option_index: option_index,
           poll_data: updatedPollData
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // RSVP TO EVENT ENDPOINT
+    if (req.method === 'POST' && pathParts.length >= 3 && pathParts[pathParts.length - 1] === 'rsvp') {
+      const postId = pathParts[pathParts.length - 2];
+      const { status } = await req.json();
+
+      // Validate RSVP status
+      const validStatuses = ['attending', 'interested', 'not_attending'];
+      if (!validStatuses.includes(status)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid RSVP status. Must be one of: attending, interested, not_attending' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Get the event post to validate it exists and is an event
+      const { data: post, error: postError } = await supabase
+        .from('posts')
+        .select('post_type, event_data')
+        .eq('id', postId)
+        .single();
+
+      if (postError || !post || post.post_type !== 'event') {
+        return new Response(
+          JSON.stringify({ error: 'Event post not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check if event has capacity restrictions
+      if (status === 'attending' && post.event_data?.max_attendees) {
+        const { count: attendingCount, error: countError } = await supabase
+          .from('event_rsvps')
+          .select('*', { count: 'exact', head: true })
+          .eq('post_id', postId)
+          .eq('status', 'attending');
+
+        if (countError) {
+          console.error('Error counting attendees:', countError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to check event capacity' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        if (attendingCount >= post.event_data.max_attendees) {
+          return new Response(
+            JSON.stringify({ error: 'Event is at maximum capacity' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+
+      // Insert or update RSVP
+      const { error: rsvpError } = await supabase
+        .from('event_rsvps')
+        .upsert({
+          user_id: userId,
+          post_id: postId,
+          status: status
+        });
+
+      if (rsvpError) {
+        console.error('RSVP creation error:', rsvpError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to record RSVP' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          rsvp_status: status,
+          post_id: postId
         }),
         { 
           status: 200, 
