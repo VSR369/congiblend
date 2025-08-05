@@ -9,3 +9,6 @@ verify_jwt = false
 
 [functions.posts]
 verify_jwt = false
+
+[functions.media]
+verify_jwt = false

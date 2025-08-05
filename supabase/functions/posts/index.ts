@@ -14,9 +14,10 @@ const supabase = createClient(
 interface CreatePostData {
   content: string;
   visibility: 'public' | 'connections' | 'private';
-  post_type: 'text' | 'image' | 'video' | 'article' | 'poll' | 'event' | 'job';
+  post_type: 'text' | 'image' | 'video' | 'article' | 'poll' | 'event' | 'job' | 'carousel';
   images?: string[];
   videos?: string[];
+  media_urls?: string[];
   metadata?: any;
 }
 
@@ -93,6 +94,7 @@ serve(async (req) => {
           visibility: postData.visibility || 'public',
           images: postData.images || null,
           videos: postData.videos || null,
+          media_urls: postData.media_urls || null,
           metadata: {
             hashtags,
             mentions,

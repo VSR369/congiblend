@@ -2911,6 +2911,7 @@ export type Database = {
           images: string[] | null
           is_archived: boolean | null
           is_pinned: boolean | null
+          media_urls: string[] | null
           metadata: Json | null
           post_type: string | null
           reactions_count: number | null
@@ -2928,6 +2929,7 @@ export type Database = {
           images?: string[] | null
           is_archived?: boolean | null
           is_pinned?: boolean | null
+          media_urls?: string[] | null
           metadata?: Json | null
           post_type?: string | null
           reactions_count?: number | null
@@ -2945,6 +2947,7 @@ export type Database = {
           images?: string[] | null
           is_archived?: boolean | null
           is_pinned?: boolean | null
+          media_urls?: string[] | null
           metadata?: Json | null
           post_type?: string | null
           reactions_count?: number | null
