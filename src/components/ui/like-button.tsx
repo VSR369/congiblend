@@ -24,42 +24,42 @@ const REACTION_CONFIG = {
   like: {
     icon: ThumbsUp,
     label: 'Like',
-    color: 'hsl(var(--primary))',
+    color: 'text-blue-600',
     hoverColor: 'hover:text-blue-600',
     bgHover: 'hover:bg-blue-50',
   },
   love: {
     icon: Heart,
     label: 'Love',
-    color: 'hsl(var(--destructive))',
+    color: 'text-red-600',
     hoverColor: 'hover:text-red-600',
     bgHover: 'hover:bg-red-50',
   },
   insightful: {
     icon: Lightbulb,
     label: 'Insightful',
-    color: 'hsl(45 93% 47%)',
+    color: 'text-yellow-600',
     hoverColor: 'hover:text-yellow-600',
     bgHover: 'hover:bg-yellow-50',
   },
   support: {
     icon: Target,
     label: 'Support',
-    color: 'hsl(142 76% 36%)',
+    color: 'text-green-600',
     hoverColor: 'hover:text-green-600',
     bgHover: 'hover:bg-green-50',
   },
   celebrate: {
     icon: Award,
     label: 'Celebrate',
-    color: 'hsl(262 83% 58%)',
+    color: 'text-purple-600',
     hoverColor: 'hover:text-purple-600',
     bgHover: 'hover:bg-purple-50',
   },
   curious: {
     icon: Smile,
     label: 'Curious',
-    color: 'hsl(329 86% 70%)',
+    color: 'text-pink-600',
     hoverColor: 'hover:text-pink-600',
     bgHover: 'hover:bg-pink-50',
   },
@@ -137,11 +137,10 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
           "flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200",
           "hover:bg-muted",
           isActive 
-            ? "text-primary font-medium"
+            ? `${currentConfig.color} font-medium`
             : "text-muted-foreground hover:text-foreground",
           className
         )}
-        style={isActive ? { color: currentConfig.color } : undefined}
       >
         <currentConfig.icon className="h-5 w-5" />
         <span className="text-sm">
@@ -182,8 +181,7 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
                   title={config.label}
                 >
                   <config.icon 
-                    className="h-4 w-4" 
-                    style={{ color: config.color }}
+                    className={cn("h-4 w-4", config.color)}
                   />
                 </button>
               ))}
