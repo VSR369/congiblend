@@ -1,69 +1,90 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-
 
 const Auth = () => {
   const navigate = useNavigate();
-  const isLogin = window.location.pathname === '/login';
+  const location = useLocation();
+  const { signIn, signUp, isLoading, error, clearError, isAuthenticated } = useAuthStore();
+  
+  const isLogin = location.pathname === '/login';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
+  const [localError, setLocalError] = useState('');
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('Auth: User is authenticated, redirecting to home');
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Clear errors when switching between login/register
+  useEffect(() => {
+    clearError();
+    setLocalError('');
+  }, [location.pathname, clearError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+    setLocalError('');
+    clearError();
 
     if (!isLogin && password !== confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
+      setLocalError('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      setLocalError('Password must be at least 6 characters');
       return;
     }
 
     try {
+      let result;
+      
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        console.log('Auth: Attempting sign in...');
+        result = await signIn(email, password);
         
-        if (error) throw error;
-        
-        toast.success('Successfully signed in!');
-        navigate('/');
+        if (!result.error) {
+          toast.success('Successfully signed in!');
+          // Navigation will be handled by the auth state change
+        }
       } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-          },
-        });
+        console.log('Auth: Attempting sign up...');
+        result = await signUp(email, password);
         
-        if (error) throw error;
-        
-        toast.success('Check your email for verification link!');
-        navigate('/login');
+        if (!result.error) {
+          toast.success('Check your email for verification link!');
+          navigate('/login');
+          return;
+        }
       }
+      
+      if (result.error) {
+        const errorMessage = result.error.message || 'An error occurred';
+        setLocalError(errorMessage);
+        toast.error(errorMessage);
+      }
+      
     } catch (error: any) {
-      setError(error.message || 'An error occurred');
-      toast.error(error.message || 'An error occurred');
-    } finally {
-      setLoading(false);
+      const errorMessage = error.message || 'An unexpected error occurred';
+      setLocalError(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
+  const displayError = localError || error;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -82,9 +103,9 @@ const Auth = () => {
         
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
-            {error && (
+            {displayError && (
               <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>{displayError}</AlertDescription>
               </Alert>
             )}
             
@@ -97,6 +118,7 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             
@@ -109,6 +131,8 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isLoading}
+                minLength={6}
               />
             </div>
             
@@ -122,14 +146,16 @@ const Auth = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
+                  disabled={isLoading}
+                  minLength={6}
                 />
               </div>
             )}
           </CardContent>
           
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Loading...' : (isLogin ? 'Sign In' : 'Sign Up')}
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Loading...' : (isLogin ? 'Sign In' : 'Sign Up')}
             </Button>
             
             <div className="text-center text-sm">
@@ -140,6 +166,7 @@ const Auth = () => {
                     variant="link"
                     className="p-0"
                     onClick={() => navigate('/register')}
+                    disabled={isLoading}
                   >
                     Sign up
                   </Button>
@@ -151,6 +178,7 @@ const Auth = () => {
                     variant="link"
                     className="p-0"
                     onClick={() => navigate('/login')}
+                    disabled={isLoading}
                   >
                     Sign in
                   </Button>

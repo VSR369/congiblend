@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,18 +24,19 @@ const queryClient = new QueryClient({
 
 const App = () => {
   const { theme } = useThemeStore();
-  const { initialize, isAuthenticated, isLoading, isInitialized } = useAuthStore();
+  const { initialize, isAuthenticated, isLoading, isInitialized, error } = useAuthStore();
+  const [authStable, setAuthStable] = useState(false);
 
+  // Initialize auth once when app mounts
   useEffect(() => {
-    // Initialize auth only once when app mounts
-    if (!isInitialized) {
-      console.log('App: Starting auth initialization...');
-      initialize().catch(console.error);
-    }
-  }, []); // Remove dependencies to prevent re-initialization
+    console.log('App: Starting auth initialization...');
+    initialize().catch((error) => {
+      console.error('App: Auth initialization failed:', error);
+    });
+  }, [initialize]);
 
+  // Apply theme
   useEffect(() => {
-    // Apply theme on mount
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -43,15 +44,57 @@ const App = () => {
     }
   }, [theme]);
 
-  if (isLoading) {
+  // Add stabilization delay for auth state
+  useEffect(() => {
+    if (isInitialized && !isLoading) {
+      // Add a small delay to prevent rapid navigation changes
+      const timer = setTimeout(() => {
+        setAuthStable(true);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    } else {
+      setAuthStable(false);
+    }
+  }, [isInitialized, isLoading, isAuthenticated]);
+
+  // Show loading while initializing or stabilizing
+  if (!isInitialized || isLoading || !authStable) {
+    const message = !isInitialized ? "Initializing..." : 
+                   isLoading ? "Authenticating..." : "Loading...";
+    
     return (
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <LoadingPage message="Initializing..." />
+          <LoadingPage message={message} />
         </TooltipProvider>
       </QueryClientProvider>
     );
   }
+
+  // Show error state if there's an auth error
+  if (error) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <div className="min-h-screen flex items-center justify-center bg-background">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-destructive mb-4">Authentication Error</h1>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="px-4 py-2 bg-primary text-primary-foreground rounded"
+              >
+                Reload App
+              </button>
+            </div>
+          </div>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
+  console.log('App: Rendering with auth state:', { isAuthenticated, isInitialized, authStable });
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -60,11 +103,38 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={isAuthenticated ? <MainLayout /> : <Navigate to="/login" replace />}>
+            <Route 
+              path="/" 
+              element={
+                isAuthenticated ? (
+                  <MainLayout />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            >
               <Route index element={<Index />} />
             </Route>
-            <Route path="/login" element={!isAuthenticated ? <Auth /> : <Navigate to="/" replace />} />
-            <Route path="/register" element={!isAuthenticated ? <Auth /> : <Navigate to="/" replace />} />
+            <Route 
+              path="/login" 
+              element={
+                !isAuthenticated ? (
+                  <Auth />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              } 
+            />
+            <Route 
+              path="/register" 
+              element={
+                !isAuthenticated ? (
+                  <Auth />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              } 
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
