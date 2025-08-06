@@ -427,7 +427,7 @@ export const PostCard = ({ post, className }: PostCardProps) => {
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-between border-t pt-3">
+      <div className="flex items-center justify-between border-t pt-3 bg-card">
         <div className="flex items-center space-x-1">
           <div className="relative">
             <ReactionButton
