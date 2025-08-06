@@ -27,6 +27,25 @@ interface FeedState {
 
 // Helper function to transform database post to our Post type
 const transformDbPost = (dbPost: any, author: any): Post => {
+  // Handle media_urls array and transform to proper media format
+  let media = [];
+  if (dbPost.media_urls && Array.isArray(dbPost.media_urls)) {
+    media = dbPost.media_urls.map((url: string, index: number) => ({
+      id: `${dbPost.id}-${index}`,
+      type: determineMediaType(url),
+      url,
+      alt: `Media ${index + 1}`
+    }));
+  } else if (dbPost.images && Array.isArray(dbPost.images)) {
+    // Fallback for legacy images field
+    media = dbPost.images.map((url: string, index: number) => ({
+      id: `${dbPost.id}-${index}`,
+      type: 'image' as const,
+      url,
+      alt: 'Post image'
+    }));
+  }
+
   return {
     id: dbPost.id,
     type: dbPost.post_type || 'text',
@@ -38,12 +57,7 @@ const transformDbPost = (dbPost: any, author: any): Post => {
       verified: author.is_verified || false,
     },
     content: dbPost.content,
-    media: dbPost.images ? dbPost.images.map((url: string, index: number) => ({
-      id: `${dbPost.id}-${index}`,
-      type: 'image' as const,
-      url,
-      alt: 'Post image'
-    })) : [],
+    media,
     hashtags: extractHashtags(dbPost.content),
     mentions: [],
     reactions: [],
@@ -56,7 +70,21 @@ const transformDbPost = (dbPost: any, author: any): Post => {
     edited: false,
     isPinned: dbPost.is_pinned || false,
     visibility: dbPost.visibility || 'public',
+    userReaction: dbPost.user_reaction || undefined,
+    userSaved: dbPost.user_saved || false,
+    userShared: dbPost.user_shared || false,
   };
+};
+
+// Helper function to determine media type from URL
+const determineMediaType = (url: string): 'image' | 'video' | 'document' => {
+  const extension = url.split('.').pop()?.toLowerCase();
+  if (['mp4', 'webm', 'mov', 'avi'].includes(extension || '')) {
+    return 'video';
+  } else if (['pdf', 'doc', 'docx'].includes(extension || '')) {
+    return 'document';
+  }
+  return 'image';
 };
 
 // Helper function to extract hashtags from content
@@ -266,60 +294,52 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
-        // Check if reaction already exists
-        const { data: existingReaction } = await supabase
-          .from('reactions')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('target_type', 'post')
-          .eq('target_id', postId)
-          .single();
+        // Use the reactions Edge Function
+        const { data, error } = await supabase.functions.invoke('reactions', {
+          body: {
+            target_type: 'post',
+            target_id: postId,
+            reaction_type: reaction
+          }
+        });
 
-        if (existingReaction) {
-          // Remove reaction
-          await supabase
-            .from('reactions')
-            .delete()
-            .eq('id', existingReaction.id);
-        } else {
-          // Add reaction
-          await supabase
-            .from('reactions')
-            .insert({
-              user_id: user.id,
-              target_type: 'post',
-              target_id: postId,
-              reaction_type: reaction
-            });
-        }
+        if (error) throw error;
 
-        // Update local state optimistically
+        // Update local state based on the response
         set(state => ({
           posts: state.posts.map(post => {
             if (post.id === postId) {
-              const userReaction = post.reactions.find(r => r.user.id === user.id);
-              if (userReaction) {
+              if (data.action === 'removed') {
                 return {
                   ...post,
-                  reactions: post.reactions.filter(r => r.user.id !== user.id),
-                  userReaction: undefined
+                  userReaction: undefined,
+                  reactions: post.reactions.filter(r => r.user.id !== user.id)
                 };
               } else {
                 return {
                   ...post,
-                  reactions: [...post.reactions, {
-                    id: `temp-${Date.now()}`,
-                    type: reaction,
-                    user: { id: user.id, name: '', username: '' },
-                    createdAt: new Date()
-                  }],
-                  userReaction: reaction
+                  userReaction: reaction,
+                  reactions: [
+                    ...post.reactions.filter(r => r.user.id !== user.id),
+                    {
+                      id: data.reaction?.id || `temp-${Date.now()}`,
+                      type: reaction,
+                      user: { 
+                        id: user.id, 
+                        name: user.user_metadata?.display_name || 'User', 
+                        username: user.user_metadata?.username || 'user' 
+                      },
+                      createdAt: new Date()
+                    }
+                  ]
                 };
               }
             }
             return post;
           })
         }));
+
+        return data;
       } catch (error) {
         console.error('Error toggling reaction:', error);
         throw error;
@@ -331,20 +351,20 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
-        const { error } = await supabase
-          .from('comments')
-          .insert({
+        // Use the comments Edge Function
+        const { data, error } = await supabase.functions.invoke('comments', {
+          body: {
             post_id: postId,
-            user_id: user.id,
             content,
             parent_id: parentId || null
-          });
+          }
+        });
 
         if (error) throw error;
 
-        // Comment will be added via real-time subscription or optimistic update
+        // Optimistically update local state
         const newComment = {
-          id: `temp-${Date.now()}`,
+          id: data.comment?.id || `temp-${Date.now()}`,
           content,
           author: {
             id: user.id,
@@ -367,6 +387,8 @@ export const useFeedStore = create<FeedState>((set, get) => {
             };
           })
         }));
+
+        return data;
       } catch (error) {
         console.error('Error adding comment:', error);
         throw error;
@@ -418,17 +440,18 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
-        const { error } = await supabase
-          .from('shares')
-          .insert({
-            user_id: user.id,
+        // Use the shares Edge Function
+        const { data, error } = await supabase.functions.invoke('shares', {
+          body: {
             target_type: 'post',
             target_id: postId,
             share_type: 'share'
-          });
+          }
+        });
 
         if (error) throw error;
 
+        // Update local state optimistically
         set(state => ({
           posts: state.posts.map(post => {
             if (post.id !== postId) return post;
@@ -440,6 +463,8 @@ export const useFeedStore = create<FeedState>((set, get) => {
             };
           })
         }));
+
+        return data;
       } catch (error) {
         console.error('Error sharing post:', error);
         throw error;

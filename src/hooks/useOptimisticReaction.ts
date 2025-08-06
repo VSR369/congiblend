@@ -23,30 +23,49 @@ export const useOptimisticReaction = () => {
       // Snapshot the previous value
       const previousPosts = queryClient.getQueryData(['posts']);
 
-      // Optimistically update the cache
+      // Optimistically update the cache - handle both paginated and simple data structures
       queryClient.setQueryData(['posts'], (old: any) => {
-        if (!old?.pages) return old;
-
-        return {
-          ...old,
-          pages: old.pages.map((page: any) => ({
-            ...page,
-            data: page.data?.map((post: any) => {
-              if (post.id === postId) {
-                const hasExistingReaction = post.userReaction === reactionType;
-                
-                return {
-                  ...post,
-                  userReaction: hasExistingReaction ? null : reactionType,
-                  reactions_count: hasExistingReaction 
-                    ? Math.max(0, post.reactions_count - 1)
-                    : post.reactions_count + 1,
-                };
-              }
-              return post;
-            }),
-          })),
-        };
+        if (old?.pages) {
+          // Handle paginated data structure
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              data: page.data?.map((post: any) => {
+                if (post.id === postId) {
+                  const hasExistingReaction = post.userReaction === reactionType;
+                  
+                  return {
+                    ...post,
+                    userReaction: hasExistingReaction ? null : reactionType,
+                    reactions: hasExistingReaction 
+                      ? post.reactions?.filter((r: any) => r.type !== reactionType) || []
+                      : [...(post.reactions || [])],
+                  };
+                }
+                return post;
+              }),
+            })),
+          };
+        } else if (Array.isArray(old)) {
+          // Handle simple array structure (feedStore)
+          return old.map((post: any) => {
+            if (post.id === postId) {
+              const hasExistingReaction = post.userReaction === reactionType;
+              
+              return {
+                ...post,
+                userReaction: hasExistingReaction ? null : reactionType,
+                reactions: hasExistingReaction 
+                  ? post.reactions?.filter((r: any) => r.type !== reactionType) || []
+                  : [...(post.reactions || [])],
+              };
+            }
+            return post;
+          });
+        }
+        
+        return old;
       });
 
       return { previousPosts };
