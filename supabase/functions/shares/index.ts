@@ -183,26 +183,7 @@ serve(async (req) => {
             is_pinned: false,
             is_archived: false
           })
-          .select(`
-            *,
-            author:user_id (
-              id,
-              username,
-              display_name,
-              avatar_url,
-              is_verified
-            ),
-            shared_post:shared_post_id (
-              *,
-              author:user_id (
-                id,
-                username,
-                display_name,
-                avatar_url,
-                is_verified
-              )
-            )
-          `)
+          .select()
           .single();
 
         if (quotePostError) {

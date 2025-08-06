@@ -145,16 +145,7 @@ serve(async (req) => {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
-        .select(`
-          *,
-          author:user_id (
-            id,
-            username,
-            display_name,
-            avatar_url,
-            is_verified
-          )
-        `)
+        .select()
         .single();
 
       if (postError) {
@@ -165,9 +156,22 @@ serve(async (req) => {
         );
       }
 
+      // Get user profile for response
+      const { data: userProfile } = await authenticatedSupabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .eq('id', userId)
+        .single();
+
       return new Response(
         JSON.stringify({
           ...newPost,
+          author: {
+            id: userId,
+            username: userProfile?.username || 'unknown',
+            display_name: userProfile?.display_name || 'Unknown User',
+            avatar_url: userProfile?.avatar_url
+          },
           author_id: newPost.user_id,
           reaction_count: newPost.reactions_count,
           comment_count: newPost.comments_count,
@@ -193,33 +197,9 @@ serve(async (req) => {
       const timeRange = url.searchParams.get('timeRange') || 'all';
       const specificUserId = url.searchParams.get('userId');
 
-      // Build query based on filters
       let query = authenticatedSupabase
         .from('posts')
-        .select(`
-          *,
-          author:user_id (
-            id,
-            username,
-            display_name,
-            avatar_url,
-            is_verified,
-            title,
-            company
-          ),
-          shared_post:shared_post_id (
-            *,
-            author:user_id (
-              id,
-              username,
-              display_name,
-              avatar_url,
-              is_verified,
-              title,
-              company
-            )
-          )
-        `);
+        .select('*');
 
       // Apply user filter
       if (filter === 'mine') {
@@ -291,31 +271,49 @@ serve(async (req) => {
         });
       }
 
+      // Get user profiles for all posts
+      const userIds = [...new Set(posts?.map(p => p.user_id) || [])];
+      let userProfiles = {};
+      
+      if (userIds.length > 0) {
+        const { data: profiles } = await authenticatedSupabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', userIds);
+        
+        profiles?.forEach(profile => {
+          userProfiles[profile.id] = profile;
+        });
+      }
+
       // Format posts for response
-      const formattedPosts = posts?.map(post => ({
-        id: post.id,
-        content: post.content,
-        postType: post.post_type,
-        author: {
-          id: post.author?.id || post.user_id,
-          username: post.author?.username || 'unknown',
-          displayName: post.author?.display_name || 'Unknown User',
-          profilePicture: post.author?.avatar_url,
-          title: post.author?.title || 'Solution Provider'
-        },
-        interactions: {
-          likesCount: post.reactions_count || 0,
-          commentsCount: post.comments_count || 0,
-          sharesCount: post.shares_count || 0,
-          isLikedByUser: userInteractions[post.id]?.isLikedByUser || false
-        },
-        createdAt: post.created_at,
-        // Include additional data for specific post types
-        ...(post.poll_data && { pollData: post.poll_data }),
-        ...(post.event_data && { eventData: post.event_data }),
-        ...(post.media_urls && { mediaUrls: post.media_urls }),
-        ...(post.thumbnail_url && { thumbnailUrl: post.thumbnail_url })
-      })) || [];
+      const formattedPosts = posts?.map(post => {
+        const author = userProfiles[post.user_id];
+        return {
+          id: post.id,
+          content: post.content,
+          postType: post.post_type,
+          author: {
+            id: post.user_id,
+            username: author?.username || 'unknown',
+            displayName: author?.display_name || 'Unknown User',
+            profilePicture: author?.avatar_url,
+            title: 'Solution Provider'
+          },
+          interactions: {
+            likesCount: post.reactions_count || 0,
+            commentsCount: post.comments_count || 0,
+            sharesCount: post.shares_count || 0,
+            isLikedByUser: userInteractions[post.id]?.isLikedByUser || false
+          },
+          createdAt: post.created_at,
+          // Include additional data for specific post types
+          ...(post.poll_data && { pollData: post.poll_data }),
+          ...(post.event_data && { eventData: post.event_data }),
+          ...(post.media_urls && { mediaUrls: post.media_urls }),
+          ...(post.thumbnail_url && { thumbnailUrl: post.thumbnail_url })
+        };
+      }) || [];
 
       return new Response(
         JSON.stringify({
@@ -341,26 +339,7 @@ serve(async (req) => {
       if (postId !== 'feed') {
         const { data: post, error: postError } = await authenticatedSupabase
           .from('posts')
-          .select(`
-            *,
-            author:user_id (
-              id,
-              username,
-              display_name,
-              avatar_url,
-              is_verified
-            ),
-            shared_post:shared_post_id (
-              *,
-              author:user_id (
-                id,
-                username,
-                display_name,
-                avatar_url,
-                is_verified
-              )
-            )
-          `)
+          .select('*')
           .eq('id', postId)
           .single();
 
@@ -388,8 +367,21 @@ serve(async (req) => {
           }
         }
 
+        // Get author profile
+        const { data: authorProfile } = await authenticatedSupabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .eq('id', post.user_id)
+          .single();
+
         const responsePost = {
           ...post,
+          author: {
+            id: post.user_id,
+            username: authorProfile?.username || 'unknown',
+            display_name: authorProfile?.display_name || 'Unknown User',
+            avatar_url: authorProfile?.avatar_url
+          },
           author_id: post.user_id,
           reaction_count: post.reactions_count,
           comment_count: post.comments_count,
