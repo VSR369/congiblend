@@ -40,7 +40,12 @@ interface FeedState {
 }
 
 // Helper function to transform database post to our Post type
-const transformDbPost = (dbPost: any, author: any): Post => {
+const transformDbPost = (dbPost: any, author: any): Post | null => {
+  if (!author) {
+    console.warn('No author found for post:', dbPost.id);
+    return null;
+  }
+  
   console.log('Transforming post:', dbPost.id, 'type:', dbPost.post_type, 'media_urls:', dbPost.media_urls);
   
   // Handle media_urls array and transform to proper media format
@@ -115,11 +120,11 @@ const transformDbPost = (dbPost: any, author: any): Post => {
     id: dbPost.id,
     type: dbPost.post_type || 'text',
     author: {
-      id: author.id,
-      name: author.display_name || author.username,
-      username: author.username,
-      avatar: author.avatar_url,
-      verified: author.is_verified || false,
+      id: author?.id || 'unknown',
+      name: author?.display_name || author?.username || 'Unknown User',
+      username: author?.username || 'unknown',
+      avatar: author?.avatar_url,
+      verified: author?.is_verified || false,
     },
     content: dbPost.content,
     media,
@@ -239,40 +244,31 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
       try {
         const { filters } = state;
+        
+        // First get posts without join
         let query = supabase
           .from('posts')
-          .select(`
-            *,
-            profiles!posts_user_id_fkey (
-              id,
-              username,
-              display_name,
-              avatar_url,
-              is_verified,
-              title,
-              company
-            )
-          `);
+          .select('*');
 
         // Apply user filter
         if (filters.userFilter === 'my_posts') {
-          const currentUser = supabase.auth.getUser();
-          query = query.eq('user_id', (await currentUser).data.user?.id);
+          const currentUser = await supabase.auth.getUser();
+          query = query.eq('user_id', currentUser.data.user?.id);
         } else if (filters.userFilter === 'others') {
-          const currentUser = supabase.auth.getUser();
-          query = query.neq('user_id', (await currentUser).data.user?.id);
-         } else if (filters.userFilter !== 'all') {
-           // For specific user filter, we'll join with profiles table
-           const { data: specificUser } = await supabase
-             .from('profiles')
-             .select('id')
-             .eq('username', filters.userFilter)
-             .single();
-           
-           if (specificUser) {
-             query = query.eq('user_id', specificUser.id);
-           }
-         }
+          const currentUser = await supabase.auth.getUser();
+          query = query.neq('user_id', currentUser.data.user?.id);
+        } else if (filters.userFilter !== 'all') {
+          // For specific user filter, we'll join with profiles table
+          const { data: specificUser } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('username', filters.userFilter)
+            .single();
+          
+          if (specificUser) {
+            query = query.eq('user_id', specificUser.id);
+          }
+        }
 
         // Apply content type filter
         if (filters.contentTypes.length > 0 && filters.contentTypes.length < 7) {
@@ -305,10 +301,27 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
         if (postsError) throw postsError;
 
+        // Get all unique user IDs from posts
+        const userIds = [...new Set(postsData?.map(post => post.user_id) || [])];
+        
+        // Fetch profiles for all users
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url, is_verified, title, company')
+          .in('id', userIds);
+
+        if (profilesError) {
+          console.warn('Error loading profiles:', profilesError);
+        }
+
+        // Create a map of user profiles for quick lookup
+        const profilesMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
+
         // Transform posts to our format
-        const transformedPosts = postsData?.map((dbPost) => 
-          transformDbPost(dbPost, dbPost.profiles)
-        ) || [];
+        const transformedPosts = postsData?.map((dbPost) => {
+          const profile = profilesMap.get(dbPost.user_id);
+          return transformDbPost(dbPost, profile);
+        }).filter(Boolean) || [];
 
         set({ 
           posts: reset ? transformedPosts : [...state.posts, ...transformedPosts],
@@ -337,9 +350,11 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
                 if (authorData) {
                   const newPost = transformDbPost(payload.new, authorData);
-                  set(state => ({
-                    posts: [newPost, ...state.posts]
-                  }));
+                  if (newPost) {
+                    set(state => ({
+                      posts: [newPost, ...state.posts]
+                    }));
+                  }
                 }
               }
             )
