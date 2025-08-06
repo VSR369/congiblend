@@ -6,6 +6,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Helper function to create authenticated Supabase client
+const createAuthenticatedClient = (token: string) => {
+  return createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    }
+  );
+};
+
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -46,6 +61,9 @@ serve(async (req) => {
     }
 
     const userId = sessionData.user.id;
+    
+    // Create authenticated client for this user
+    const authSupabase = createAuthenticatedClient(token);
 
     // CREATE SHARE
     if (req.method === 'POST') {
@@ -82,7 +100,7 @@ serve(async (req) => {
       }
 
       // Check if target post exists
-      const { data: targetPost, error: targetError } = await supabase
+      const { data: targetPost, error: targetError } = await authSupabase
         .from('posts')
         .select('id, user_id, post_type, content, visibility')
         .eq('id', target_id)
@@ -104,7 +122,7 @@ serve(async (req) => {
       }
 
       // Check if user already shared this post with the same share type
-      const { data: existingShare, error: shareCheckError } = await supabase
+      const { data: existingShare, error: shareCheckError } = await authSupabase
         .from('shares')
         .select('id')
         .eq('user_id', userId)
@@ -128,7 +146,7 @@ serve(async (req) => {
       }
 
       // Create share record
-      const { data: newShare, error: shareError } = await supabase
+      const { data: newShare, error: shareError } = await authSupabase
         .from('shares')
         .insert({
           user_id: userId,
@@ -150,7 +168,7 @@ serve(async (req) => {
 
       // For quote reposts, create a new post entry
       if (share_type === 'quote_repost') {
-        const { data: quotePost, error: quotePostError } = await supabase
+        const { data: quotePost, error: quotePostError } = await authSupabase
           .from('posts')
           .insert({
             user_id: userId,
@@ -190,7 +208,7 @@ serve(async (req) => {
         if (quotePostError) {
           console.error('Quote post creation error:', quotePostError);
           // Try to clean up the share record
-          await supabase.from('shares').delete().eq('id', newShare.id);
+          await authSupabase.from('shares').delete().eq('id', newShare.id);
           return new Response(
             JSON.stringify({ error: 'Failed to create quote post' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -201,7 +219,7 @@ serve(async (req) => {
       }
 
       // Update share count on target post
-      await updateShareCount(target_id, 1);
+      await updateShareCount(authSupabase, target_id, 1);
 
       return new Response(
         JSON.stringify(newShare),
@@ -225,7 +243,7 @@ serve(async (req) => {
       }
 
       // Find and delete existing share
-      const { data: deletedShare, error: deleteError } = await supabase
+      const { data: deletedShare, error: deleteError } = await authSupabase
         .from('shares')
         .delete()
         .eq('user_id', userId)
@@ -244,7 +262,7 @@ serve(async (req) => {
 
       // If it was a quote repost, also delete the quote post
       if (share_type === 'quote_repost') {
-        await supabase
+        await authSupabase
           .from('posts')
           .delete()
           .eq('user_id', userId)
@@ -253,7 +271,7 @@ serve(async (req) => {
       }
 
       // Update share count on target post
-      await updateShareCount(target_id, -1);
+      await updateShareCount(authSupabase, target_id, -1);
 
       return new Response(
         JSON.stringify({ success: true, deleted_share: deletedShare }),
@@ -279,10 +297,10 @@ serve(async (req) => {
 })
 
 // Helper function to update share count on target post
-async function updateShareCount(targetId: string, increment: number) {
+async function updateShareCount(authSupabase: any, targetId: string, increment: number) {
   try {
     // Get current count
-    const { data: currentData, error: fetchError } = await supabase
+    const { data: currentData, error: fetchError } = await authSupabase
       .from('posts')
       .select('shares_count')
       .eq('id', targetId)
@@ -296,7 +314,7 @@ async function updateShareCount(targetId: string, increment: number) {
     const newCount = Math.max(0, (currentData.shares_count || 0) + increment);
 
     // Update count
-    const { error: updateError } = await supabase
+    const { error: updateError } = await authSupabase
       .from('posts')
       .update({ shares_count: newCount })
       .eq('id', targetId);

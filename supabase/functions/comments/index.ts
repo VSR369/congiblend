@@ -6,6 +6,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Helper function to create authenticated Supabase client
+const createAuthenticatedClient = (token: string) => {
+  return createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    }
+  );
+};
+
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -57,6 +72,9 @@ serve(async (req) => {
     }
 
     const userId = sessionData.user.id;
+    
+    // Create authenticated client for this user
+    const authSupabase = createAuthenticatedClient(token);
 
     // CREATE COMMENT
     if (req.method === 'POST' && endpoint === 'comments') {
@@ -71,7 +89,7 @@ serve(async (req) => {
       }
 
       // Verify post exists
-      const { data: postExists, error: postCheckError } = await supabase
+      const { data: postExists, error: postCheckError } = await authSupabase
         .from('posts')
         .select('id')
         .eq('id', post_id)
@@ -86,7 +104,7 @@ serve(async (req) => {
 
       // If parent_comment_id is provided, verify it exists and belongs to the same post
       if (parent_comment_id) {
-        const { data: parentComment, error: parentCheckError } = await supabase
+        const { data: parentComment, error: parentCheckError } = await authSupabase
           .from('comments')
           .select('id, post_id')
           .eq('id', parent_comment_id)
@@ -112,7 +130,7 @@ serve(async (req) => {
       const mentions = extractMentions(content);
 
       // Create the comment
-      const { data: newComment, error: commentError } = await supabase
+      const { data: newComment, error: commentError } = await authSupabase
         .from('comments')
         .insert({
           post_id: post_id,
@@ -144,11 +162,11 @@ serve(async (req) => {
       }
 
       // Update post comment count
-      await updatePostCommentCount(post_id, 1);
+      await updatePostCommentCount(authSupabase, post_id, 1);
 
       // If this is a reply, update parent comment reply count
       if (parent_comment_id) {
-        await updateCommentReplyCount(parent_comment_id, 1);
+        await updateCommentReplyCount(authSupabase, parent_comment_id, 1);
       }
 
       return new Response(
@@ -172,7 +190,7 @@ serve(async (req) => {
     if (req.method === 'GET' && pathParts.length >= 2 && pathParts[pathParts.length - 1] === 'replies') {
       const commentId = pathParts[pathParts.length - 2];
       
-      const { data: replies, error: repliesError } = await supabase
+      const { data: replies, error: repliesError } = await authSupabase
         .from('comments')
         .select(`
           *,
@@ -220,7 +238,7 @@ serve(async (req) => {
       const commentId = pathParts[pathParts.length - 1];
       
       if (commentId !== 'comments') {
-        const { data: comment, error: commentError } = await supabase
+        const { data: comment, error: commentError } = await authSupabase
           .from('comments')
           .select(`
             *,
@@ -273,7 +291,7 @@ serve(async (req) => {
       }
 
       // Get top-level comments (no parent)
-      const { data: comments, error: commentsError } = await supabase
+      const { data: comments, error: commentsError } = await authSupabase
         .from('comments')
         .select(`
           *,
@@ -339,10 +357,10 @@ serve(async (req) => {
 })
 
 // Helper function to update post comment count
-async function updatePostCommentCount(postId: string, increment: number) {
+async function updatePostCommentCount(authSupabase: any, postId: string, increment: number) {
   try {
     // Get current count
-    const { data: currentData, error: fetchError } = await supabase
+    const { data: currentData, error: fetchError } = await authSupabase
       .from('posts')
       .select('comments_count')
       .eq('id', postId)
@@ -356,7 +374,7 @@ async function updatePostCommentCount(postId: string, increment: number) {
     const newCount = Math.max(0, (currentData.comments_count || 0) + increment);
 
     // Update count
-    const { error: updateError } = await supabase
+    const { error: updateError } = await authSupabase
       .from('posts')
       .update({ comments_count: newCount })
       .eq('id', postId);
@@ -370,10 +388,10 @@ async function updatePostCommentCount(postId: string, increment: number) {
 }
 
 // Helper function to update comment reply count
-async function updateCommentReplyCount(commentId: string, increment: number) {
+async function updateCommentReplyCount(authSupabase: any, commentId: string, increment: number) {
   try {
     // Get current count
-    const { data: currentData, error: fetchError } = await supabase
+    const { data: currentData, error: fetchError } = await authSupabase
       .from('comments')
       .select('replies_count')
       .eq('id', commentId)
@@ -387,7 +405,7 @@ async function updateCommentReplyCount(commentId: string, increment: number) {
     const newCount = Math.max(0, (currentData.replies_count || 0) + increment);
 
     // Update count
-    const { error: updateError } = await supabase
+    const { error: updateError } = await authSupabase
       .from('comments')
       .update({ replies_count: newCount })
       .eq('id', commentId);

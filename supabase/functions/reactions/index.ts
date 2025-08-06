@@ -6,6 +6,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Helper function to create authenticated Supabase client
+const createAuthenticatedClient = (token: string) => {
+  return createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    }
+  );
+};
+
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -55,6 +70,9 @@ serve(async (req) => {
     }
 
     const userId = sessionData.user.id;
+    
+    // Create authenticated client for this user
+    const authSupabase = createAuthenticatedClient(token);
 
     // ADD REACTION
     if (req.method === 'POST') {
@@ -83,7 +101,7 @@ serve(async (req) => {
       }
 
       // Check if target exists
-      const { data: targetExists, error: targetError } = await supabase
+      const { data: targetExists, error: targetError } = await authSupabase
         .from(target_type === 'post' ? 'posts' : 'comments')
         .select('id')
         .eq('id', target_id)
@@ -97,7 +115,7 @@ serve(async (req) => {
       }
 
       // Check if user already has a reaction on this target
-      const { data: existingReaction, error: reactionCheckError } = await supabase
+      const { data: existingReaction, error: reactionCheckError } = await authSupabase
         .from('reactions')
         .select('id, reaction_type')
         .eq('user_id', userId)
@@ -117,7 +135,7 @@ serve(async (req) => {
 
       if (existingReaction) {
         // Update existing reaction
-        const { data: updatedReaction, error: updateError } = await supabase
+        const { data: updatedReaction, error: updateError } = await authSupabase
           .from('reactions')
           .update({ reaction_type: reaction_type })
           .eq('id', existingReaction.id)
@@ -135,7 +153,7 @@ serve(async (req) => {
         reactionResult = updatedReaction;
       } else {
         // Create new reaction
-        const { data: newReaction, error: insertError } = await supabase
+        const { data: newReaction, error: insertError } = await authSupabase
           .from('reactions')
           .insert({
             user_id: userId,
@@ -157,7 +175,7 @@ serve(async (req) => {
         reactionResult = newReaction;
 
         // Update reaction count on target
-        await updateReactionCount(target_type, target_id, 1);
+        await updateReactionCount(authSupabase, target_type, target_id, 1);
       }
 
       return new Response(
@@ -189,7 +207,7 @@ serve(async (req) => {
       }
 
       // Find existing reaction
-      const { data: existingReaction, error: findError } = await supabase
+      const { data: existingReaction, error: findError } = await authSupabase
         .from('reactions')
         .select('id')
         .eq('user_id', userId)
@@ -205,7 +223,7 @@ serve(async (req) => {
       }
 
       // Update reaction
-      const { data: updatedReaction, error: updateError } = await supabase
+      const { data: updatedReaction, error: updateError } = await authSupabase
         .from('reactions')
         .update({ reaction_type: reaction_type })
         .eq('id', existingReaction.id)
@@ -242,7 +260,7 @@ serve(async (req) => {
       }
 
       // Find and delete existing reaction
-      const { data: deletedReaction, error: deleteError } = await supabase
+      const { data: deletedReaction, error: deleteError } = await authSupabase
         .from('reactions')
         .delete()
         .eq('user_id', userId)
@@ -259,7 +277,7 @@ serve(async (req) => {
       }
 
       // Update reaction count on target
-      await updateReactionCount(target_type, target_id, -1);
+      await updateReactionCount(authSupabase, target_type, target_id, -1);
 
       return new Response(
         JSON.stringify({ success: true, deleted_reaction: deletedReaction }),
@@ -285,13 +303,13 @@ serve(async (req) => {
 })
 
 // Helper function to update reaction count on target
-async function updateReactionCount(targetType: string, targetId: string, increment: number) {
+async function updateReactionCount(authSupabase: any, targetType: string, targetId: string, increment: number) {
   try {
     const tableName = targetType === 'post' ? 'posts' : 'comments';
     const countField = targetType === 'post' ? 'reactions_count' : 'reactions_count';
     
     // Get current count
-    const { data: currentData, error: fetchError } = await supabase
+    const { data: currentData, error: fetchError } = await authSupabase
       .from(tableName)
       .select(countField)
       .eq('id', targetId)
@@ -305,7 +323,7 @@ async function updateReactionCount(targetType: string, targetId: string, increme
     const newCount = Math.max(0, (currentData[countField] || 0) + increment);
 
     // Update count
-    const { error: updateError } = await supabase
+    const { error: updateError } = await authSupabase
       .from(tableName)
       .update({ [countField]: newCount })
       .eq('id', targetId);
