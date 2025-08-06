@@ -4057,6 +4057,23 @@ export type Database = {
         Args: { component_id: string }
         Returns: Json
       }
+      create_post_optimized: {
+        Args: {
+          p_user_id: string
+          p_content: string
+          p_post_type?: string
+          p_visibility?: string
+          p_media_urls?: string[]
+          p_poll_data?: Json
+          p_event_data?: Json
+          p_metadata?: Json
+        }
+        Returns: {
+          post_id: string
+          created_at: string
+          author_profile: Json
+        }[]
+      }
       generate_organization_id: {
         Args: Record<PropertyKey, never>
         Returns: string

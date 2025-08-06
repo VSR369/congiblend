@@ -3,6 +3,8 @@ import type { Post, FeedSettings, CreatePostData, ReactionType, PostType, User }
 
 import { supabase } from '@/integrations/supabase/client';
 import { performanceMonitor } from '@/utils/performance';
+import { profileCache } from '@/utils/profileCache';
+import { requestQueue } from '@/utils/requestQueue';
 
 export interface FeedFilters {
   userFilter: 'all' | 'my_posts' | 'others' | string; // 'string' for specific user
@@ -304,8 +306,13 @@ export const useFeedStore = create<FeedState>((set, get) => {
           console.warn('Error loading profiles:', profilesError);
         }
 
-        // Create a map of user profiles for quick lookup
+        // Create a map of user profiles for quick lookup and update cache
         const profilesMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
+        
+        // Update profile cache with fetched profiles
+        if (profilesData) {
+          profileCache.setMultiple(profilesData);
+        }
 
         // Transform posts to our format
         const transformedPosts = postsData?.map((dbPost) => {
@@ -328,18 +335,36 @@ export const useFeedStore = create<FeedState>((set, get) => {
               {
                 event: 'INSERT',
                 schema: 'public',
-                table: 'posts'
+                table: 'posts',
+                filter: 'visibility=eq.public' // Only listen to public posts for performance
               },
               async (payload) => {
                 const currentUser = await supabase.auth.getUser();
                 // Only add posts from other users via real-time (not our own optimistic posts)
                 if (payload.new.user_id !== currentUser.data.user?.id) {
-                  // Get author info for new post
-                  const { data: authorData } = await supabase
-                    .from('profiles')
-                    .select('id, username, display_name, avatar_url, is_verified')
-                    .eq('id', payload.new.user_id)
-                    .single();
+                  // Try to get author from cache first
+                  let authorData = profileCache.get(payload.new.user_id);
+                  
+                  if (!authorData) {
+                    // Fallback to DB query if not in cache
+                    const { data: dbAuthor } = await supabase
+                      .from('profiles')
+                      .select('id, username, display_name, avatar_url, is_verified')
+                      .eq('id', payload.new.user_id)
+                      .single();
+                    
+                    if (dbAuthor) {
+                      profileCache.set(dbAuthor);
+                      authorData = {
+                        id: dbAuthor.id,
+                        username: dbAuthor.username || '',
+                        display_name: dbAuthor.display_name || '',
+                        avatar_url: dbAuthor.avatar_url,
+                        is_verified: dbAuthor.is_verified || false,
+                        cached_at: Date.now()
+                      };
+                    }
+                  }
 
                   if (authorData) {
                     const newPost = transformDbPost(payload.new, authorData);
@@ -412,12 +437,27 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: sessionData } = await supabase.auth.getSession();
         if (!sessionData.session?.access_token) throw new Error('No access token');
 
-        // Get current user profile for optimistic update
-        const { data: userProfile } = await supabase
-          .from('profiles')
-          .select('id, username, display_name, avatar_url, is_verified')
-          .eq('id', user.id)
-          .single();
+        // Try to get profile from cache first, fallback to DB
+        let userProfile = profileCache.get(user.id);
+        if (!userProfile) {
+          const { data: dbProfile } = await supabase
+            .from('profiles')
+            .select('id, username, display_name, avatar_url, is_verified')
+            .eq('id', user.id)
+            .single();
+          
+          if (dbProfile) {
+            profileCache.set(dbProfile);
+            userProfile = {
+              id: dbProfile.id,
+              username: dbProfile.username || '',
+              display_name: dbProfile.display_name || '',
+              avatar_url: dbProfile.avatar_url,
+              is_verified: dbProfile.is_verified || false,
+              cached_at: Date.now()
+            };
+          }
+        }
 
         // Create optimistic post for immediate UI feedback
         const optimisticPost: Post = {

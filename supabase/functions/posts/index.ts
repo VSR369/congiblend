@@ -102,7 +102,7 @@ serve(async (req) => {
 
     const userId = sessionData.user.id;
 
-    // CREATE POST
+    // CREATE POST (OPTIMIZED)
     if (req.method === 'POST' && (endpoint === 'posts' || pathParts[pathParts.length - 2] === 'api')) {
       const postData: CreatePostData = await req.json();
 
@@ -118,37 +118,24 @@ serve(async (req) => {
       const hashtags = extractHashtags(postData.content);
       const mentions = extractMentions(postData.content);
 
-      // Create the post
-      const { data: newPost, error: postError } = await authenticatedSupabase
-        .from('posts')
-        .insert({
-          user_id: userId,
-          content: postData.content.trim(),
-          post_type: postData.post_type || 'text',
-          visibility: postData.visibility || 'public',
-          images: postData.images || null,
-          videos: postData.videos || null,
-          media_urls: postData.media_urls || null,
-          thumbnail_url: postData.thumbnail_url || null,
-          poll_data: postData.poll_data || null,
-          event_data: postData.event_data || null,
-          metadata: {
+      // Use optimized database function that batches operations
+      const { data: postResult, error: postError } = await authenticatedSupabase
+        .rpc('create_post_optimized', {
+          p_user_id: userId,
+          p_content: postData.content.trim(),
+          p_post_type: postData.post_type || 'text',
+          p_visibility: postData.visibility || 'public',
+          p_media_urls: postData.media_urls || null,
+          p_poll_data: postData.poll_data || null,
+          p_event_data: postData.event_data || null,
+          p_metadata: {
             hashtags,
             mentions,
             ...postData.metadata
-          },
-          reactions_count: 0,
-          comments_count: 0,
-          shares_count: 0,
-          is_pinned: false,
-          is_archived: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+          }
+        });
 
-      if (postError) {
+      if (postError || !postResult || postResult.length === 0) {
         console.error('Post creation error:', postError);
         return new Response(
           JSON.stringify({ error: 'Failed to create post' }),
@@ -156,31 +143,36 @@ serve(async (req) => {
         );
       }
 
-      // Get user profile for response
-      const { data: userProfile } = await authenticatedSupabase
-        .from('profiles')
-        .select('id, username, display_name, avatar_url, is_verified')
-        .eq('id', userId)
-        .single();
+      const { post_id, created_at, author_profile } = postResult[0];
 
-      // Return the complete post data with author info
+      // Return optimized response with batched data
       const responseData = {
-        ...newPost,
+        id: post_id,
+        user_id: userId,
+        content: postData.content.trim(),
+        post_type: postData.post_type || 'text',
+        visibility: postData.visibility || 'public',
+        media_urls: postData.media_urls || null,
+        poll_data: postData.poll_data || null,
+        event_data: postData.event_data || null,
+        metadata: { hashtags, mentions, ...postData.metadata },
+        reactions_count: 0,
+        comments_count: 0,
+        shares_count: 0,
+        created_at,
+        updated_at: created_at,
         author: {
-          id: userId,
-          username: userProfile?.username || 'unknown',
-          display_name: userProfile?.display_name || 'Unknown User',
-          avatar_url: userProfile?.avatar_url,
-          is_verified: userProfile?.is_verified || false
+          id: author_profile.id,
+          username: author_profile.username || 'unknown',
+          display_name: author_profile.display_name || 'Unknown User',
+          avatar_url: author_profile.avatar_url,
+          is_verified: author_profile.is_verified || false
         },
-        author_id: newPost.user_id,
-        reaction_count: newPost.reactions_count,
-        comment_count: newPost.comments_count,
         hashtags,
         mentions
       };
 
-      console.log('Post created successfully, returning:', responseData);
+      console.log('Post created successfully with optimization:', responseData);
 
       return new Response(
         JSON.stringify(responseData),
@@ -191,10 +183,10 @@ serve(async (req) => {
       );
     }
 
-    // GET POSTS WITH FILTERING
+    // GET POSTS WITH FILTERING (OPTIMIZED)
     if (req.method === 'GET' && (endpoint === 'posts' || endpoint === 'feed')) {
       const page = parseInt(url.searchParams.get('page') || '1');
-      const limit = parseInt(url.searchParams.get('limit') || '20');
+      const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 50); // Cap at 50
       const offset = (page - 1) * limit;
       
       // Get filtering parameters
@@ -277,14 +269,14 @@ serve(async (req) => {
         });
       }
 
-      // Get user profiles for all posts
+      // Get user profiles for all posts (OPTIMIZED - single query)
       const userIds = [...new Set(posts?.map(p => p.user_id) || [])];
       let userProfiles = {};
       
       if (userIds.length > 0) {
         const { data: profiles } = await authenticatedSupabase
           .from('profiles')
-          .select('id, username, display_name, avatar_url')
+          .select('id, username, display_name, avatar_url, is_verified')
           .in('id', userIds);
         
         profiles?.forEach(profile => {
