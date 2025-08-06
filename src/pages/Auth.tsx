@@ -1,89 +1,69 @@
-
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
+
 
 const Auth = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { signIn, signUp, isLoading, error, clearError, user } = useAuthStore();
-  
-  const isLogin = location.pathname === '/login';
+  const isLogin = window.location.pathname === '/login';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [localError, setLocalError] = useState('');
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (user) {
-      navigate('/', { replace: true });
-    }
-  }, [user, navigate]);
-
-  // Clear errors when switching between login/register
-  useEffect(() => {
-    clearError();
-    setLocalError('');
-  }, [location.pathname, clearError]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLocalError('');
-    clearError();
+    setError('');
+    setLoading(true);
 
     if (!isLogin && password !== confirmPassword) {
-      setLocalError('Passwords do not match');
-      return;
-    }
-
-    if (password.length < 6) {
-      setLocalError('Password must be at least 6 characters');
+      setError('Passwords do not match');
+      setLoading(false);
       return;
     }
 
     try {
-      let result;
-      
       if (isLogin) {
-        console.log('Auth: Attempting sign in...');
-        result = await signIn(email, password);
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         
-        if (!result.error) {
-          toast.success('Successfully signed in!');
-          // Navigation will be handled by the auth state change
-        }
+        if (error) throw error;
+        
+        toast.success('Successfully signed in!');
+        navigate('/');
       } else {
-        console.log('Auth: Attempting sign up...');
-        result = await signUp(email, password);
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+          },
+        });
         
-        if (!result.error) {
-          toast.success('Check your email for verification link!');
-          navigate('/login');
-          return;
-        }
+        if (error) throw error;
+        
+        toast.success('Check your email for verification link!');
+        navigate('/login');
       }
-      
-      if (result.error) {
-        const errorMessage = result.error.message || 'An error occurred';
-        setLocalError(errorMessage);
-        toast.error(errorMessage);
-      }
-      
     } catch (error: any) {
-      const errorMessage = error.message || 'An unexpected error occurred';
-      setLocalError(errorMessage);
-      toast.error(errorMessage);
+      setError(error.message || 'An error occurred');
+      toast.error(error.message || 'An error occurred');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const displayError = localError || error;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -102,9 +82,9 @@ const Auth = () => {
         
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
-            {displayError && (
+            {error && (
               <Alert variant="destructive">
-                <AlertDescription>{displayError}</AlertDescription>
+                <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
             
@@ -117,7 +97,6 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={isLoading}
               />
             </div>
             
@@ -130,8 +109,6 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={isLoading}
-                minLength={6}
               />
             </div>
             
@@ -145,16 +122,14 @@ const Auth = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  disabled={isLoading}
-                  minLength={6}
                 />
               </div>
             )}
           </CardContent>
           
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Loading...' : (isLogin ? 'Sign In' : 'Sign Up')}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Loading...' : (isLogin ? 'Sign In' : 'Sign Up')}
             </Button>
             
             <div className="text-center text-sm">
@@ -165,7 +140,6 @@ const Auth = () => {
                     variant="link"
                     className="p-0"
                     onClick={() => navigate('/register')}
-                    disabled={isLoading}
                   >
                     Sign up
                   </Button>
@@ -177,7 +151,6 @@ const Auth = () => {
                     variant="link"
                     className="p-0"
                     onClick={() => navigate('/login')}
-                    disabled={isLoading}
                   >
                     Sign in
                   </Button>

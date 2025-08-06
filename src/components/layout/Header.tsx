@@ -27,7 +27,7 @@ interface HeaderProps {
 export const Header = ({ onMenuToggle, showMenuButton = false }: HeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const { theme, toggleTheme } = useThemeStore();
-  const { user, signOut } = useAuthStore();
+  const { user, isAuthenticated, signOut } = useAuthStore();
   const { unreadCount } = useNotificationStore();
 
   const handleSearch = (e: React.FormEvent) => {

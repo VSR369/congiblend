@@ -502,8 +502,7 @@ export const PostCard = ({ post, className }: PostCardProps) => {
             {/* Comment Input */}
             <div className="pt-3 border-t">
               <CommentInput 
-                postId={post.id}
-                onCommentAdded={handleCommentSubmit}
+                onSubmit={handleCommentSubmit}
                 placeholder="Write a comment..."
               />
             </div>

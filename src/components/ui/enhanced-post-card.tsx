@@ -559,8 +559,7 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                   className="mt-4 space-y-4"
                 >
                   <CommentInput 
-                    postId={post.id}
-                    onCommentAdded={handleCommentSubmit}
+                    onSubmit={handleCommentSubmit}
                     placeholder="Write a comment..."
                     disabled={loadingStates.commenting}
                   />

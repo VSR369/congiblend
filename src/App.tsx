@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -24,15 +23,15 @@ const queryClient = new QueryClient({
 
 const App = () => {
   const { theme } = useThemeStore();
-  const { initialize, user, isLoading, error, isInitialized } = useAuthStore();
+  const { initialize, isAuthenticated, isLoading } = useAuthStore();
 
-  // Initialize auth once when app mounts
   useEffect(() => {
+    // Initialize auth state on app start
     initialize();
-  }, []);
+  }, [initialize]);
 
-  // Apply theme
   useEffect(() => {
+    // Apply theme on mount
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -40,8 +39,7 @@ const App = () => {
     }
   }, [theme]);
 
-  // Stabilize auth state before navigation decisions
-  if (isLoading || !isInitialized) {
+  if (isLoading) {
     return (
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
@@ -51,35 +49,6 @@ const App = () => {
     );
   }
 
-  // Show error state if there's an auth error
-  if (error) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <div className="min-h-screen flex items-center justify-center bg-background">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold text-destructive mb-4">Authentication Error</h1>
-              <p className="text-muted-foreground mb-4">{error}</p>
-              <button 
-                onClick={() => window.location.reload()} 
-                className="px-4 py-2 bg-primary text-primary-foreground rounded"
-              >
-                Reload App
-              </button>
-            </div>
-          </div>
-        </TooltipProvider>
-      </QueryClientProvider>
-    );
-  }
-
-  console.log('App: Rendering with auth state:', { 
-    user: !!user, 
-    isLoading, 
-    isInitialized,
-    path: window.location.pathname 
-  });
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -87,38 +56,11 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route 
-              path="/" 
-              element={
-                user ? (
-                  <MainLayout />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            >
+            <Route path="/" element={isAuthenticated ? <MainLayout /> : <Navigate to="/login" replace />}>
               <Route index element={<Index />} />
             </Route>
-            <Route 
-              path="/login" 
-              element={
-                !user ? (
-                  <Auth />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
-            <Route 
-              path="/register" 
-              element={
-                !user ? (
-                  <Auth />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
+            <Route path="/login" element={!isAuthenticated ? <Auth /> : <Navigate to="/" replace />} />
+            <Route path="/register" element={!isAuthenticated ? <Auth /> : <Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

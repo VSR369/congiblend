@@ -1,7 +1,5 @@
-
 import { useState, useCallback } from 'react';
 import { invokeEdgeFunction } from '@/utils/authUtils';
-import { useAuthStore } from '@/stores/authStore';
 import { toast } from '@/hooks/use-toast';
 
 export interface Comment {
@@ -32,7 +30,6 @@ export function useComments(
 ): UseCommentsReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuthStore();
 
   const clearError = useCallback(() => {
     setError(null);
@@ -43,11 +40,6 @@ export function useComments(
     content: string, 
     parentId?: string
   ) => {
-    if (!user) {
-      setError('Authentication required to add comments');
-      return;
-    }
-
     if (!content.trim()) {
       setError('Comment content cannot be empty');
       return;
@@ -63,7 +55,7 @@ export function useComments(
         post_id: postId,
         content: content.trim(),
         parent_comment_id: parentId || null
-      });
+      }, { retries: 3 });
 
       if (response?.comment) {
         const newComment: Comment = {
@@ -100,14 +92,9 @@ export function useComments(
     } finally {
       setIsLoading(false);
     }
-  }, [onCommentAdded, user]);
+  }, [onCommentAdded]);
 
   const deleteComment = useCallback(async (commentId: string) => {
-    if (!user) {
-      setError('Authentication required to delete comments');
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
 
@@ -117,7 +104,7 @@ export function useComments(
       await invokeEdgeFunction('comments', {
         method: 'DELETE',
         comment_id: commentId
-      });
+      }, { retries: 2 });
 
       onCommentDeleted?.(commentId);
       
@@ -138,7 +125,7 @@ export function useComments(
     } finally {
       setIsLoading(false);
     }
-  }, [onCommentDeleted, user]);
+  }, [onCommentDeleted]);
 
   return {
     isLoading,

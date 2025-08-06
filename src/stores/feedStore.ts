@@ -762,7 +762,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           post_id: postId,
           content,
           parent_comment_id: parentId || null
-        });
+        }, { retries: 3 });
 
         // Update local state with actual response data
         if (data?.comment) {
