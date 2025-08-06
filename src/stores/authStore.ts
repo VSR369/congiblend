@@ -20,7 +20,6 @@ interface AuthState {
 }
 
 let authSubscription: any = null;
-let initializationPromise: Promise<void> | null = null;
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -35,92 +34,87 @@ export const useAuthStore = create<AuthState>()(
       clearError: () => set({ error: null }),
 
       initialize: async () => {
-        // Prevent multiple concurrent initializations
-        if (initializationPromise) {
-          return await initializationPromise;
+        const state = get();
+        
+        if (state.isInitialized) {
+          console.log('Auth already initialized');
+          set({ isLoading: false });
+          return;
         }
 
-        initializationPromise = (async () => {
-          const state = get();
+        console.log('Starting auth initialization...');
+        
+        try {
+          set({ isLoading: true, error: null });
+
+          // Clean up any existing subscription
+          if (authSubscription) {
+            authSubscription.unsubscribe();
+            authSubscription = null;
+          }
+
+          // Get initial session first
+          const { data: { session }, error } = await supabase.auth.getSession();
           
-          if (state.isInitialized) {
-            console.log('Auth already initialized');
-            set({ isLoading: false });
+          if (error) {
+            console.error('Error getting initial session:', error);
+            set({ 
+              error: error.message,
+              isLoading: false,
+              isInitialized: true,
+              user: null,
+              session: null,
+              isAuthenticated: false
+            });
             return;
           }
 
-          console.log('Starting auth initialization...');
-          
-          try {
-            set({ isLoading: true, error: null });
+          // Set initial state
+          const initialUser = session?.user ?? null;
+          const initialIsAuth = !!session?.user;
 
-            // Clean up any existing subscription
-            if (authSubscription) {
-              authSubscription.unsubscribe();
-              authSubscription = null;
-            }
+          set({
+            session,
+            user: initialUser,
+            isAuthenticated: initialIsAuth,
+            isLoading: false,
+            isInitialized: true,
+            error: null,
+          });
 
-            // Set up auth state listener
-            authSubscription = supabase.auth.onAuthStateChange(
-              (event, session) => {
-                console.log('Auth state change:', event, !!session?.user);
-                
-                // Prevent setting state if we're not initialized yet
-                const currentState = get();
-                if (!currentState.isInitialized && event !== 'INITIAL_SESSION') {
-                  return;
-                }
+          console.log('Initial auth state set. Authenticated:', initialIsAuth);
 
-                const newUser = session?.user ?? null;
-                const newIsAuthenticated = !!session?.user;
+          // Set up auth state listener after initial state
+          authSubscription = supabase.auth.onAuthStateChange(
+            (event, session) => {
+              console.log('Auth state change:', event, !!session?.user);
+              
+              const newUser = session?.user ?? null;
+              const newIsAuthenticated = !!session?.user;
 
-                set({
-                  session,
-                  user: newUser,
-                  isAuthenticated: newIsAuthenticated,
-                  isLoading: false,
-                  error: null,
-                });
-              }
-            );
-
-            // Get initial session
-            const { data: { session }, error } = await supabase.auth.getSession();
-            
-            if (error) {
-              console.error('Error getting initial session:', error);
-              set({ 
-                error: error.message,
+              set({
+                session,
+                user: newUser,
+                isAuthenticated: newIsAuthenticated,
                 isLoading: false,
-                isInitialized: true 
+                error: null,
               });
-              return;
             }
+          );
 
-            // Set initial state
-            set({
-              session,
-              user: session?.user ?? null,
-              isAuthenticated: !!session?.user,
-              isLoading: false,
-              isInitialized: true,
-              error: null,
-            });
-
-            console.log('Auth initialization complete. Authenticated:', !!session?.user);
-            
-          } catch (error: any) {
-            console.error('Auth initialization error:', error);
-            set({ 
-              error: error.message || 'Authentication initialization failed',
-              isLoading: false, 
-              isInitialized: true 
-            });
-          }
-        })();
-
-        await initializationPromise;
-        initializationPromise = null;
+          console.log('Auth initialization complete');
+          
+        } catch (error: any) {
+          console.error('Auth initialization error:', error);
+          set({ 
+            error: error.message || 'Authentication initialization failed',
+            isLoading: false, 
+            isInitialized: true,
+            user: null,
+            session: null,
+            isAuthenticated: false
+          });
+        }
       },
 
       signIn: async (email: string, password: string) => {
@@ -225,9 +219,12 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-store',
       partialize: (state) => ({
-        // Only persist user data, not session or initialization state
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
+        // Only persist minimal user info, let Supabase handle session
+        user: state.user ? {
+          id: state.user.id,
+          email: state.user.email,
+          user_metadata: state.user.user_metadata
+        } : null,
       }),
     }
   )

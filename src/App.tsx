@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,7 +25,6 @@ const queryClient = new QueryClient({
 const App = () => {
   const { theme } = useThemeStore();
   const { initialize, isAuthenticated, isLoading, isInitialized, error } = useAuthStore();
-  const [authStable, setAuthStable] = useState(false);
 
   // Initialize auth once when app mounts
   useEffect(() => {
@@ -33,7 +32,7 @@ const App = () => {
     initialize().catch((error) => {
       console.error('App: Auth initialization failed:', error);
     });
-  }, [initialize]);
+  }, []); // No dependencies - initialize should be stable
 
   // Apply theme
   useEffect(() => {
@@ -44,24 +43,9 @@ const App = () => {
     }
   }, [theme]);
 
-  // Add stabilization delay for auth state
-  useEffect(() => {
-    if (isInitialized && !isLoading) {
-      // Add a small delay to prevent rapid navigation changes
-      const timer = setTimeout(() => {
-        setAuthStable(true);
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    } else {
-      setAuthStable(false);
-    }
-  }, [isInitialized, isLoading, isAuthenticated]);
-
-  // Show loading while initializing or stabilizing
-  if (!isInitialized || isLoading || !authStable) {
-    const message = !isInitialized ? "Initializing..." : 
-                   isLoading ? "Authenticating..." : "Loading...";
+  // Show loading while initializing
+  if (!isInitialized || isLoading) {
+    const message = !isInitialized ? "Initializing..." : "Loading...";
     
     return (
       <QueryClientProvider client={queryClient}>
@@ -94,7 +78,7 @@ const App = () => {
     );
   }
 
-  console.log('App: Rendering with auth state:', { isAuthenticated, isInitialized, authStable });
+  console.log('App: Rendering with auth state:', { isAuthenticated, isInitialized });
 
   return (
     <QueryClientProvider client={queryClient}>

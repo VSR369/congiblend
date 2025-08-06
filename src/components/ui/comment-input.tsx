@@ -1,10 +1,11 @@
+
 import * as React from "react";
 import { Send, AlertCircle } from "lucide-react";
 import { Button } from "./button";
 import { Textarea } from "./textarea";
 import { Alert, AlertDescription } from "./alert";
-import { supabase } from "@/integrations/supabase/client";
 import { useComments } from "@/hooks/useComments";
+import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/lib/utils";
 
 interface CommentInputProps {
@@ -25,17 +26,9 @@ export const CommentInput = ({
   parentId
 }: CommentInputProps) => {
   const [content, setContent] = React.useState("");
-  const [user, setUser] = React.useState<any>(null);
+  const { user, isAuthenticated } = useAuthStore();
   
   const { isLoading, error, addComment, clearError } = useComments(onCommentAdded);
-
-  React.useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    getUser();
-  }, []);
 
   React.useEffect(() => {
     if (error) {
@@ -46,7 +39,7 @@ export const CommentInput = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || isLoading) return;
+    if (!content.trim() || isLoading || !isAuthenticated) return;
 
     try {
       await addComment(postId, content.trim(), parentId);
@@ -62,6 +55,10 @@ export const CommentInput = ({
       handleSubmit(e);
     }
   };
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className={cn("space-y-2", className)}>
