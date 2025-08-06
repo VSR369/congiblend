@@ -1,6 +1,6 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Image, Video, FileText, Calendar, Briefcase, BarChart3, Hash, AtSign, Smile } from "lucide-react";
+import { X, Image, Video, FileText, Calendar, Briefcase, BarChart3, Hash, AtSign, Smile, Music } from "lucide-react";
 import { Modal, ModalHeader, ModalBody, ModalFooter, ModalTitle } from "./modal";
 import { Button } from "./button";
 import { Input } from "./input";
@@ -8,11 +8,23 @@ import { Textarea } from "./textarea";
 import { Badge } from "./badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 import { Progress } from "./loading";
+import { FileUpload } from "./file-upload";
 import { useFeedStore } from "@/stores/feedStore";
 import { postSchema } from "@/schemas/post";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { PostType, CreatePostData } from "@/types/feed";
+
+interface FileItem {
+  id: string;
+  file: File;
+  preview?: string;
+  progress: number;
+  status: 'pending' | 'uploading' | 'completed' | 'error';
+  error?: string;
+  url?: string;
+}
 
 interface PostCreationModalProps {
   open: boolean;
@@ -25,7 +37,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
   const [hashtags, setHashtags] = React.useState<string[]>([]);
   const [mentions, setMentions] = React.useState<string[]>([]);
   const [isPosting, setIsPosting] = React.useState(false);
-  const [selectedFiles, setSelectedFiles] = React.useState<File[]>([]);
+  const [uploadedFiles, setUploadedFiles] = React.useState<FileItem[]>([]);
   const [pollOptions, setPollOptions] = React.useState<string[]>(['', '']);
   const [eventData, setEventData] = React.useState({
     title: '',
@@ -46,16 +58,101 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
     { type: "text", label: "Text", icon: FileText, description: "Share your thoughts" },
     { type: "image", label: "Photo", icon: Image, description: "Share images" },
     { type: "video", label: "Video", icon: Video, description: "Upload videos" },
+    { type: "audio", label: "Audio", icon: Music, description: "Share audio files" },
     { type: "article", label: "Article", icon: FileText, description: "Write long-form content" },
     { type: "poll", label: "Poll", icon: BarChart3, description: "Ask your network" },
     { type: "event", label: "Event", icon: Calendar, description: "Announce events" },
     { type: "job", label: "Job", icon: Briefcase, description: "Post job openings" },
   ];
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    setSelectedFiles(files);
+  // Get file type restrictions based on active tab
+  const getAcceptedFileTypes = (): string[] => {
+    switch (activeTab) {
+      case "image":
+        return ["image/jpeg", "image/png", "image/gif", "image/webp"];
+      case "video":
+        return ["video/mp4", "video/webm", "video/mov", "video/avi"];
+      case "audio":
+        return ["audio/mp3", "audio/wav", "audio/ogg", "audio/m4a"];
+      default:
+        return [];
+    }
   };
+
+  // Get max file size based on active tab
+  const getMaxFileSize = (): number => {
+    switch (activeTab) {
+      case "image":
+        return 10 * 1024 * 1024; // 10MB
+      case "video":
+        return 100 * 1024 * 1024; // 100MB
+      case "audio":
+        return 50 * 1024 * 1024; // 50MB
+      default:
+        return 10 * 1024 * 1024; // 10MB default
+    }
+  };
+
+  const handleFileSelection = React.useCallback((files: File[]) => {
+    const newFiles: FileItem[] = files.map(file => ({
+      id: Math.random().toString(36).substr(2, 9),
+      file,
+      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+      progress: 0,
+      status: 'pending'
+    }));
+    setUploadedFiles(newFiles);
+  }, []);
+
+  const handleFileRemoval = React.useCallback((id: string) => {
+    setUploadedFiles(prev => {
+      const fileToRemove = prev.find(f => f.id === id);
+      if (fileToRemove?.preview) {
+        URL.revokeObjectURL(fileToRemove.preview);
+      }
+      return prev.filter(f => f.id !== id);
+    });
+  }, []);
+
+  const handleFileUpload = React.useCallback(async () => {
+    if (uploadedFiles.length === 0) return;
+
+    setUploadedFiles(prev => prev.map(file => ({ ...file, status: 'uploading' as const })));
+
+    try {
+      const uploadPromises = uploadedFiles.map(async (fileItem) => {
+        const formData = new FormData();
+        formData.append('file', fileItem.file);
+
+        const { data, error } = await supabase.functions.invoke('media', {
+          body: formData,
+        });
+
+        if (error) {
+          throw new Error(`Upload failed: ${error.message}`);
+        }
+
+        return {
+          ...fileItem,
+          status: 'completed' as const,
+          progress: 100,
+          url: data.url
+        };
+      });
+
+      const completedFiles = await Promise.all(uploadPromises);
+      setUploadedFiles(completedFiles);
+      toast.success(`${completedFiles.length} file(s) uploaded successfully!`);
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadedFiles(prev => prev.map(file => ({ 
+        ...file, 
+        status: 'error' as const, 
+        error: error instanceof Error ? error.message : 'Upload failed' 
+      })));
+      toast.error('Failed to upload files. Please try again.');
+    }
+  }, [uploadedFiles]);
 
   const handleSubmit = async () => {
     if (!content.trim()) return;
@@ -69,7 +166,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
         hashtags,
         mentions,
         visibility: "public",
-        media: selectedFiles.length > 0 ? selectedFiles : undefined,
+        media: uploadedFiles.filter(f => f.status === 'completed').map(f => f.file),
       };
 
       // Add poll data if it's a poll post
@@ -122,7 +219,11 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
       setContent("");
       setHashtags([]);
       setMentions([]);
-      setSelectedFiles([]);
+      // Clean up file previews
+      uploadedFiles.forEach(file => {
+        if (file.preview) URL.revokeObjectURL(file.preview);
+      });
+      setUploadedFiles([]);
       setPollOptions(['', '']);
       setEventData({ title: '', location: '', start_date: '', max_attendees: '' });
       setJobData({ title: '', company: '', location: '', salary: '' });
@@ -159,6 +260,16 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
     setHashtags(extractHashtags(content));
     setMentions(extractMentions(content));
   }, [content]);
+
+  // Clear files when switching post types
+  React.useEffect(() => {
+    if (!['image', 'video', 'audio'].includes(activeTab)) {
+      uploadedFiles.forEach(file => {
+        if (file.preview) URL.revokeObjectURL(file.preview);
+      });
+      setUploadedFiles([]);
+    }
+  }, [activeTab]);
 
   const characterLimit = 3000;
   const characterCount = content.length;
@@ -273,57 +384,27 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
 
       case "image":
       case "video":
+      case "audio":
         return (
           <div className="space-y-4">
             <Textarea
-              placeholder={`What would you like to say about ${activeTab === "image" ? "these photos" : "this video"}?`}
+              placeholder={`What would you like to say about ${
+                activeTab === "image" ? "these photos" : 
+                activeTab === "video" ? "this video" : 
+                "this audio"
+              }?`}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               className="min-h-24"
             />
-            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-              <div className="space-y-2">
-                <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center">
-                  {activeTab === "image" ? (
-                    <Image className="h-6 w-6 text-muted-foreground" />
-                  ) : (
-                    <Video className="h-6 w-6 text-muted-foreground" />
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Drag and drop {activeTab === "image" ? "images" : "videos"} here, or click to browse
-                </p>
-                <input
-                  type="file"
-                  multiple
-                  accept={activeTab === "image" ? "image/*" : "video/*"}
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="file-upload"
-                />
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => document.getElementById('file-upload')?.click()}
-                 >
-                   Choose Files
-                 </Button>
-               </div>
-               {selectedFiles.length > 0 && (
-                 <div className="mt-4">
-                   <p className="text-sm text-muted-foreground mb-2">
-                     Selected files: {selectedFiles.length}
-                   </p>
-                   <div className="space-y-1">
-                     {selectedFiles.map((file, index) => (
-                       <div key={index} className="text-xs text-muted-foreground">
-                         {file.name} ({Math.round(file.size / 1024)}KB)
-                       </div>
-                     ))}
-                   </div>
-                 </div>
-               )}
-             </div>
+            <FileUpload
+              acceptedTypes={getAcceptedFileTypes()}
+              maxSize={getMaxFileSize()}
+              multiple={activeTab === "image"}
+              onFilesSelect={handleFileSelection}
+              onFileRemove={handleFileRemoval}
+              onFileUpload={handleFileUpload}
+            />
           </div>
         );
 
@@ -348,7 +429,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
       <ModalBody className="space-y-6">
         {/* Post Type Selector */}
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as PostType)}>
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
             {postTypes.map((type) => {
               const Icon = type.icon;
               return (
@@ -445,7 +526,12 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={!content.trim() || characterCount > characterLimit || isPosting}
+          disabled={
+            !content.trim() || 
+            characterCount > characterLimit || 
+            isPosting ||
+            (uploadedFiles.length > 0 && uploadedFiles.some(f => f.status !== 'completed'))
+          }
           loading={isPosting}
           loadingText="Posting..."
         >
