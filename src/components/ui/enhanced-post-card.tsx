@@ -14,6 +14,7 @@ import { useFeedStore } from "@/stores/feedStore";
 import { PostErrorBoundary } from "./post-error-boundary";
 import { useToast } from "@/hooks/use-toast";
 import type { Post, ReactionType } from "@/types/feed";
+import { REACTION_CONFIG, getMostCommonReactions } from "@/utils/reactions";
 
 interface PostCardProps {
   post: Post;
@@ -428,9 +429,19 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                 {post.reactions.length > 0 && (
                   <div className="flex items-center space-x-1">
                     <div className="flex -space-x-1">
-                      {['❤️', '👍', '🎉'].slice(0, 3).map((emoji, i) => (
-                        <span key={i} className="text-xs">{emoji}</span>
-                      ))}
+                      {getMostCommonReactions(post.reactions, 3).map(({ type, count }, i) => {
+                        const config = REACTION_CONFIG[type];
+                        const IconComponent = config.icon;
+                        return (
+                          <div 
+                            key={type} 
+                            className="flex items-center justify-center w-5 h-5 rounded-full bg-background border border-border -ml-1 first:ml-0"
+                            title={`${count} ${config.label}`}
+                          >
+                            <IconComponent className={`w-3 h-3 ${config.color}`} />
+                          </div>
+                        );
+                      })}
                     </div>
                     <span>{post.reactions.length}</span>
                   </div>
