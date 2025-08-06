@@ -477,8 +477,8 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
             )}
 
             {/* Actions */}
-            <div className="flex items-center justify-between border-t border-border pt-4 mt-4 bg-background min-h-[60px]">
-              <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-between border-t border-border pt-4 mt-4 relative z-10">
+              <div className="flex items-center space-x-4">
                 <div className="relative">
                   <ReactionButton
                     type={post.userReaction || 'like'}
@@ -491,7 +491,7 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                     variant="ghost"
                     size="sm"
                     onClick={handleReactionPickerToggle}
-                    className="ml-1 px-2 text-muted-foreground hover:text-foreground"
+                    className="ml-1 px-2 text-foreground/70 hover:text-foreground hover:bg-accent/80 transition-colors min-h-[40px]"
                     disabled={loadingStates.reaction}
                   >
                     <ChevronDown className="h-4 w-4" />
@@ -511,7 +511,7 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowComments(!showComments)}
-                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  className="flex items-center gap-1 text-foreground/70 hover:text-foreground hover:bg-accent/80 transition-colors min-h-[40px] px-3 py-2"
                   disabled={loadingStates.comment}
                 >
                   <MessageSquare className="h-5 w-5" />
@@ -522,7 +522,7 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                   variant="ghost"
                   size="sm"
                   onClick={handleShare}
-                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  className="flex items-center gap-1 text-foreground/70 hover:text-foreground hover:bg-accent/80 transition-colors min-h-[40px] px-3 py-2"
                   disabled={loadingStates.share}
                 >
                   <Share className="h-5 w-5" />
@@ -535,7 +535,7 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                 size="sm"
                 onClick={handleSave}
                 className={cn(
-                  "text-muted-foreground hover:text-foreground",
+                  "text-foreground/70 hover:text-foreground hover:bg-accent/80 transition-colors min-h-[40px] px-3 py-2",
                   post.userSaved && "text-yellow-500"
                 )}
                 disabled={isSubmitting}
