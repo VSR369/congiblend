@@ -23,7 +23,7 @@ interface PostCardProps {
 export const PostCard = ({ post, className }: PostCardProps) => {
   const [showReactionPicker, setShowReactionPicker] = React.useState(false);
   const [showComments, setShowComments] = React.useState(false);
-  const { toggleSave, sharePost, addComment } = useFeedStore();
+  const { toggleSave, sharePost, addComment, votePoll } = useFeedStore();
   const reactionMutation = useOptimisticReaction();
 
   const handleReactionClick = () => {
@@ -59,6 +59,16 @@ export const PostCard = ({ post, className }: PostCardProps) => {
       } else {
         toast.error("Failed to share post");
       }
+    }
+  };
+
+  const handlePollVote = async (optionIndex: number) => {
+    try {
+      await votePoll(post.id, optionIndex);
+      toast.success("Vote submitted successfully");
+    } catch (error) {
+      toast.error("Failed to submit vote");
+      console.error("Poll voting error:", error);
     }
   };
 
@@ -129,29 +139,45 @@ export const PostCard = ({ post, className }: PostCardProps) => {
               <div className="space-y-3 p-4 border rounded-lg">
                 <h4 className="font-medium">{post.poll.question}</h4>
                 <div className="space-y-2">
-                  {post.poll.options.map((option) => (
-                    <button
-                      key={option.id} 
-                      className="w-full text-left space-y-2 p-4 border-2 rounded-lg hover:bg-primary/5 hover:border-primary transition-colors bg-card"
-                      onClick={() => {
-                        // TODO: Handle poll voting
-                        console.log('Voting for option:', option.id);
-                      }}
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-foreground">{option.text}</span>
-                        <span className="text-xs text-muted-foreground font-medium">
-                          {option.percentage}% ({option.votes} vote{option.votes !== 1 ? 's' : ''})
-                        </span>
-                      </div>
-                      <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
-                        <div
-                          className="bg-primary h-full rounded-full transition-all duration-500 ease-out"
-                          style={{ width: `${Math.max(option.percentage, 2)}%` }}
-                        />
-                      </div>
-                    </button>
-                  ))}
+                  {post.poll.options.map((option, index) => {
+                    const isSelected = post.poll?.userVote?.includes(index.toString());
+                    return (
+                      <button
+                        key={option.id} 
+                        className={cn(
+                          "w-full text-left space-y-2 p-4 border-2 rounded-lg transition-colors bg-card",
+                          isSelected 
+                            ? "border-primary bg-primary/10" 
+                            : "hover:bg-primary/5 hover:border-primary"
+                        )}
+                        onClick={() => handlePollVote(index)}
+                        disabled={!!post.poll?.userVote?.length}
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-medium text-foreground">{option.text}</span>
+                            {isSelected && (
+                              <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
+                                ✓ Selected
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground font-medium">
+                            {option.percentage}% ({option.votes} vote{option.votes !== 1 ? 's' : ''})
+                          </span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+                          <div
+                            className={cn(
+                              "h-full rounded-full transition-all duration-500 ease-out",
+                              isSelected ? "bg-primary" : "bg-primary/70"
+                            )}
+                            style={{ width: `${Math.max(option.percentage, 2)}%` }}
+                          />
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
                 <div className="flex justify-between items-center text-xs text-muted-foreground pt-2 border-t">
                   <span className="font-medium">{post.poll.totalVotes} total vote{post.poll.totalVotes !== 1 ? 's' : ''}</span>

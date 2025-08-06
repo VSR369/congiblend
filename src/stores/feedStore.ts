@@ -21,6 +21,9 @@ interface FeedState {
   toggleSave: (postId: string) => void;
   sharePost: (postId: string) => void;
   
+  // Poll actions
+  votePoll: (postId: string, optionIndex: number) => Promise<void>;
+  
   // Settings
   updateFeedSettings: (settings: Partial<FeedSettings>) => void;
 }
@@ -473,6 +476,67 @@ export const useFeedStore = create<FeedState>((set, get) => {
         }));
       } catch (error) {
         console.error('Error deleting comment:', error);
+        throw error;
+      }
+    },
+
+    votePoll: async (postId: string, optionIndex: number) => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        // Insert or update vote in the votes table
+        const { data, error } = await supabase
+          .from('votes')
+          .upsert({
+            user_id: user.id,
+            post_id: postId,
+            option_index: optionIndex
+          }, {
+            onConflict: 'user_id,post_id'
+          });
+
+        if (error) throw error;
+
+        // Update local state optimistically
+        set(state => ({
+          posts: state.posts.map(post => {
+            if (post.id !== postId || !post.poll) return post;
+            
+            // Update vote counts
+            const updatedOptions = post.poll.options.map((option, index) => {
+              if (index === optionIndex) {
+                return { ...option, votes: option.votes + 1 };
+              }
+              // Remove previous vote if it exists
+              if (post.poll?.userVote?.includes(index.toString())) {
+                return { ...option, votes: Math.max(0, option.votes - 1) };
+              }
+              return option;
+            });
+
+            // Recalculate percentages
+            const totalVotes = updatedOptions.reduce((sum, opt) => sum + opt.votes, 0);
+            const optionsWithPercentages = updatedOptions.map(option => ({
+              ...option,
+              percentage: totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0
+            }));
+
+            return {
+              ...post,
+              poll: {
+                ...post.poll,
+                options: optionsWithPercentages,
+                totalVotes,
+                userVote: [optionIndex.toString()]
+              }
+            };
+          })
+        }));
+
+        return data;
+      } catch (error) {
+        console.error('Error voting on poll:', error);
         throw error;
       }
     },
