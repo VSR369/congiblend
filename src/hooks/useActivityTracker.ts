@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuthStore } from '@/stores/authStore';
 
 export const useActivityTracker = () => {
+  const { user } = useAuthStore();
+  
   const trackActivity = async (activityType: 'post' | 'comment' | 'reaction' | 'login' | 'view') => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       await supabase.rpc('update_user_activity', {
@@ -18,8 +20,6 @@ export const useActivityTracker = () => {
 
   const trackProfileView = async (profileUserId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
       await supabase.rpc('increment_profile_view', {
         p_profile_user_id: profileUserId,
         p_viewer_user_id: user?.id || null,

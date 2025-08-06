@@ -23,7 +23,7 @@ const queryClient = new QueryClient({
 
 const App = () => {
   const { theme } = useThemeStore();
-  const { initialize, isAuthenticated, isLoading } = useAuthStore();
+  const { initialize, isAuthenticated, isLoading, isInitialized } = useAuthStore();
 
   useEffect(() => {
     // Initialize auth state on app start
@@ -39,11 +39,11 @@ const App = () => {
     }
   }, [theme]);
 
-  if (isLoading) {
+  if (!isInitialized || isLoading) {
     return (
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <LoadingPage message="Initializing..." />
+          <LoadingPage message="Initializing authentication..." />
         </TooltipProvider>
       </QueryClientProvider>
     );

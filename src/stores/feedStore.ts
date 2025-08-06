@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { performanceMonitor } from '@/utils/performance';
 import { profileCache } from '@/utils/profileCache';
 import { requestQueue } from '@/utils/requestQueue';
+import { useAuthStore } from '@/stores/authStore';
 
 export interface FeedFilters {
   userFilter: 'all' | 'my_posts' | 'others' | string; // 'string' for specific user
@@ -243,12 +244,11 @@ export const useFeedStore = create<FeedState>((set, get) => {
           .select('*');
 
         // Apply user filter
+        const currentUser = useAuthStore.getState().user;
         if (filters.userFilter === 'my_posts') {
-          const currentUser = await supabase.auth.getUser();
-          query = query.eq('user_id', currentUser.data.user?.id);
+          query = query.eq('user_id', currentUser?.id);
         } else if (filters.userFilter === 'others') {
-          const currentUser = await supabase.auth.getUser();
-          query = query.neq('user_id', currentUser.data.user?.id);
+          query = query.neq('user_id', currentUser?.id);
         } else if (filters.userFilter !== 'all') {
           // For specific user filter, we'll join with profiles table
           const { data: specificUser } = await supabase
@@ -339,9 +339,9 @@ export const useFeedStore = create<FeedState>((set, get) => {
                 filter: 'visibility=eq.public' // Only listen to public posts for performance
               },
               async (payload) => {
-                const currentUser = await supabase.auth.getUser();
+                const currentUser = useAuthStore.getState().user;
                 // Only add posts from other users via real-time (not our own optimistic posts)
-                if (payload.new.user_id !== currentUser.data.user?.id) {
+                if (payload.new.user_id !== currentUser?.id) {
                   // Try to get author from cache first
                   let authorData = profileCache.get(payload.new.user_id);
                   
@@ -430,12 +430,9 @@ export const useFeedStore = create<FeedState>((set, get) => {
       set(state => ({ ...state, loading: true }));
       
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { user, session } = useAuthStore.getState();
         if (!user) throw new Error('User not authenticated');
-
-        // Get the session token for API calls
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session?.access_token) throw new Error('No access token');
+        if (!session?.access_token) throw new Error('No access token');
 
         // Try to get profile from cache first, fallback to DB
         let userProfile = profileCache.get(user.id);
@@ -591,7 +588,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: newPost, error } = await supabase.functions.invoke('posts', {
           body: postPayload,
           headers: {
-            Authorization: `Bearer ${sessionData.session.access_token}`,
+            Authorization: `Bearer ${session.access_token}`,
           },
         });
 
@@ -669,7 +666,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
       
       
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { user } = useAuthStore.getState();
         if (!user) throw new Error('User not authenticated');
 
         const state = get();
@@ -752,7 +749,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
     addComment: async (postId: string, content: string, parentId?: string) => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { user } = useAuthStore.getState();
         if (!user) throw new Error('User not authenticated');
 
         // Use the comments Edge Function
@@ -826,7 +823,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
     votePoll: async (postId: string, optionIndex: number) => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { user } = useAuthStore.getState();
         if (!user) throw new Error('User not authenticated');
 
         // First, check if user has already voted
@@ -925,7 +922,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
     sharePost: async (postId: string) => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { user } = useAuthStore.getState();
         if (!user) throw new Error('User not authenticated');
 
         // Check if user is trying to share their own post
