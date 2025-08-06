@@ -104,7 +104,12 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
         const uploadPromises = selectedFiles.map(async (file) => {
           const fileExt = file.name.split('.').pop();
           const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-          const filePath = `${fileName}`;
+          
+          // Get current user ID for the file path structure
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          if (userError || !user) throw new Error('User not authenticated');
+          
+          const filePath = `${user.id}/${fileName}`;
 
           const { data, error } = await supabase.storage
             .from('post-media')
