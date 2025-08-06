@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -23,12 +24,15 @@ const queryClient = new QueryClient({
 
 const App = () => {
   const { theme } = useThemeStore();
-  const { initialize, isAuthenticated, isLoading } = useAuthStore();
+  const { initialize, isAuthenticated, isLoading, isInitialized } = useAuthStore();
 
   useEffect(() => {
-    // Initialize auth state on app start
-    initialize();
-  }, [initialize]);
+    // Initialize auth state only once on app start
+    if (!isInitialized) {
+      console.log('App: Initializing auth...');
+      initialize();
+    }
+  }, [initialize, isInitialized]);
 
   useEffect(() => {
     // Apply theme on mount
