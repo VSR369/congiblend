@@ -49,6 +49,7 @@ const transformDbPost = (dbPost: any, author: any): Post => {
   // Transform poll_data to poll object
   let poll = undefined;
   if (dbPost.poll_data && dbPost.poll_data.options) {
+    console.log('Transforming poll data:', dbPost.poll_data);
     const totalVotes = dbPost.poll_data.options.reduce((sum: number, option: any) => sum + (option.votes || 0), 0);
     poll = {
       id: `${dbPost.id}-poll`,
@@ -64,6 +65,7 @@ const transformDbPost = (dbPost: any, author: any): Post => {
       allowMultiple: dbPost.poll_data.multiple_choice || false,
       userVote: undefined // TODO: Get user's vote from database
     };
+    console.log('Transformed poll:', poll);
   }
 
   // Transform event_data to event object

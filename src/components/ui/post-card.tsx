@@ -120,43 +120,49 @@ export const PostCard = ({ post, className }: PostCardProps) => {
         );
 
       case 'poll':
+        console.log('Rendering poll post:', post);
+        console.log('Post poll data:', post.poll);
         return (
           <div className="space-y-4">
             <p className="text-foreground">{post.content}</p>
-            {post.poll && (
+            {post.poll ? (
               <div className="space-y-3 p-4 border rounded-lg">
                 <h4 className="font-medium">{post.poll.question}</h4>
                 <div className="space-y-2">
                   {post.poll.options.map((option) => (
                     <button
                       key={option.id} 
-                      className="w-full text-left space-y-1 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                      className="w-full text-left space-y-2 p-4 border-2 rounded-lg hover:bg-primary/5 hover:border-primary transition-colors bg-card"
                       onClick={() => {
                         // TODO: Handle poll voting
                         console.log('Voting for option:', option.id);
                       }}
                     >
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">{option.text}</span>
-                        <span className="text-xs text-muted-foreground">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-foreground">{option.text}</span>
+                        <span className="text-xs text-muted-foreground font-medium">
                           {option.percentage}% ({option.votes} vote{option.votes !== 1 ? 's' : ''})
                         </span>
                       </div>
-                      <div className="w-full bg-muted rounded-full h-2">
+                      <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
                         <div
-                          className="bg-primary h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${option.percentage}%` }}
+                          className="bg-primary h-full rounded-full transition-all duration-500 ease-out"
+                          style={{ width: `${Math.max(option.percentage, 2)}%` }}
                         />
                       </div>
                     </button>
                   ))}
                 </div>
-                <div className="flex justify-between items-center text-xs text-muted-foreground">
-                  <span>{post.poll.totalVotes} total vote{post.poll.totalVotes !== 1 ? 's' : ''}</span>
+                <div className="flex justify-between items-center text-xs text-muted-foreground pt-2 border-t">
+                  <span className="font-medium">{post.poll.totalVotes} total vote{post.poll.totalVotes !== 1 ? 's' : ''}</span>
                   {post.poll.expiresAt && (
                     <span>Expires {formatRelativeTime(post.poll.expiresAt)}</span>
                   )}
                 </div>
+              </div>
+            ) : (
+              <div className="p-4 border rounded-lg">
+                <p className="text-muted-foreground">Poll data not available</p>
               </div>
             )}
           </div>
