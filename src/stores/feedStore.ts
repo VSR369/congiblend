@@ -30,15 +30,22 @@ interface FeedState {
 
 // Helper function to transform database post to our Post type
 const transformDbPost = (dbPost: any, author: any): Post => {
+  console.log('Transforming post:', dbPost.id, 'type:', dbPost.post_type, 'media_urls:', dbPost.media_urls);
+  
   // Handle media_urls array and transform to proper media format
   let media = [];
   if (dbPost.media_urls && Array.isArray(dbPost.media_urls)) {
-    media = dbPost.media_urls.map((url: string, index: number) => ({
-      id: `${dbPost.id}-${index}`,
-      type: determineMediaType(url),
-      url,
-      alt: `Media ${index + 1}`
-    }));
+    media = dbPost.media_urls.map((url: string, index: number) => {
+      const mediaType = determineMediaType(url);
+      console.log('Media item:', { url, type: mediaType });
+      return {
+        id: `${dbPost.id}-${index}`,
+        type: mediaType,
+        url,
+        alt: `Media ${index + 1}`,
+        thumbnail: dbPost.thumbnail_url // Use thumbnail if available
+      };
+    });
   } else if (dbPost.images && Array.isArray(dbPost.images)) {
     // Fallback for legacy images field
     media = dbPost.images.map((url: string, index: number) => ({
@@ -129,19 +136,24 @@ const determineMediaType = (url: string): 'image' | 'video' | 'document' => {
     const filename = pathParts[pathParts.length - 1];
     const extension = filename.split('.').pop()?.toLowerCase();
     
-    if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv'].includes(extension || '')) {
+    console.log('Determining media type for:', filename, 'extension:', extension);
+    
+    if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv', 'm4v', 'wmv'].includes(extension || '')) {
+      console.log('Detected as video');
       return 'video';
-    } else if (['pdf', 'doc', 'docx', 'txt', 'rtf'].includes(extension || '')) {
+    } else if (['pdf', 'doc', 'docx', 'txt', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx'].includes(extension || '')) {
+      console.log('Detected as document');
       return 'document';
     }
+    console.log('Detected as image (default)');
     return 'image';
   }
   
   // Fallback for external URLs
   const extension = url.split('.').pop()?.toLowerCase();
-  if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv'].includes(extension || '')) {
+  if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv', 'm4v', 'wmv'].includes(extension || '')) {
     return 'video';
-  } else if (['pdf', 'doc', 'docx', 'txt', 'rtf'].includes(extension || '')) {
+  } else if (['pdf', 'doc', 'docx', 'txt', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx'].includes(extension || '')) {
     return 'document';
   }
   return 'image';

@@ -117,6 +117,8 @@ export const PostCard = ({ post, className }: PostCardProps) => {
   const renderPostContent = () => {
     switch (post.type) {
       case 'image':
+      case 'video':
+      case 'document':
         return (
           <div className="space-y-3">
             <p className="text-foreground">{post.content}</p>
@@ -131,16 +133,43 @@ export const PostCard = ({ post, className }: PostCardProps) => {
                   <div 
                     key={media.id}
                     className={cn(
-                      "relative aspect-video bg-muted",
+                      "relative aspect-video bg-muted rounded-lg overflow-hidden",
                       post.media!.length === 3 && index === 0 ? "row-span-2" : ""
                     )}
                   >
-                    <img
-                      src={media.url}
-                      alt={media.alt || "Post image"}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
+                    {media.type === 'video' ? (
+                      <video
+                        src={media.url}
+                        className="w-full h-full object-cover"
+                        controls
+                        preload="metadata"
+                        poster={media.thumbnail}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    ) : media.type === 'document' ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-muted p-4">
+                        <div className="text-4xl mb-2">📄</div>
+                        <p className="text-sm font-medium text-center truncate w-full">
+                          {media.alt || 'Document'}
+                        </p>
+                        <a 
+                          href={media.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary hover:underline mt-2"
+                        >
+                          Open Document
+                        </a>
+                      </div>
+                    ) : (
+                      <img
+                        src={media.url}
+                        alt={media.alt || "Post image"}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    )}
                     {post.media!.length > 4 && index === 3 && (
                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                         <span className="text-white text-lg font-semibold">
