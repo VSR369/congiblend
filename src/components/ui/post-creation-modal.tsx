@@ -8,16 +8,12 @@ import { Textarea } from "./textarea";
 import { Badge } from "./badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 import { Progress } from "./loading";
-import { FileUpload } from "./file-upload";
 import { useFeedStore } from "@/stores/feedStore";
 import { postSchema } from "@/schemas/post";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { PostType, CreatePostData } from "@/types/feed";
-
-// Import the standardized FileItem interface from FileUpload
-import type { FileItem } from './file-upload';
 
 interface PostCreationModalProps {
   open: boolean;
@@ -30,7 +26,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
   const [hashtags, setHashtags] = React.useState<string[]>([]);
   const [mentions, setMentions] = React.useState<string[]>([]);
   const [isPosting, setIsPosting] = React.useState(false);
-  const [uploadedFiles, setUploadedFiles] = React.useState<FileItem[]>([]);
+  const [selectedFiles, setSelectedFiles] = React.useState<File[]>([]);
   const [pollOptions, setPollOptions] = React.useState<string[]>(['', '']);
   const [eventData, setEventData] = React.useState({
     title: '',
@@ -86,71 +82,13 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
     }
   };
 
-  const handleFileSelection = React.useCallback((files: File[]) => {
-    console.log('Files selected:', files.length, files.map(f => f.name));
-    const newFiles: FileItem[] = files.map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
-      file,
-      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
-      status: 'pending'
-    }));
-    setUploadedFiles(newFiles);
+  const handleFileSelection = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setSelectedFiles(files);
   }, []);
 
-  const handleFileRemoval = React.useCallback((id: string) => {
-    setUploadedFiles(prev => {
-      const fileToRemove = prev.find(f => f.id === id);
-      if (fileToRemove?.preview) {
-        URL.revokeObjectURL(fileToRemove.preview);
-      }
-      return prev.filter(f => f.id !== id);
-    });
-  }, []);
-
-  const handleFileUpload = React.useCallback(async (filesToUpload: FileItem[]) => {
-    console.log('Upload triggered for files:', filesToUpload.length);
-    if (filesToUpload.length === 0) return;
-
-    setUploadedFiles(prev => prev.map(file => ({ ...file, status: 'uploading' as const })));
-    console.log('Set files to uploading status');
-
-    try {
-      const uploadPromises = filesToUpload.map(async (fileItem) => {
-        console.log('Starting upload for:', fileItem.file.name);
-        const formData = new FormData();
-        formData.append('file', fileItem.file);
-
-        const { data, error } = await supabase.functions.invoke('media', {
-          body: formData,
-        });
-
-        console.log('Upload response for', fileItem.file.name, '- data:', data, 'error:', error);
-
-        if (error) {
-          throw new Error(`Upload failed: ${error.message}`);
-        }
-
-        return {
-          ...fileItem,
-          status: 'success' as const,
-          progress: 100,
-          url: data.url
-        };
-      });
-
-      const completedFiles = await Promise.all(uploadPromises);
-      console.log('All uploads completed:', completedFiles);
-      setUploadedFiles(completedFiles);
-      toast.success(`${completedFiles.length} file(s) uploaded successfully!`);
-    } catch (error) {
-      console.error('Upload error:', error);
-      setUploadedFiles(prev => prev.map(file => ({ 
-        ...file, 
-        status: 'error' as const, 
-        error: error instanceof Error ? error.message : 'Upload failed' 
-      })));
-      toast.error('Failed to upload files. Please try again.');
-    }
+  const handleFileRemoval = React.useCallback((index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   }, []);
 
   const handleSubmit = async () => {
@@ -159,13 +97,37 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
     setIsPosting(true);
     
     try {
+      // Upload files directly to storage if any are selected
+      let mediaUrls: string[] = [];
+      if (selectedFiles.length > 0) {
+        const uploadPromises = selectedFiles.map(async (file) => {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+          const filePath = `${fileName}`;
+
+          const { data, error } = await supabase.storage
+            .from('post-media')
+            .upload(filePath, file);
+
+          if (error) throw error;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('post-media')
+            .getPublicUrl(filePath);
+
+          return publicUrl;
+        });
+
+        mediaUrls = await Promise.all(uploadPromises);
+      }
+
       const postData: CreatePostData = {
         type: activeTab,
         content: content.trim(),
         hashtags,
         mentions,
         visibility: "public",
-        media: uploadedFiles.filter(f => f.status === 'success').map(f => f.file),
+        media: selectedFiles,
       };
 
       // Add poll data if it's a poll post
@@ -218,11 +180,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
       setContent("");
       setHashtags([]);
       setMentions([]);
-      // Clean up file previews
-      uploadedFiles.forEach(file => {
-        if (file.preview) URL.revokeObjectURL(file.preview);
-      });
-      setUploadedFiles([]);
+      setSelectedFiles([]);
       setPollOptions(['', '']);
       setEventData({ title: '', location: '', start_date: '', max_attendees: '' });
       setJobData({ title: '', company: '', location: '', salary: '' });
@@ -263,10 +221,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
   // Clear files when switching post types
   React.useEffect(() => {
     if (!['image', 'video', 'audio'].includes(activeTab)) {
-      uploadedFiles.forEach(file => {
-        if (file.preview) URL.revokeObjectURL(file.preview);
-      });
-      setUploadedFiles([]);
+      setSelectedFiles([]);
     }
   }, [activeTab]);
 
@@ -396,16 +351,36 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
               onChange={(e) => setContent(e.target.value)}
               className="min-h-24"
             />
-            <FileUpload
-              acceptedTypes={getAcceptedFileTypes()}
-              maxSize={getMaxFileSize()}
-              multiple={activeTab === "image"}
-              onFilesSelect={handleFileSelection}
-              onFileRemove={handleFileRemoval}
-              onFileUpload={handleFileUpload}
-              uploadFiles={uploadedFiles}
-              showPreview={true}
-            />
+            <div className="space-y-4">
+              <input
+                type="file"
+                accept={getAcceptedFileTypes().join(',')}
+                multiple={activeTab === "image"}
+                onChange={handleFileSelection}
+                className="w-full p-2 border border-border rounded-md"
+              />
+              {selectedFiles.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    {selectedFiles.length} file(s) selected
+                  </p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
+                        <span className="text-sm truncate">{file.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleFileRemoval(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         );
 
@@ -530,13 +505,12 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
           disabled={
             !content.trim() || 
             characterCount > characterLimit || 
-            isPosting ||
-            (uploadedFiles.length > 0 && uploadedFiles.some(f => f.status !== 'success'))
+            isPosting
           }
           loading={isPosting}
           loadingText="Posting..."
         >
-          Post {uploadedFiles.length > 0 && `(Files: ${uploadedFiles.map(f => f.status).join(', ')})`}
+          Post
         </Button>
       </ModalFooter>
     </Modal>
