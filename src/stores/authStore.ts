@@ -17,144 +17,167 @@ interface AuthState {
   updateUser: (user: Partial<User>) => void;
 }
 
-let authStateSubscription: any = null;
-
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
-      user: null,
-      session: null,
-      isAuthenticated: false,
-      isLoading: true,
-      isInitialized: false,
+    (set, get) => {
+      let authSubscription: any = null;
+      let isUpdating = false;
 
-      initialize: async () => {
-        const state = get();
-        
-        // Prevent multiple initializations
-        if (state.isInitialized) {
-          console.log('Auth already initialized, skipping...');
-          set({ isLoading: false });
-          return;
-        }
+      return {
+        user: null,
+        session: null,
+        isAuthenticated: false,
+        isLoading: true,
+        isInitialized: false,
 
-        console.log('Initializing auth...');
-        
-        try {
+        initialize: async () => {
+          const state = get();
+          
+          // Prevent multiple initializations
+          if (state.isInitialized || authSubscription) {
+            console.log('Auth already initialized, skipping...');
+            set({ isLoading: false });
+            return;
+          }
+
+          console.log('Initializing auth...');
+          
+          try {
+            set({ isLoading: true });
+
+            // Set up auth state listener with proper debouncing
+            authSubscription = supabase.auth.onAuthStateChange(
+              async (event, session) => {
+                // Prevent concurrent updates
+                if (isUpdating) {
+                  console.log('Update already in progress, skipping...');
+                  return;
+                }
+
+                isUpdating = true;
+                console.log('Auth state changed:', event, !!session);
+                
+                try {
+                  const currentState = get();
+                  const newIsAuthenticated = !!session;
+                  
+                  // Only update if something actually changed
+                  const sessionChanged = currentState.session?.access_token !== session?.access_token;
+                  const authStatusChanged = currentState.isAuthenticated !== newIsAuthenticated;
+                  
+                  if (sessionChanged || authStatusChanged || currentState.isLoading) {
+                    set({
+                      session,
+                      user: session?.user ?? null,
+                      isAuthenticated: newIsAuthenticated,
+                      isLoading: false,
+                    });
+                    console.log('Auth state updated successfully');
+                  } else {
+                    console.log('No actual state change, skipping update');
+                  }
+                } finally {
+                  isUpdating = false;
+                }
+              }
+            );
+
+            // Get initial session
+            const { data: { session }, error } = await supabase.auth.getSession();
+            
+            if (error) {
+              console.error('Error getting session:', error);
+            }
+
+            // Set initial state
+            set({
+              session,
+              user: session?.user ?? null,
+              isAuthenticated: !!session,
+              isLoading: false,
+              isInitialized: true,
+            });
+
+            console.log('Auth initialization complete');
+            
+          } catch (error) {
+            console.error('Auth initialization error:', error);
+            set({ 
+              isLoading: false, 
+              isInitialized: true 
+            });
+          }
+        },
+
+        signIn: async (email: string, password: string) => {
           set({ isLoading: true });
           
-          // Clean up any existing subscription
-          if (authStateSubscription) {
-            authStateSubscription.unsubscribe();
-          }
+          const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
 
-          // Set up auth state listener FIRST
-          authStateSubscription = supabase.auth.onAuthStateChange(
-            (event, session) => {
-              console.log('Auth state changed:', event, !!session);
-              
-              // Prevent infinite loops by checking if state actually changed
-              const currentState = get();
-              const newIsAuthenticated = !!session;
-              
-              if (currentState.isAuthenticated !== newIsAuthenticated || 
-                  currentState.session?.access_token !== session?.access_token) {
-                set({
-                  session,
-                  user: session?.user ?? null,
-                  isAuthenticated: newIsAuthenticated,
-                  isLoading: false,
-                });
-              }
-            }
-          );
-
-          // THEN check for existing session
-          const { data: { session }, error } = await supabase.auth.getSession();
-          
           if (error) {
-            console.error('Error getting session:', error);
+            set({ isLoading: false });
           }
-
-          set({
-            session,
-            user: session?.user ?? null,
-            isAuthenticated: !!session,
-            isLoading: false,
-            isInitialized: true,
-          });
-
-          console.log('Auth initialization complete');
           
-        } catch (error) {
-          console.error('Auth initialization error:', error);
-          set({ 
-            isLoading: false, 
-            isInitialized: true 
+          return { error };
+        },
+
+        signUp: async (email: string, password: string) => {
+          set({ isLoading: true });
+          
+          const redirectUrl = `${window.location.origin}/`;
+          
+          const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              emailRedirectTo: redirectUrl
+            }
           });
-        }
-      },
 
-      signIn: async (email: string, password: string) => {
-        set({ isLoading: true });
-        
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) {
-          set({ isLoading: false });
-        }
-        
-        return { error };
-      },
-
-      signUp: async (email: string, password: string) => {
-        set({ isLoading: true });
-        
-        const redirectUrl = `${window.location.origin}/`;
-        
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: redirectUrl
+          if (error) {
+            set({ isLoading: false });
           }
-        });
+          
+          return { error };
+        },
 
-        if (error) {
-          set({ isLoading: false });
-        }
-        
-        return { error };
-      },
-
-      signOut: async () => {
-        await supabase.auth.signOut();
-        set({
-          user: null,
-          session: null,
-          isAuthenticated: false,
-        });
-      },
-
-      updateUser: (userData: Partial<User>) => {
-        const currentUser = get().user;
-        if (currentUser) {
+        signOut: async () => {
+          // Clean up subscription before signing out
+          if (authSubscription) {
+            authSubscription.unsubscribe();
+            authSubscription = null;
+          }
+          
+          await supabase.auth.signOut();
+          
           set({
-            user: { ...currentUser, ...userData },
+            user: null,
+            session: null,
+            isAuthenticated: false,
+            isInitialized: false, // Reset initialization flag
           });
-        }
-      },
-    }),
+        },
+
+        updateUser: (userData: Partial<User>) => {
+          const currentUser = get().user;
+          if (currentUser) {
+            set({
+              user: { ...currentUser, ...userData },
+            });
+          }
+        },
+      };
+    },
     {
       name: 'auth-store',
       partialize: (state) => ({
+        // Don't persist isInitialized to prevent initialization confusion
         user: state.user,
         session: state.session,
         isAuthenticated: state.isAuthenticated,
-        isInitialized: state.isInitialized,
       }),
     }
   )

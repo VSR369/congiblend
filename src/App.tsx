@@ -27,12 +27,12 @@ const App = () => {
   const { initialize, isAuthenticated, isLoading, isInitialized } = useAuthStore();
 
   useEffect(() => {
-    // Initialize auth state only once on app start
+    // Initialize auth only once when app mounts
     if (!isInitialized) {
-      console.log('App: Initializing auth...');
-      initialize();
+      console.log('App: Starting auth initialization...');
+      initialize().catch(console.error);
     }
-  }, [initialize, isInitialized]);
+  }, []); // Remove dependencies to prevent re-initialization
 
   useEffect(() => {
     // Apply theme on mount
