@@ -3,7 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useInView } from "react-intersection-observer";
 import { motion } from "framer-motion";
 import { Plus, TrendingUp } from "lucide-react";
-import { PostCard } from "./enhanced-post-card";
+import { PostCard } from "./post-card";
 import { PostCreationModal } from "./post-creation-modal";
 import { LoadingSkeleton } from "./loading-skeleton";
 import { Button } from "./button";
