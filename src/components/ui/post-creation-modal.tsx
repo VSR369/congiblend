@@ -16,15 +16,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { PostType, CreatePostData } from "@/types/feed";
 
-interface FileItem {
-  id: string;
-  file: File;
-  preview?: string;
-  progress: number;
-  status: 'pending' | 'uploading' | 'completed' | 'error';
-  error?: string;
-  url?: string;
-}
+// Import the standardized FileItem interface from FileUpload
+import type { FileItem } from './file-upload';
 
 interface PostCreationModalProps {
   open: boolean;
@@ -94,11 +87,11 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
   };
 
   const handleFileSelection = React.useCallback((files: File[]) => {
+    console.log('Files selected:', files.length, files.map(f => f.name));
     const newFiles: FileItem[] = files.map(file => ({
       id: Math.random().toString(36).substr(2, 9),
       file,
       preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
-      progress: 0,
       status: 'pending'
     }));
     setUploadedFiles(newFiles);
@@ -114,13 +107,14 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
     });
   }, []);
 
-  const handleFileUpload = React.useCallback(async () => {
-    if (uploadedFiles.length === 0) return;
+  const handleFileUpload = React.useCallback(async (filesToUpload: FileItem[]) => {
+    console.log('Upload triggered for files:', filesToUpload.length);
+    if (filesToUpload.length === 0) return;
 
     setUploadedFiles(prev => prev.map(file => ({ ...file, status: 'uploading' as const })));
 
     try {
-      const uploadPromises = uploadedFiles.map(async (fileItem) => {
+      const uploadPromises = filesToUpload.map(async (fileItem) => {
         const formData = new FormData();
         formData.append('file', fileItem.file);
 
@@ -134,7 +128,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
 
         return {
           ...fileItem,
-          status: 'completed' as const,
+          status: 'success' as const,
           progress: 100,
           url: data.url
         };
@@ -152,7 +146,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
       })));
       toast.error('Failed to upload files. Please try again.');
     }
-  }, [uploadedFiles]);
+  }, []);
 
   const handleSubmit = async () => {
     if (!content.trim()) return;
@@ -166,7 +160,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
         hashtags,
         mentions,
         visibility: "public",
-        media: uploadedFiles.filter(f => f.status === 'completed').map(f => f.file),
+        media: uploadedFiles.filter(f => f.status === 'success').map(f => f.file),
       };
 
       // Add poll data if it's a poll post
@@ -404,6 +398,8 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
               onFilesSelect={handleFileSelection}
               onFileRemove={handleFileRemoval}
               onFileUpload={handleFileUpload}
+              uploadFiles={uploadedFiles}
+              showPreview={true}
             />
           </div>
         );
@@ -530,7 +526,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
             !content.trim() || 
             characterCount > characterLimit || 
             isPosting ||
-            (uploadedFiles.length > 0 && uploadedFiles.some(f => f.status !== 'completed'))
+            (uploadedFiles.length > 0 && uploadedFiles.some(f => f.status !== 'success'))
           }
           loading={isPosting}
           loadingText="Posting..."
