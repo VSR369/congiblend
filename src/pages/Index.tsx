@@ -4,7 +4,7 @@ import { ContentFeed } from '@/components/ui/content-feed';
 import { AnalyticsDashboard } from '@/components/ui/analytics-dashboard';
 import { EnhancedTabs, EnhancedTabsList, EnhancedTabsTrigger, EnhancedTabsContent } from '@/components/ui/enhanced-tabs';
 import { BarChart3, Users, MessageSquare, Sparkles, TrendingUp, Zap, Plus, ArrowRight, Target } from 'lucide-react';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { LeftSidebar } from '@/components/layout/LeftSidebar';
 import { RightSidebar } from '@/components/layout/RightSidebar';
 import { Button } from '@/components/ui/button';
@@ -13,18 +13,17 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('feed');
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-screen w-full bg-gradient-subtle relative overflow-hidden">
-        {/* Background Elements */}
-        <div className="absolute inset-0 bg-gradient-primary opacity-5" />
-        <div className="absolute top-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        
-        {/* Left Sidebar */}
-        <LeftSidebar />
+    <div className="flex min-h-screen w-full bg-gradient-subtle relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-gradient-primary opacity-5" />
+      <div className="absolute top-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+      
+      {/* Left Sidebar */}
+      <LeftSidebar />
 
-        {/* Main Content */}
-        <SidebarInset className="flex-1 relative">
+      {/* Main Content */}
+      <div className="flex-1 relative">
           {/* Enhanced Hero Section */}
           <section className="relative py-16 px-4 overflow-hidden">
             {/* Floating Elements */}
@@ -149,15 +148,14 @@ const Index = () => {
                 </EnhancedTabs>
               </motion.div>
             </div>
-          </section>
-        </SidebarInset>
-
-        {/* Right Sidebar */}
-        <div className="hidden xl:block flex-shrink-0">
-          <RightSidebar />
-        </div>
+        </section>
       </div>
-    </SidebarProvider>
+
+      {/* Right Sidebar */}
+      <div className="hidden xl:block flex-shrink-0">
+        <RightSidebar />
+      </div>
+    </div>
   );
 };
 
