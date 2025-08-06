@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Bell, Search, Settings, User, Menu, Sun, Moon, PanelLeft } from 'lucide-react';
-import { SidebarTrigger } from '@/components/ui/sidebar';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -48,7 +48,13 @@ export const Header = ({ onMenuToggle, showMenuButton = false }: HeaderProps) =>
       <div className="container flex h-20 items-center justify-between">
         {/* Left Section */}
         <div className="flex items-center space-x-4">
-          <SidebarTrigger className="md:hidden" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="md:hidden h-10 w-10 rounded-xl hover-glow transition-all duration-300 glass-card border-0"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
           {showMenuButton && (
             <Button
               variant="ghost"
