@@ -4,6 +4,7 @@ import { MoreHorizontal, MessageCircle, Share2, Bookmark, Flag, Heart } from "lu
 import { formatRelativeTime } from "@/utils/formatters";
 import { ReactionButton, ReactionPicker } from "./reaction-system";
 import { PostErrorBoundary } from "./post-error-boundary";
+import { CommentInput } from "./comment-input";
 import { Button } from "./button";
 import { Avatar } from "./avatar";
 import { Badge } from "./badge";
@@ -11,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useOptimisticReaction } from "@/hooks/useOptimisticReaction";
 import { useFeedStore } from "@/stores/feedStore";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import type { Post, ReactionType } from "@/types/feed";
 
 interface PostCardProps {
@@ -21,7 +23,7 @@ interface PostCardProps {
 export const PostCard = ({ post, className }: PostCardProps) => {
   const [showReactionPicker, setShowReactionPicker] = React.useState(false);
   const [showComments, setShowComments] = React.useState(false);
-  const { toggleSave, sharePost } = useFeedStore();
+  const { toggleSave, sharePost, addComment } = useFeedStore();
   const reactionMutation = useOptimisticReaction();
 
   const handleReactionClick = () => {
@@ -35,6 +37,29 @@ export const PostCard = ({ post, className }: PostCardProps) => {
   const handleReactionSelect = (reaction: ReactionType) => {
     reactionMutation.mutate({ postId: post.id, reactionType: reaction });
     setShowReactionPicker(false);
+  };
+
+  const handleCommentSubmit = async (content: string) => {
+    try {
+      await addComment(post.id, content);
+      toast.success("Comment added successfully");
+    } catch (error) {
+      toast.error("Failed to add comment");
+      throw error;
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await sharePost(post.id);
+      toast.success("Post shared successfully");
+    } catch (error: any) {
+      if (error.message?.includes("own post")) {
+        toast.error("You cannot share your own posts. Try copying the link instead.");
+      } else {
+        toast.error("Failed to share post");
+      }
+    }
   };
 
   const totalReactions = post.reactions.length;
@@ -341,7 +366,7 @@ export const PostCard = ({ post, className }: PostCardProps) => {
           <Button 
             variant="ghost" 
             size="sm"
-            onClick={() => sharePost(post.id)}
+            onClick={handleShare}
             className="text-muted-foreground hover:text-foreground"
           >
             <Share2 className="h-5 w-5 mr-1" />
@@ -403,6 +428,14 @@ export const PostCard = ({ post, className }: PostCardProps) => {
                 View all {post.comments.length} comments
               </button>
             )}
+            
+            {/* Comment Input */}
+            <div className="pt-3 border-t">
+              <CommentInput 
+                onSubmit={handleCommentSubmit}
+                placeholder="Write a comment..."
+              />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

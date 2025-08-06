@@ -78,10 +78,26 @@ const transformDbPost = (dbPost: any, author: any): Post => {
 
 // Helper function to determine media type from URL
 const determineMediaType = (url: string): 'image' | 'video' | 'document' => {
+  // Handle Supabase storage URLs that may not have clear extensions
+  if (url.includes('/post-media/')) {
+    // Extract filename from Supabase URL
+    const pathParts = url.split('/');
+    const filename = pathParts[pathParts.length - 1];
+    const extension = filename.split('.').pop()?.toLowerCase();
+    
+    if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv'].includes(extension || '')) {
+      return 'video';
+    } else if (['pdf', 'doc', 'docx', 'txt', 'rtf'].includes(extension || '')) {
+      return 'document';
+    }
+    return 'image';
+  }
+  
+  // Fallback for external URLs
   const extension = url.split('.').pop()?.toLowerCase();
-  if (['mp4', 'webm', 'mov', 'avi'].includes(extension || '')) {
+  if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv'].includes(extension || '')) {
     return 'video';
-  } else if (['pdf', 'doc', 'docx'].includes(extension || '')) {
+  } else if (['pdf', 'doc', 'docx', 'txt', 'rtf'].includes(extension || '')) {
     return 'document';
   }
   return 'image';
@@ -440,6 +456,13 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
+        // Check if user is trying to share their own post
+        const state = get();
+        const post = state.posts.find(p => p.id === postId);
+        if (post?.author.id === user.id) {
+          throw new Error('Cannot share your own post');
+        }
+
         // Use the shares Edge Function
         const { data, error } = await supabase.functions.invoke('shares', {
           body: {
@@ -449,7 +472,12 @@ export const useFeedStore = create<FeedState>((set, get) => {
           }
         });
 
-        if (error) throw error;
+        if (error) {
+          if (error.message?.includes('own post')) {
+            throw new Error('Cannot share your own post');
+          }
+          throw error;
+        }
 
         // Update local state optimistically
         set(state => ({
