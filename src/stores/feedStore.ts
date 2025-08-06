@@ -330,19 +330,23 @@ export const useFeedStore = create<FeedState>((set, get) => {
                 table: 'posts'
               },
               async (payload) => {
-                // Get author info for new post
-                const { data: authorData } = await supabase
-                  .from('profiles')
-                  .select('id, username, display_name, avatar_url, is_verified')
-                  .eq('id', payload.new.user_id)
-                  .single();
+                const currentUser = await supabase.auth.getUser();
+                // Only add posts from other users via real-time (not our own optimistic posts)
+                if (payload.new.user_id !== currentUser.data.user?.id) {
+                  // Get author info for new post
+                  const { data: authorData } = await supabase
+                    .from('profiles')
+                    .select('id, username, display_name, avatar_url, is_verified')
+                    .eq('id', payload.new.user_id)
+                    .single();
 
-                if (authorData) {
-                  const newPost = transformDbPost(payload.new, authorData);
-                  if (newPost) {
-                    set(state => ({
-                      posts: [newPost, ...state.posts]
-                    }));
+                  if (authorData) {
+                    const newPost = transformDbPost(payload.new, authorData);
+                    if (newPost) {
+                      set(state => ({
+                        posts: [newPost, ...state.posts]
+                      }));
+                    }
                   }
                 }
               }
@@ -395,7 +399,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
     },
 
     createPost: async (data: CreatePostData) => {
-      
+      console.log('Creating post with data:', data);
       set(state => ({ ...state, loading: true }));
       
       try {
@@ -406,18 +410,73 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: sessionData } = await supabase.auth.getSession();
         if (!sessionData.session?.access_token) throw new Error('No access token');
 
-        // Upload media files if present with progress tracking
+        // Get current user profile for optimistic update
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url, is_verified')
+          .eq('id', user.id)
+          .single();
+
+        // Create optimistic post for immediate UI feedback
+        const optimisticPost: Post = {
+          id: `temp-${Date.now()}`,
+          type: data.type,
+          author: {
+            id: user.id,
+            name: userProfile?.display_name || userProfile?.username || 'You',
+            username: userProfile?.username || 'you',
+            avatar: userProfile?.avatar_url,
+            verified: userProfile?.is_verified || false,
+          },
+          content: data.content,
+          media: [],
+          poll: data.poll ? {
+            ...data.poll,
+            id: `temp-poll-${Date.now()}`,
+            totalVotes: 0,
+            options: data.poll.options.map((opt, idx) => ({
+              ...opt,
+              id: `temp-option-${idx}`,
+              votes: 0,
+              percentage: 0
+            }))
+          } : undefined,
+          event: data.event ? {
+            ...data.event,
+            id: `temp-event-${Date.now()}`,
+            attendees: 0
+          } : undefined,
+          hashtags: data.hashtags || [],
+          mentions: [],
+          reactions: [],
+          comments: [],
+          shares: 0,
+          saves: 0,
+          views: 0,
+          createdAt: new Date(),
+          visibility: data.visibility,
+          userReaction: undefined,
+          userSaved: false,
+          userShared: false,
+        };
+
+        // Add optimistic post to UI immediately
+        set(state => ({
+          posts: [optimisticPost, ...state.posts]
+        }));
+
+        // Upload media files in parallel if present
         let mediaUrls: string[] = [];
         let thumbnailUrl: string | undefined;
         
         if (data.media && data.media.length > 0) {
+          console.log(`Uploading ${data.media.length} files in parallel...`);
           
-          
-          for (const file of data.media) {
+          const uploadPromises = data.media.map(async (file) => {
             const fileExt = file.name.split('.').pop()?.toLowerCase();
             const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
             
-            
+            console.log(`Uploading file: ${fileName}`);
             
             const { data: uploadData, error: uploadError } = await supabase.storage
               .from('post-media')
@@ -435,15 +494,22 @@ export const useFeedStore = create<FeedState>((set, get) => {
               .from('post-media')
               .getPublicUrl(uploadData.path);
 
-            mediaUrls.push(publicUrl);
-            
-            
-            // For video files, we might want to generate a thumbnail later
-            if (['mp4', 'webm', 'mov', 'avi'].includes(fileExt || '')) {
-              // Could set a placeholder thumbnail here
-              thumbnailUrl = publicUrl; // Use first video as thumbnail placeholder
-            }
+            console.log(`File uploaded successfully: ${publicUrl}`);
+            return { url: publicUrl, type: fileExt };
+          });
+
+          const uploadResults = await Promise.all(uploadPromises);
+          mediaUrls = uploadResults.map(result => result.url);
+          
+          // Set thumbnail for first video
+          const firstVideo = uploadResults.find(result => 
+            ['mp4', 'webm', 'mov', 'avi'].includes(result.type || '')
+          );
+          if (firstVideo) {
+            thumbnailUrl = firstVideo.url;
           }
+          
+          console.log('All files uploaded successfully:', mediaUrls);
         }
 
         const postPayload = {
@@ -473,7 +539,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
         };
 
         
-
+        
         // Use the posts edge function with timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
@@ -489,14 +555,33 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
         if (error) {
           console.error('Edge function error:', error);
+          // Remove optimistic post on error
+          set(state => ({
+            posts: state.posts.filter(post => post.id !== optimisticPost.id)
+          }));
           throw error;
         }
 
+        console.log('Post created successfully:', newPost);
         
-        // Post will be added via real-time subscription
+        // Replace optimistic post with real post data
+        if (newPost && newPost.id) {
+          const realPost = transformDbPost(newPost, userProfile);
+          if (realPost) {
+            set(state => ({
+              posts: state.posts.map(post => 
+                post.id === optimisticPost.id ? realPost : post
+              )
+            }));
+          }
+        }
         
       } catch (error) {
         console.error('Error creating post:', error);
+        // Remove optimistic post on error
+        set(state => ({
+          posts: state.posts.filter(post => !post.id.startsWith('temp-'))
+        }));
         throw error;
       } finally {
         set(state => ({ ...state, loading: false }));

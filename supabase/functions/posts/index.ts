@@ -159,25 +159,31 @@ serve(async (req) => {
       // Get user profile for response
       const { data: userProfile } = await authenticatedSupabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url')
+        .select('id, username, display_name, avatar_url, is_verified')
         .eq('id', userId)
         .single();
 
+      // Return the complete post data with author info
+      const responseData = {
+        ...newPost,
+        author: {
+          id: userId,
+          username: userProfile?.username || 'unknown',
+          display_name: userProfile?.display_name || 'Unknown User',
+          avatar_url: userProfile?.avatar_url,
+          is_verified: userProfile?.is_verified || false
+        },
+        author_id: newPost.user_id,
+        reaction_count: newPost.reactions_count,
+        comment_count: newPost.comments_count,
+        hashtags,
+        mentions
+      };
+
+      console.log('Post created successfully, returning:', responseData);
+
       return new Response(
-        JSON.stringify({
-          ...newPost,
-          author: {
-            id: userId,
-            username: userProfile?.username || 'unknown',
-            display_name: userProfile?.display_name || 'Unknown User',
-            avatar_url: userProfile?.avatar_url
-          },
-          author_id: newPost.user_id,
-          reaction_count: newPost.reactions_count,
-          comment_count: newPost.comments_count,
-          hashtags,
-          mentions
-        }),
+        JSON.stringify(responseData),
         { 
           status: 201, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
