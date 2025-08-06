@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useOptimisticReaction } from "@/hooks/useOptimisticReaction";
 import { useFeedStore } from "@/stores/feedStore";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import type { Post, ReactionType } from "@/types/feed";
 
 interface PostCardProps {
@@ -42,9 +42,16 @@ export const PostCard = ({ post, className }: PostCardProps) => {
   const handleCommentSubmit = async (content: string) => {
     try {
       await addComment(post.id, content);
-      toast.success("Comment added successfully");
+      toast({
+        title: "Comment added",
+        description: "Your comment has been posted successfully.",
+      });
     } catch (error) {
-      toast.error("Failed to add comment");
+      toast({
+        title: "Comment failed",
+        description: "Failed to add comment. Please try again.",
+        variant: "destructive"
+      });
       throw error;
     }
   };
@@ -52,23 +59,42 @@ export const PostCard = ({ post, className }: PostCardProps) => {
   const handleShare = async () => {
     try {
       await sharePost(post.id);
-      toast.success("Post shared successfully");
+      toast({
+        title: "Post shared",
+        description: "Post has been shared successfully.",
+      });
     } catch (error: any) {
       if (error.message?.includes("own post")) {
-        toast.error("You cannot share your own posts. Try copying the link instead.");
+        toast({
+          title: "Cannot share",
+          description: "You cannot share your own posts. Try copying the link instead.",
+          variant: "destructive"
+        });
       } else {
-        toast.error("Failed to share post");
+        toast({
+          title: "Share failed",
+          description: "Failed to share post. Please try again.",
+          variant: "destructive"
+        });
       }
     }
   };
 
   const handlePollVote = async (optionIndex: number) => {
     try {
+      console.log('Voting for option index:', optionIndex);
       await votePoll(post.id, optionIndex);
-      toast.success("Vote submitted successfully");
+      toast({
+        title: "Vote submitted",
+        description: "Your vote has been recorded successfully.",
+      });
     } catch (error) {
-      toast.error("Failed to submit vote");
       console.error("Poll voting error:", error);
+      toast({
+        title: "Vote failed", 
+        description: "Failed to submit your vote. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 

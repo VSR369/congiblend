@@ -22,7 +22,7 @@ interface FeedState {
   sharePost: (postId: string) => void;
   
   // Poll actions
-  votePoll: (postId: string, optionIndex: number) => Promise<void>;
+  votePoll: (postId: string, optionIndex: number) => Promise<any>;
   
   // Settings
   updateFeedSettings: (settings: Partial<FeedSettings>) => void;
@@ -485,8 +485,20 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
+        console.log('Voting on poll:', { postId, optionIndex, userId: user.id });
+
+        // First, check if user has already voted
+        const { data: existingVote } = await supabase
+          .from('votes')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('post_id', postId)
+          .single();
+
+        console.log('Existing vote:', existingVote);
+
         // Insert or update vote in the votes table
-        const { data, error } = await supabase
+        const { data: voteData, error: voteError } = await supabase
           .from('votes')
           .upsert({
             user_id: user.id,
@@ -494,29 +506,50 @@ export const useFeedStore = create<FeedState>((set, get) => {
             option_index: optionIndex
           }, {
             onConflict: 'user_id,post_id'
-          });
+          })
+          .select();
 
-        if (error) throw error;
+        if (voteError) {
+          console.error('Vote error:', voteError);
+          throw voteError;
+        }
 
-        // Update local state optimistically
+        console.log('Vote saved:', voteData);
+
+        // Get all votes for this post to calculate accurate counts
+        const { data: allVotes, error: votesError } = await supabase
+          .from('votes')
+          .select('option_index')
+          .eq('post_id', postId);
+
+        if (votesError) {
+          console.error('Error fetching votes:', votesError);
+          throw votesError;
+        }
+
+        console.log('All votes for post:', allVotes);
+
+        // Count votes per option
+        const voteCounts: Record<number, number> = {};
+        allVotes?.forEach(vote => {
+          voteCounts[vote.option_index] = (voteCounts[vote.option_index] || 0) + 1;
+        });
+
+        console.log('Vote counts:', voteCounts);
+
+        // Update local state with accurate vote counts
         set(state => ({
           posts: state.posts.map(post => {
             if (post.id !== postId || !post.poll) return post;
             
-            // Update vote counts
-            const updatedOptions = post.poll.options.map((option, index) => {
-              if (index === optionIndex) {
-                return { ...option, votes: option.votes + 1 };
-              }
-              // Remove previous vote if it exists
-              if (post.poll?.userVote?.includes(index.toString())) {
-                return { ...option, votes: Math.max(0, option.votes - 1) };
-              }
-              return option;
-            });
+            // Update vote counts based on actual database data
+            const updatedOptions = post.poll.options.map((option, index) => ({
+              ...option,
+              votes: voteCounts[index] || 0
+            }));
 
             // Recalculate percentages
-            const totalVotes = updatedOptions.reduce((sum, opt) => sum + opt.votes, 0);
+            const totalVotes = Object.values(voteCounts).reduce((sum, count) => sum + count, 0);
             const optionsWithPercentages = updatedOptions.map(option => ({
               ...option,
               percentage: totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0
@@ -534,7 +567,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           })
         }));
 
-        return data;
+        return voteData;
       } catch (error) {
         console.error('Error voting on poll:', error);
         throw error;
