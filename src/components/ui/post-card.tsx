@@ -128,11 +128,18 @@ export const PostCard = ({ post, className }: PostCardProps) => {
                 <h4 className="font-medium">{post.poll.question}</h4>
                 <div className="space-y-2">
                   {post.poll.options.map((option) => (
-                    <div key={option.id} className="space-y-1">
+                    <button
+                      key={option.id} 
+                      className="w-full text-left space-y-1 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                      onClick={() => {
+                        // TODO: Handle poll voting
+                        console.log('Voting for option:', option.id);
+                      }}
+                    >
                       <div className="flex justify-between items-center">
-                        <span className="text-sm">{option.text}</span>
+                        <span className="text-sm font-medium">{option.text}</span>
                         <span className="text-xs text-muted-foreground">
-                          {option.percentage}%
+                          {option.percentage}% ({option.votes} vote{option.votes !== 1 ? 's' : ''})
                         </span>
                       </div>
                       <div className="w-full bg-muted rounded-full h-2">
@@ -141,15 +148,15 @@ export const PostCard = ({ post, className }: PostCardProps) => {
                           style={{ width: `${option.percentage}%` }}
                         />
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {post.poll.totalVotes} votes
+                <div className="flex justify-between items-center text-xs text-muted-foreground">
+                  <span>{post.poll.totalVotes} total vote{post.poll.totalVotes !== 1 ? 's' : ''}</span>
                   {post.poll.expiresAt && (
-                    <> • Expires {formatRelativeTime(post.poll.expiresAt)}</>
+                    <span>Expires {formatRelativeTime(post.poll.expiresAt)}</span>
                   )}
-                </p>
+                </div>
               </div>
             )}
           </div>

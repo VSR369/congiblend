@@ -46,6 +46,43 @@ const transformDbPost = (dbPost: any, author: any): Post => {
     }));
   }
 
+  // Transform poll_data to poll object
+  let poll = undefined;
+  if (dbPost.poll_data && dbPost.poll_data.options) {
+    const totalVotes = dbPost.poll_data.options.reduce((sum: number, option: any) => sum + (option.votes || 0), 0);
+    poll = {
+      id: `${dbPost.id}-poll`,
+      question: dbPost.content, // Use post content as question
+      options: dbPost.poll_data.options.map((option: any, index: number) => ({
+        id: `${dbPost.id}-option-${index}`,
+        text: option.text,
+        votes: option.votes || 0,
+        percentage: totalVotes > 0 ? Math.round((option.votes || 0) / totalVotes * 100) : 0
+      })),
+      totalVotes,
+      expiresAt: dbPost.poll_data.expires_at ? new Date(dbPost.poll_data.expires_at) : undefined,
+      allowMultiple: dbPost.poll_data.multiple_choice || false,
+      userVote: undefined // TODO: Get user's vote from database
+    };
+  }
+
+  // Transform event_data to event object
+  let event = undefined;
+  if (dbPost.event_data) {
+    event = {
+      id: `${dbPost.id}-event`,
+      title: dbPost.event_data.title,
+      description: dbPost.event_data.description,
+      startDate: new Date(dbPost.event_data.start_date),
+      endDate: dbPost.event_data.end_date ? new Date(dbPost.event_data.end_date) : undefined,
+      location: dbPost.event_data.location,
+      isVirtual: dbPost.event_data.is_virtual || false,
+      attendees: dbPost.event_data.attendees || 0,
+      maxAttendees: dbPost.event_data.max_attendees,
+      userRSVP: dbPost.event_data.user_rsvp || undefined
+    };
+  }
+
   return {
     id: dbPost.id,
     type: dbPost.post_type || 'text',
@@ -58,6 +95,8 @@ const transformDbPost = (dbPost: any, author: any): Post => {
     },
     content: dbPost.content,
     media,
+    poll,
+    event,
     hashtags: extractHashtags(dbPost.content),
     mentions: [],
     reactions: [],
