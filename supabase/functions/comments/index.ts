@@ -40,6 +40,9 @@ const extractMentions = (content: string): string[] => {
 };
 
 serve(async (req) => {
+  const startTime = Date.now();
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });

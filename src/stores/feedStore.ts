@@ -755,42 +755,42 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
-        // Use the comments Edge Function
-        const { data, error } = await supabase.functions.invoke('comments', {
-          body: {
-            post_id: postId,
-            content,
-            parent_comment_id: parentId || null
-          }
-        });
-
-        if (error) throw error;
-
-        // Optimistically update local state
-        const newComment = {
-          id: data.comment?.id || `temp-${Date.now()}`,
+        // Use the enhanced auth utils for better reliability
+        const { invokeEdgeFunction } = await import('@/utils/authUtils');
+        
+        const data = await invokeEdgeFunction('comments', {
+          post_id: postId,
           content,
-          author: {
-            id: user.id,
-            name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
-            username: user.user_metadata?.username || user.email?.split('@')[0] || 'user',
-            avatar: user.user_metadata?.avatar_url
-          },
-          createdAt: new Date(),
-          reactions: [],
-          parentId
-        };
+          parent_comment_id: parentId || null
+        }, { retries: 3 });
 
-        set(state => ({
-          posts: state.posts.map(post => {
-            if (post.id !== postId) return post;
-            
-            return {
-              ...post,
-              comments: [...post.comments, newComment]
-            };
-          })
-        }));
+        // Update local state with actual response data
+        if (data?.comment) {
+          const newComment = {
+            id: data.comment.id,
+            content: data.comment.content,
+            author: {
+              id: data.comment.profiles.id,
+              name: data.comment.profiles.display_name || data.comment.profiles.username || 'User',
+              username: data.comment.profiles.username || 'user',
+              avatar: data.comment.profiles.avatar_url
+            },
+            createdAt: new Date(data.comment.created_at),
+            reactions: [],
+            parentId: data.comment.parent_comment_id
+          };
+
+          set(state => ({
+            posts: state.posts.map(post => {
+              if (post.id !== postId) return post;
+              
+              return {
+                ...post,
+                comments: [...post.comments, newComment]
+              };
+            })
+          }));
+        }
 
         return data;
       } catch (error) {
