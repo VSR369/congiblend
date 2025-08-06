@@ -20,6 +20,7 @@ interface PostCreationModalProps {
   onClose: () => void;
 }
 
+// Simplified post creation modal with direct file upload
 export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => {
   const [activeTab, setActiveTab] = React.useState<PostType>("text");
   const [content, setContent] = React.useState("");
