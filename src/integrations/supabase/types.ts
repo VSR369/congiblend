@@ -3821,6 +3821,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          company: string | null
           cover_url: string | null
           created_at: string | null
           current_streak_days: number | null
@@ -3836,6 +3837,7 @@ export type Database = {
           longest_streak_days: number | null
           password_hash: string | null
           profile_views_count: number | null
+          title: string | null
           updated_at: string | null
           username: string
           website: string | null
@@ -3843,6 +3845,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          company?: string | null
           cover_url?: string | null
           created_at?: string | null
           current_streak_days?: number | null
@@ -3858,6 +3861,7 @@ export type Database = {
           longest_streak_days?: number | null
           password_hash?: string | null
           profile_views_count?: number | null
+          title?: string | null
           updated_at?: string | null
           username: string
           website?: string | null
@@ -3865,6 +3869,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          company?: string | null
           cover_url?: string | null
           created_at?: string | null
           current_streak_days?: number | null
@@ -3880,6 +3885,7 @@ export type Database = {
           longest_streak_days?: number | null
           password_hash?: string | null
           profile_views_count?: number | null
+          title?: string | null
           updated_at?: string | null
           username?: string
           website?: string | null

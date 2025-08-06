@@ -390,19 +390,26 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                     {post.author.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="font-semibold text-sm">{post.author.name}</h3>
-                    {post.author.verified && (
-                      <Badge variant="secondary" className="text-xs">
-                        ✓
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    @{post.author.username} • {formatDistanceToNow(post.createdAt, { addSuffix: true })}
-                  </p>
-                </div>
+                 <div>
+                   <div className="flex items-center space-x-2">
+                     <h3 className="font-semibold text-sm">{post.author.name}</h3>
+                     {post.author.verified && (
+                       <Badge variant="secondary" className="text-xs">
+                         ✓
+                       </Badge>
+                     )}
+                     {/* Show "You" indicator for current user's posts */}
+                     <Badge variant="outline" className="text-xs">
+                       You
+                     </Badge>
+                   </div>
+                   <div className="text-xs text-muted-foreground">
+                     {post.author.title && post.author.company && (
+                       <span>{post.author.title} at {post.author.company} • </span>
+                     )}
+                     <span>@{post.author.username} • {formatDistanceToNow(post.createdAt, { addSuffix: true })}</span>
+                   </div>
+                 </div>
               </div>
               
               <DropdownMenu>

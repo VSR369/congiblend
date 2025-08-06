@@ -2,11 +2,12 @@ import * as React from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useInView } from "react-intersection-observer";
 import { motion } from "framer-motion";
-import { Plus, Filter, TrendingUp } from "lucide-react";
+import { Plus, TrendingUp } from "lucide-react";
 import { PostCard } from "./enhanced-post-card";
 import { PostCreationModal } from "./post-creation-modal";
 import { LoadingSkeleton } from "./loading-skeleton";
 import { Button } from "./button";
+import { FeedFilterPanel } from "./feed-filter-panel";
 import { useFeedStore } from "@/stores/feedStore";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +17,7 @@ interface ContentFeedProps {
 
 export const ContentFeed = ({ className }: ContentFeedProps) => {
   const [showCreateModal, setShowCreateModal] = React.useState(false);
-  const { posts, loading, hasMore, loadPosts } = useFeedStore();
+  const { posts, loading, hasMore, loadPosts, filters } = useFeedStore();
   const parentRef = React.useRef<HTMLDivElement>(null);
 
   // Intersection observer for infinite scroll
@@ -47,17 +48,20 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
       {/* Feed Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold">Your Feed</h1>
+          <h1 className="text-2xl font-bold">
+            {filters.userFilter === 'all' ? 'Community Feed' :
+             filters.userFilter === 'my_posts' ? 'My Posts' :
+             filters.userFilter === 'others' ? 'Others\' Posts' : 'Filtered Feed'}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Stay updated with your connections and interests
+            {filters.userFilter === 'all' ? 'Stay updated with your professional community' :
+             filters.userFilter === 'my_posts' ? 'Your posts and updates' :
+             'Content from your network'}
           </p>
         </div>
         
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
+          <FeedFilterPanel />
           <Button variant="outline" size="sm">
             <TrendingUp className="h-4 w-4 mr-2" />
             Trending
