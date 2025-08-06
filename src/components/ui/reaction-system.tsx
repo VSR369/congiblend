@@ -96,7 +96,7 @@ export const LikeButton = ({
   const handleMouseDown = () => {
     const timer = setTimeout(() => {
       setShowReactionPicker(true);
-    }, 500); // 500ms for long press
+    }, 700); // Longer delay for more intentional long press
     setLongPressTimer(timer);
   };
 
@@ -106,17 +106,10 @@ export const LikeButton = ({
       setLongPressTimer(null);
     }
     
+    // Only trigger like if reaction picker isn't showing
     if (!showReactionPicker) {
       onLikeToggle();
     }
-  };
-
-  const handleMouseEnter = () => {
-    // Show picker on hover for desktop
-    const timer = setTimeout(() => {
-      setShowReactionPicker(true);
-    }, 800);
-    setLongPressTimer(timer);
   };
 
   const handleMouseLeave = () => {
@@ -124,8 +117,16 @@ export const LikeButton = ({
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
     }
-    // Delay hiding to allow interaction with picker
-    setTimeout(() => setShowReactionPicker(false), 200);
+    // Hide picker when mouse leaves
+    setShowReactionPicker(false);
+  };
+
+  // Simple click handler for immediate like toggle
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!showReactionPicker) {
+      onLikeToggle();
+    }
   };
 
   const handleReactionSelect = (reaction: ReactionType) => {
@@ -153,9 +154,9 @@ export const LikeButton = ({
         ref={buttonRef}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
+        onClick={handleClick}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
-        onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         disabled={isLoading}
         className={cn(
@@ -189,9 +190,17 @@ export const LikeButton = ({
             {totalReactions}
           </span>
         )}
+        {/* More reactions indicator - only show when not already reacted */}
+        {!isLiked && (
+          <MoreHorizontal className="h-3 w-3 opacity-60" />
+        )}
         
-        {/* More reactions indicator */}
-        <MoreHorizontal className="h-3 w-3 opacity-60" />
+        {/* Long press hint */}
+        {!isLiked && (
+          <span className="text-xs text-muted-foreground/60 ml-1">
+            Hold for more
+          </span>
+        )}
       </motion.button>
 
       {/* Reaction Picker */}
