@@ -15,7 +15,7 @@ interface FeedState {
   deletePost: (postId: string) => void;
   
   // Engagement actions
-  toggleReaction: (postId: string, reaction: ReactionType) => void;
+  toggleReaction: (postId: string, reaction: ReactionType | null) => Promise<void>;
   addComment: (postId: string, content: string, parentId?: string) => void;
   deleteComment: (postId: string, commentId: string) => void;
   toggleSave: (postId: string) => void;
@@ -433,122 +433,87 @@ export const useFeedStore = create<FeedState>((set, get) => {
       }
     },
 
-    toggleReaction: async (postId: string, reaction: ReactionType) => {
+    toggleReaction: async (postId: string, reaction: ReactionType | null) => {
       console.log('Toggling reaction:', { postId, reaction });
       
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
-        // Get current session token
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session?.access_token) throw new Error('No access token');
+        const state = get();
+        const post = state.posts.find(p => p.id === postId);
+        if (!post) throw new Error('Post not found');
 
-        // Check if user already has this reaction
-        const currentPost = get().posts.find(p => p.id === postId);
-        const isCurrentlyReacted = currentPost?.userReaction === reaction;
-        
-        console.log('Current reaction state:', { currentReaction: currentPost?.userReaction, isCurrentlyReacted });
-
-        // Optimistically update UI first
+        // Optimistic update first
+        const previousReaction = post.userReaction;
         set(state => ({
-          posts: state.posts.map(post => {
-            if (post.id === postId) {
-              if (isCurrentlyReacted) {
-                // Remove reaction
-                console.log('Removing reaction');
-                return {
-                  ...post,
-                  userReaction: undefined,
-                  reactions: post.reactions.filter(r => r.user.id !== user.id)
-                };
-              } else {
-                // Add/change reaction
-                console.log('Adding/changing reaction to:', reaction);
-                return {
-                  ...post,
-                  userReaction: reaction,
-                  reactions: [
-                    ...post.reactions.filter(r => r.user.id !== user.id),
-                    {
-                      id: `temp-${Date.now()}`,
-                      type: reaction,
-                      user: { 
-                        id: user.id, 
-                        name: user.user_metadata?.display_name || 'User', 
-                        username: user.user_metadata?.username || 'user' 
-                      },
-                      createdAt: new Date()
-                    }
-                  ]
-                };
-              }
+          posts: state.posts.map(p => {
+            if (p.id !== postId) return p;
+            
+            const updatedReactions = [...p.reactions];
+            const userReactionIndex = updatedReactions.findIndex(r => r.user.id === user.id);
+            
+            // Remove existing reaction if any
+            if (userReactionIndex >= 0) {
+              updatedReactions.splice(userReactionIndex, 1);
             }
-            return post;
+            
+            // Add new reaction if provided
+            if (reaction) {
+              updatedReactions.push({
+                id: `temp-${Date.now()}`,
+                type: reaction,
+                user: {
+                  id: user.id,
+                  name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
+                  username: user.user_metadata?.username || user.email?.split('@')[0] || 'user'
+                },
+                createdAt: new Date()
+              });
+            }
+            
+            return {
+              ...p,
+              reactions: updatedReactions,
+              userReaction: reaction || undefined
+            };
           })
         }));
 
-        // Call the reactions Edge Function with proper timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-        const { data, error } = await supabase.functions.invoke('reactions', {
-          body: {
-            target_type: 'post',
-            target_id: postId,
-            reaction_type: reaction
-          },
-          headers: {
-            Authorization: `Bearer ${sessionData.session.access_token}`,
-          }
-        });
-
-        clearTimeout(timeoutId);
-
-        if (error) {
-          console.error('Reaction API error:', error);
+        // Call backend
+        if (reaction) {
+          // Add or update reaction
+          const { error } = await supabase.functions.invoke('reactions', {
+            body: {
+              target_type: 'post',
+              target_id: postId,
+              reaction_type: reaction
+            }
+          });
           
-          // Revert optimistic update on error
-          set(state => ({
-            posts: state.posts.map(post => {
-              if (post.id === postId) {
-                if (!isCurrentlyReacted) {
-                  return {
-                    ...post,
-                    userReaction: undefined,
-                    reactions: post.reactions.filter(r => r.user.id !== user.id)
-                  };
-                } else {
-                  return {
-                    ...post,
-                    userReaction: reaction,
-                    reactions: [
-                      ...post.reactions.filter(r => r.user.id !== user.id),
-                      {
-                        id: `restored-${Date.now()}`,
-                        type: reaction,
-                        user: { 
-                          id: user.id, 
-                          name: user.user_metadata?.display_name || 'User', 
-                          username: user.user_metadata?.username || 'user' 
-                        },
-                        createdAt: new Date()
-                      }
-                    ]
-                  };
-                }
-              }
-              return post;
-            })
-          }));
+          if (error) throw error;
+        } else {
+          // Remove reaction
+          const { error } = await supabase.functions.invoke('reactions', {
+            body: {
+              target_type: 'post',
+              target_id: postId
+            }
+          });
           
-          throw error;
+          if (error) throw error;
         }
-
-        console.log('Reaction response:', data);
-        return data;
       } catch (error) {
         console.error('Error toggling reaction:', error);
+        
+        // Revert optimistic update on error
+        set(state => ({
+          posts: state.posts.map(p => {
+            if (p.id !== postId) return p;
+            return { ...p, userReaction: p.userReaction };
+          })
+        }));
+        
         throw error;
       }
     },

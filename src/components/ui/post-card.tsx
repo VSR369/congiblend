@@ -2,14 +2,13 @@ import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MoreHorizontal, MessageCircle, Share2, Bookmark, Flag, Heart } from "lucide-react";
 import { formatRelativeTime } from "@/utils/formatters";
-import { ReactionButton } from "./reaction-button";
+import { LikeButton } from "./like-button";
 import { PostErrorBoundary } from "./post-error-boundary";
 import { CommentInput } from "./comment-input";
 import { Button } from "./button";
 import { Avatar } from "./avatar";
 import { Badge } from "./badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./dropdown-menu";
-import { useOptimisticReaction } from "@/hooks/useOptimisticReaction";
 import { useFeedStore } from "@/stores/feedStore";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -21,23 +20,8 @@ interface PostCardProps {
 }
 
 export const PostCard = ({ post, className }: PostCardProps) => {
-  const [showReactionPicker, setShowReactionPicker] = React.useState(false);
   const [showComments, setShowComments] = React.useState(false);
   const { toggleSave, sharePost, addComment, votePoll } = useFeedStore();
-  const reactionMutation = useOptimisticReaction();
-
-  const handleReactionClick = () => {
-    if (post.userReaction) {
-      reactionMutation.mutate({ postId: post.id, reactionType: post.userReaction });
-    } else {
-      setShowReactionPicker(!showReactionPicker);
-    }
-  };
-
-  const handleReactionSelect = (reaction: ReactionType) => {
-    reactionMutation.mutate({ postId: post.id, reactionType: reaction });
-    setShowReactionPicker(false);
-  };
 
   const handleCommentSubmit = async (content: string) => {
     try {
@@ -429,13 +413,14 @@ export const PostCard = ({ post, className }: PostCardProps) => {
       {/* Actions */}
       <div className="flex items-center justify-between border-t pt-3 bg-card">
         <div className="flex items-center space-x-1">
-          <ReactionButton
+          <LikeButton
             targetId={post.id}
             targetType="post"
-            onReactionChange={(reactionType) => {
-              // Handle reaction change if needed
-              console.log('Reaction changed to:', reactionType);
-            }}
+            currentReaction={post.userReaction}
+            reactionCounts={post.reactions.reduce((acc, reaction) => {
+              acc[reaction.type] = (acc[reaction.type] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>)}
           />
 
           <Button 

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
-import { LikeButton } from "./reaction-system";
+import { LikeButton } from "./like-button";
 import { CommentInput } from "./comment-input";
 import { useFeedStore } from "@/stores/feedStore";
 import { PostErrorBoundary } from "./post-error-boundary";
@@ -32,60 +32,13 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
     saving: false
   });
   
-  const { toggleReaction, addComment, sharePost, toggleSave, votePoll } = useFeedStore();
+  const { addComment, sharePost, toggleSave, votePoll } = useFeedStore();
   const { toast } = useToast();
 
   const updateLoadingState = (key: keyof typeof loadingStates, value: boolean) => {
     setLoadingStates(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleLikeToggle = async () => {
-    // Simple like toggle - if user has any reaction, remove it, otherwise add 'like'
-    const reactionType = post.userReaction || 'like';
-    
-    updateLoadingState('reacting', true);
-    try {
-      await toggleReaction(post.id, reactionType);
-      
-      // Subtle success feedback
-      if (!post.userReaction) {
-        toast({
-          title: "Liked!",
-          description: "You liked this post",
-        });
-      }
-    } catch (error) {
-      console.error('Error toggling like:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update reaction",
-        variant: "destructive",
-      });
-    } finally {
-      updateLoadingState('reacting', false);
-    }
-  };
-
-  const handleReactionSelect = async (reactionType: ReactionType) => {
-    updateLoadingState('reacting', true);
-    
-    try {
-      await toggleReaction(post.id, reactionType);
-      toast({
-        title: `Reacted with ${reactionType}!`,
-        description: "Your reaction has been updated",
-      });
-    } catch (error) {
-      console.error('Error adding reaction:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add reaction",
-        variant: "destructive",
-      });
-    } finally {
-      updateLoadingState('reacting', false);
-    }
-  };
 
   const handleShare = async () => {
     if (loadingStates.sharing) return;
@@ -496,13 +449,14 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
             {/* Action Buttons */}
             <div className="flex items-center justify-between pt-3 border-t border-border/50">
               <div className="flex items-center space-x-2">
-                {/* Modern Like Button with Reaction Picker */}
                 <LikeButton
-                  totalReactions={post.reactions.length}
-                  userReaction={post.userReaction}
-                  onLikeToggle={handleLikeToggle}
-                  onReactionSelect={handleReactionSelect}
-                  isLoading={loadingStates.reacting}
+                  targetId={post.id}
+                  targetType="post"
+                  currentReaction={post.userReaction}
+                  reactionCounts={post.reactions.reduce((acc, reaction) => {
+                    acc[reaction.type] = (acc[reaction.type] || 0) + 1;
+                    return acc;
+                  }, {} as Record<string, number>)}
                 />
 
                 {/* Comment Button */}

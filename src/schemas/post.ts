@@ -18,7 +18,7 @@ export const commentSchema = z.object({
 export const reactionSchema = z.object({
   target_type: z.enum(['post', 'comment']),
   target_id: z.string().uuid(),
-  reaction_type: z.enum(['like', 'love', 'celebrate', 'support', 'insightful', 'curious']),
+  reaction_type: z.enum(['like', 'love', 'insightful', 'support', 'celebrate', 'curious']),
 });
 
 export type PostFormData = z.infer<typeof postSchema>;
