@@ -243,7 +243,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           .from('posts')
           .select(`
             *,
-            user:user_id (
+            profiles!posts_user_id_fkey (
               id,
               username,
               display_name,
@@ -262,9 +262,9 @@ export const useFeedStore = create<FeedState>((set, get) => {
           const currentUser = supabase.auth.getUser();
           query = query.neq('user_id', (await currentUser).data.user?.id);
          } else if (filters.userFilter !== 'all') {
-           // For specific user filter, we'll join with users table
+           // For specific user filter, we'll join with profiles table
            const { data: specificUser } = await supabase
-             .from('users')
+             .from('profiles')
              .select('id')
              .eq('username', filters.userFilter)
              .single();
@@ -307,7 +307,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
         // Transform posts to our format
         const transformedPosts = postsData?.map((dbPost) => 
-          transformDbPost(dbPost, dbPost.user)
+          transformDbPost(dbPost, dbPost.profiles)
         ) || [];
 
         set({ 
@@ -330,7 +330,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
               async (payload) => {
                 // Get author info for new post
                 const { data: authorData } = await supabase
-                  .from('users')
+                  .from('profiles')
                   .select('id, username, display_name, avatar_url, is_verified')
                   .eq('id', payload.new.user_id)
                   .single();
@@ -368,7 +368,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
     loadUsers: async () => {
       try {
         const { data: usersData, error } = await supabase
-          .from('users')
+          .from('profiles')
           .select('id, username, display_name, avatar_url, title, company')
           .order('display_name');
 

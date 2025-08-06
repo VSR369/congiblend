@@ -61,13 +61,20 @@ const createTestUsers = async (count: number) => {
         testUsers.push(authData.user);
         
         // Create user profile
-        await supabase.from('users').insert({
+        await supabase.from('profiles').insert({
           id: authData.user.id,
           username: `testuser${i + 1}`,
           display_name: `Test User ${i + 1}`,
           bio: `Bio for test user ${i + 1}`,
           location: ['New York', 'London', 'Tokyo', 'Sydney', 'Berlin'][i % 5],
           is_verified: Math.random() > 0.7,
+          custom_user_id: `testuser${i + 1}`,
+          organization_name: 'Test Organization',
+          contact_person_name: `Test User ${i + 1}`,
+          organization_type: 'Test Type',
+          entity_type: 'Test Entity',
+          country: 'Test Country',
+          address: 'Test Address'
         });
       }
     } catch (error) {
@@ -198,7 +205,7 @@ export const validateProductionData = async () => {
   try {
     // Check for test data in users
     const { count: testUserCount } = await supabase
-      .from('users')
+      .from('profiles')
       .select('*', { count: 'exact', head: true })
       .or('username.ilike.%test%,display_name.ilike.%test%,bio.ilike.%test%');
     
@@ -208,7 +215,7 @@ export const validateProductionData = async () => {
     
     // Check for incomplete profiles
     const { count: incompleteProfileCount } = await supabase
-      .from('users')
+      .from('profiles')
       .select('*', { count: 'exact', head: true })
       .or('username.is.null,display_name.is.null');
     
@@ -266,7 +273,7 @@ export const cleanupTestData = async () => {
     
     // Remove test users and their associated data
     const { data: testUsers } = await supabase
-      .from('users')
+      .from('profiles')
       .select('id')
       .or('username.ilike.%test%,display_name.ilike.%test%,bio.ilike.%test%');
     
@@ -286,7 +293,7 @@ export const cleanupTestData = async () => {
       await supabase.from('connections').delete().or(`user1_id.in.(${userIds.join(',')}),user2_id.in.(${userIds.join(',')})`);
       
       // Delete test users
-      await supabase.from('users').delete().in('id', userIds);
+      await supabase.from('profiles').delete().in('id', userIds);
     }
     
     // Remove test posts
