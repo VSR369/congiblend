@@ -1,6 +1,6 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageSquare, Share, Bookmark, Calendar, MapPin, Users, Clock, FileText, Volume2, MoreHorizontal, Flag, ChevronDown } from "lucide-react";
+import { Heart, MessageCircle, Share2, Bookmark, Calendar, MapPin, Users, Clock, FileText, Volume2, MoreHorizontal, Flag, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
-import { ReactionButton, ReactionPicker } from "./reaction-system";
+import { LikeButton } from "./reaction-system";
 import { CommentInput } from "./comment-input";
 import { useFeedStore } from "@/stores/feedStore";
 import { PostErrorBoundary } from "./post-error-boundary";
@@ -25,11 +25,11 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
   const [showComments, setShowComments] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [loadingStates, setLoadingStates] = React.useState({
-    reaction: false,
-    comment: false,
-    share: false,
-    vote: false,
-    react: false
+    reacting: false,
+    commenting: false,
+    sharing: false,
+    voting: false,
+    saving: false
   });
   
   const { toggleReaction, addComment, sharePost, toggleSave, votePoll } = useFeedStore();
@@ -39,46 +39,57 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
     setLoadingStates(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleReactionClick = () => {
-    if (post.userReaction) {
-      // If user has a reaction, clicking the button should remove it
-      handleReactionSelect(post.userReaction);
-    } else {
-      // If no reaction, directly apply "like" reaction
-      handleReactionSelect('like');
-    }
-  };
-
-  const handleReactionPickerToggle = () => {
-    setShowReactionPicker(!showReactionPicker);
-  };
-
-  const handleReactionSelect = async (reaction: ReactionType) => {
-    if (loadingStates.reaction) return;
-    updateLoadingState('reaction', true);
+  const handleLikeToggle = async () => {
+    // Simple like toggle - if user has any reaction, remove it, otherwise add 'like'
+    const reactionType = post.userReaction || 'like';
     
+    updateLoadingState('reacting', true);
     try {
-      await toggleReaction(post.id, reaction);
-      setShowReactionPicker(false);
-      toast({
-        title: "Reaction updated",
-        description: `You ${post.userReaction === reaction ? 'removed your' : 'added a'} ${reaction} reaction`,
-      });
+      await toggleReaction(post.id, reactionType);
+      
+      // Subtle success feedback
+      if (!post.userReaction) {
+        toast({
+          title: "Liked!",
+          description: "You liked this post",
+        });
+      }
     } catch (error) {
-      console.error('Failed to toggle reaction:', error);
+      console.error('Error toggling like:', error);
       toast({
         title: "Error",
-        description: "Failed to update reaction. Please try again.",
+        description: "Failed to update reaction",
         variant: "destructive",
       });
     } finally {
-      updateLoadingState('reaction', false);
+      updateLoadingState('reacting', false);
+    }
+  };
+
+  const handleReactionSelect = async (reactionType: ReactionType) => {
+    updateLoadingState('reacting', true);
+    
+    try {
+      await toggleReaction(post.id, reactionType);
+      toast({
+        title: `Reacted with ${reactionType}!`,
+        description: "Your reaction has been updated",
+      });
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add reaction",
+        variant: "destructive",
+      });
+    } finally {
+      updateLoadingState('reacting', false);
     }
   };
 
   const handleShare = async () => {
-    if (loadingStates.share) return;
-    updateLoadingState('share', true);
+    if (loadingStates.sharing) return;
+    updateLoadingState('sharing', true);
     
     try {
       await sharePost(post.id);
@@ -102,22 +113,28 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
         });
       }
     } finally {
-      updateLoadingState('share', false);
+      updateLoadingState('sharing', false);
     }
   };
 
   const handleSave = () => {
-    if (isSubmitting) return;
-    toggleSave(post.id);
-    toast({
-      title: "Success",
-      description: post.userSaved ? 'Post unsaved' : 'Post saved',
-    });
+    if (loadingStates.saving) return;
+    updateLoadingState('saving', true);
+    
+    try {
+      toggleSave(post.id);
+      toast({
+        title: "Success",
+        description: post.userSaved ? 'Post unsaved' : 'Post saved',
+      });
+    } finally {
+      updateLoadingState('saving', false);
+    }
   };
 
   const handleCommentSubmit = async (content: string) => {
-    if (loadingStates.comment) return;
-    updateLoadingState('comment', true);
+    if (loadingStates.commenting) return;
+    updateLoadingState('commenting', true);
     
     try {
       await addComment(post.id, content);
@@ -133,13 +150,13 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
         variant: "destructive",
       });
     } finally {
-      updateLoadingState('comment', false);
+      updateLoadingState('commenting', false);
     }
   };
 
   const handlePollVote = async (optionIndex: number) => {
-    if (loadingStates.vote) return;
-    updateLoadingState('vote', true);
+    if (loadingStates.voting) return;
+    updateLoadingState('voting', true);
     
     try {
       await votePoll(post.id, optionIndex);
@@ -155,7 +172,7 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
         variant: "destructive",
       });
     } finally {
-      updateLoadingState('vote', false);
+      updateLoadingState('voting', false);
     }
   };
 
@@ -281,7 +298,7 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                     : "border-border hover:border-primary/50 hover:bg-primary/5"
                 )}
                 onClick={() => handlePollVote(index)}
-                disabled={loadingStates.vote || !!post.poll?.userVote?.length}
+                disabled={loadingStates.voting || !!post.poll?.userVote?.length}
               >
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-2">
@@ -476,72 +493,87 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex items-center justify-between border-t border-border pt-4 mt-4 relative z-10">
-              <div className="flex items-center space-x-4">
-                <div className="relative">
-                  <ReactionButton
-                    type={post.userReaction || 'like'}
-                    count={post.reactions.length}
-                    isActive={!!post.userReaction}
-                    onClick={handleReactionClick}
-                    showCount={true}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleReactionPickerToggle}
-                    className="ml-1 px-2 text-foreground/70 hover:text-foreground hover:bg-accent/80 transition-colors min-h-[40px]"
-                    disabled={loadingStates.reaction}
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                  <AnimatePresence>
-                    {showReactionPicker && (
-                      <ReactionPicker
-                        onReactionSelect={handleReactionSelect}
-                        currentReaction={post.userReaction}
-                        position="top"
-                      />
-                    )}
-                  </AnimatePresence>
-                </div>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
+            {/* Action Buttons */}
+            <div className="flex items-center justify-between pt-3 border-t border-border/50">
+              <div className="flex items-center space-x-2">
+                {/* Modern Like Button with Reaction Picker */}
+                <LikeButton
+                  totalReactions={post.reactions.length}
+                  userReaction={post.userReaction}
+                  onLikeToggle={handleLikeToggle}
+                  onReactionSelect={handleReactionSelect}
+                  isLoading={loadingStates.reacting}
+                />
+
+                {/* Comment Button */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => setShowComments(!showComments)}
-                  className="flex items-center gap-1 text-foreground/70 hover:text-foreground hover:bg-accent/80 transition-colors min-h-[40px] px-3 py-2"
-                  disabled={loadingStates.comment}
+                  className={cn(
+                    "flex items-center space-x-2 px-4 py-2 rounded-full transition-all",
+                    "border border-border hover:border-border/80",
+                    "text-muted-foreground hover:text-foreground hover:bg-accent/50",
+                    "focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  )}
+                  aria-label={`${showComments ? 'Hide' : 'Show'} comments (${post.comments.length})`}
                 >
-                  <MessageSquare className="h-5 w-5" />
-                  <span className="text-sm font-medium">{post.comments.length}</span>
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
+                  <MessageCircle className="h-5 w-5" />
+                  <span className="text-sm font-medium">Comment</span>
+                  {post.comments.length > 0 && (
+                    <span className="text-xs bg-muted px-2 py-1 rounded-full">
+                      {post.comments.length}
+                    </span>
+                  )}
+                </motion.button>
+
+                {/* Share Button */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={handleShare}
-                  className="flex items-center gap-1 text-foreground/70 hover:text-foreground hover:bg-accent/80 transition-colors min-h-[40px] px-3 py-2"
-                  disabled={loadingStates.share}
+                  disabled={loadingStates.sharing}
+                  className={cn(
+                    "flex items-center space-x-2 px-4 py-2 rounded-full transition-all",
+                    "border border-border hover:border-border/80",
+                    "text-muted-foreground hover:text-foreground hover:bg-accent/50",
+                    "focus:outline-none focus:ring-2 focus:ring-primary/20",
+                    loadingStates.sharing && "opacity-50 cursor-not-allowed"
+                  )}
+                  aria-label={`Share post (${post.shares} shares)`}
                 >
-                  <Share className="h-5 w-5" />
-                  <span className="text-sm font-medium">{post.shares}</span>
-                </Button>
+                  <Share2 className="h-5 w-5" />
+                  <span className="text-sm font-medium">Share</span>
+                  {post.shares > 0 && (
+                    <span className="text-xs bg-muted px-2 py-1 rounded-full">
+                      {post.shares}
+                    </span>
+                  )}
+                </motion.button>
               </div>
-              
-              <Button
-                variant="ghost"
-                size="sm"
+
+              {/* Save Button */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={handleSave}
+                disabled={loadingStates.saving}
                 className={cn(
-                  "text-foreground/70 hover:text-foreground hover:bg-accent/80 transition-colors min-h-[40px] px-3 py-2",
-                  post.userSaved && "text-yellow-500"
+                  "flex items-center space-x-2 px-4 py-2 rounded-full transition-all",
+                  "border border-border hover:border-border/80",
+                  "focus:outline-none focus:ring-2 focus:ring-primary/20",
+                  post.userSaved 
+                    ? "text-foreground bg-primary/10 border-primary/30"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
+                  loadingStates.saving && "opacity-50 cursor-not-allowed"
                 )}
-                disabled={isSubmitting}
+                aria-label={`${post.userSaved ? 'Unsave' : 'Save'} post`}
               >
-                <Bookmark className={cn("h-5 w-5", post.userSaved && "fill-current")} />
-              </Button>
+                <Bookmark className={cn("h-5 w-5 transition-colors", post.userSaved && "fill-current")} />
+                <span className="text-sm font-medium">
+                  {post.userSaved ? 'Saved' : 'Save'}
+                </span>
+              </motion.button>
             </div>
 
             {/* Comments Section */}
@@ -556,7 +588,7 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                   <CommentInput 
                     onSubmit={handleCommentSubmit}
                     placeholder="Write a comment..."
-                    disabled={loadingStates.comment}
+                    disabled={loadingStates.commenting}
                   />
                   
                   <div className="space-y-3">
