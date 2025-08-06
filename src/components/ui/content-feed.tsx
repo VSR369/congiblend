@@ -110,6 +110,20 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
               </div>
             ))}
           </div>
+        ) : posts.length === 0 ? (
+          // Empty state
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-16"
+          >
+            <p className="text-lg font-medium text-muted-foreground mb-2">
+              No posts found
+            </p>
+            <p className="text-muted-foreground">
+              Be the first to share something interesting!
+            </p>
+          </motion.div>
         ) : (
           // Simple feed layout with proper spacing
           <div className="space-y-8">
