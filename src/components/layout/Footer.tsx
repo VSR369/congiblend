@@ -49,7 +49,7 @@ export const Footer = () => {
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center space-x-2">
               <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-                <span className="text-white font-bold text-sm">S</span>
+                <span className="text-white font-bold text-sm">C</span>
               </div>
               <span className="font-bold text-lg gradient-text">
                 {APP_CONFIG.name}
