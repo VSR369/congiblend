@@ -7,7 +7,7 @@ import { PostCard } from "./enhanced-post-card";
 import { PostCreationModal } from "./post-creation-modal";
 import { LoadingSkeleton } from "./loading-skeleton";
 import { Button } from "./button";
-import { FeedFilterPanel } from "./feed-filter-panel";
+import { FilterBar } from "./filter-bar";
 import { useFeedStore } from "@/stores/feedStore";
 import { cn } from "@/lib/utils";
 
@@ -61,7 +61,7 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
         </div>
         
         <div className="flex items-center space-x-2">
-          <FeedFilterPanel />
+          <FilterBar />
           <Button variant="outline" size="sm">
             <TrendingUp className="h-4 w-4 mr-2" />
             Trending
