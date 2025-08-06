@@ -3738,6 +3738,59 @@ export type Database = {
         }
         Relationships: []
       }
+      user_analytics: {
+        Row: {
+          id: string
+          image_posts: number | null
+          poll_posts: number | null
+          profile_views: number | null
+          text_posts: number | null
+          total_comments_received: number | null
+          total_likes_received: number | null
+          total_posts: number | null
+          total_shares_received: number | null
+          updated_at: string | null
+          user_id: string
+          video_posts: number | null
+        }
+        Insert: {
+          id?: string
+          image_posts?: number | null
+          poll_posts?: number | null
+          profile_views?: number | null
+          text_posts?: number | null
+          total_comments_received?: number | null
+          total_likes_received?: number | null
+          total_posts?: number | null
+          total_shares_received?: number | null
+          updated_at?: string | null
+          user_id: string
+          video_posts?: number | null
+        }
+        Update: {
+          id?: string
+          image_posts?: number | null
+          poll_posts?: number | null
+          profile_views?: number | null
+          text_posts?: number | null
+          total_comments_received?: number | null
+          total_likes_received?: number | null
+          total_posts?: number | null
+          total_shares_received?: number | null
+          updated_at?: string | null
+          user_id?: string
+          video_posts?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_analytics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
