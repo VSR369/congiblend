@@ -181,14 +181,20 @@ serve(async (req) => {
       );
     }
 
-    // GET FEED
-    if (req.method === 'GET' && endpoint === 'feed') {
+    // GET POSTS WITH FILTERING
+    if (req.method === 'GET' && (endpoint === 'posts' || endpoint === 'feed')) {
       const page = parseInt(url.searchParams.get('page') || '1');
       const limit = parseInt(url.searchParams.get('limit') || '20');
       const offset = (page - 1) * limit;
+      
+      // Get filtering parameters
+      const filter = url.searchParams.get('filter') || 'all';
+      const contentTypes = url.searchParams.get('contentType')?.split(',') || [];
+      const timeRange = url.searchParams.get('timeRange') || 'all';
+      const specificUserId = url.searchParams.get('userId');
 
-      // Get posts with author information
-      const { data: posts, error: postsError } = await authenticatedSupabase
+      // Build query based on filters
+      let query = authenticatedSupabase
         .from('posts')
         .select(`
           *,
@@ -197,7 +203,9 @@ serve(async (req) => {
             username,
             display_name,
             avatar_url,
-            is_verified
+            is_verified,
+            title,
+            company
           ),
           shared_post:shared_post_id (
             *,
@@ -206,31 +214,107 @@ serve(async (req) => {
               username,
               display_name,
               avatar_url,
-              is_verified
+              is_verified,
+              title,
+              company
             )
           )
-        `)
-        .eq('visibility', 'public')
+        `);
+
+      // Apply user filter
+      if (filter === 'mine') {
+        query = query.eq('user_id', userId);
+      } else if (filter === 'others') {
+        query = query.neq('user_id', userId);
+      } else if (specificUserId) {
+        query = query.eq('user_id', specificUserId);
+      }
+
+      // Apply content type filter
+      if (contentTypes.length > 0) {
+        query = query.in('post_type', contentTypes);
+      }
+
+      // Apply time range filter
+      const now = new Date();
+      if (timeRange === '24h') {
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        query = query.gte('created_at', yesterday.toISOString());
+      } else if (timeRange === 'week') {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        query = query.gte('created_at', weekAgo.toISOString());
+      } else if (timeRange === 'month') {
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        query = query.gte('created_at', monthAgo.toISOString());
+      }
+
+      // Apply visibility filter (only show public posts unless it's user's own posts)
+      if (filter !== 'mine') {
+        query = query.eq('visibility', 'public');
+      }
+
+      // Execute query with pagination
+      const { data: posts, error: postsError } = await query
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
       if (postsError) {
-        console.error('Feed fetch error:', postsError);
+        console.error('Posts fetch error:', postsError);
         return new Response(
-          JSON.stringify({ error: 'Failed to fetch feed' }),
+          JSON.stringify({ error: 'Failed to fetch posts' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
+      // Get user interactions for each post
+      const postIds = posts?.map(p => p.id) || [];
+      let userInteractions = {};
+
+      if (postIds.length > 0) {
+        // Get user's reactions
+        const { data: reactions } = await authenticatedSupabase
+          .from('reactions')
+          .select('target_id, reaction_type')
+          .eq('user_id', userId)
+          .eq('target_type', 'post')
+          .in('target_id', postIds);
+
+        // Get user's saves (if you have a saves table)
+        // Add this if you implement saves functionality
+        
+        // Format interactions
+        reactions?.forEach(reaction => {
+          if (!userInteractions[reaction.target_id]) {
+            userInteractions[reaction.target_id] = {};
+          }
+          userInteractions[reaction.target_id].isLikedByUser = reaction.reaction_type === 'like';
+        });
+      }
+
       // Format posts for response
       const formattedPosts = posts?.map(post => ({
-        ...post,
-        author_id: post.user_id,
-        reaction_count: post.reactions_count,
-        comment_count: post.comments_count,
-        share_count: post.shares_count,
-        hashtags: post.metadata?.hashtags || [],
-        mentions: post.metadata?.mentions || []
+        id: post.id,
+        content: post.content,
+        postType: post.post_type,
+        author: {
+          id: post.author?.id || post.user_id,
+          username: post.author?.username || 'unknown',
+          displayName: post.author?.display_name || 'Unknown User',
+          profilePicture: post.author?.avatar_url,
+          title: post.author?.title || 'Solution Provider'
+        },
+        interactions: {
+          likesCount: post.reactions_count || 0,
+          commentsCount: post.comments_count || 0,
+          sharesCount: post.shares_count || 0,
+          isLikedByUser: userInteractions[post.id]?.isLikedByUser || false
+        },
+        createdAt: post.created_at,
+        // Include additional data for specific post types
+        ...(post.poll_data && { pollData: post.poll_data }),
+        ...(post.event_data && { eventData: post.event_data }),
+        ...(post.media_urls && { mediaUrls: post.media_urls }),
+        ...(post.thumbnail_url && { thumbnailUrl: post.thumbnail_url })
       })) || [];
 
       return new Response(
