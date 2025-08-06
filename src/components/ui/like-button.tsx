@@ -96,15 +96,22 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
       clearTimeout(hoverTimeoutRef.current);
     }
     
-    // Hide picker immediately when leaving the entire component
-    setShowPicker(false);
+    // Add a small delay before hiding to allow moving to picker
+    hoverTimeoutRef.current = setTimeout(() => {
+      setShowPicker(false);
+    }, 200);
   };
 
   const handlePickerMouseEnter = () => {
-    // Keep picker open when hovering over it
+    // Keep picker open when hovering over it - clear hide timeout
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
+  };
+
+  const handlePickerMouseLeave = () => {
+    // Hide picker when leaving the picker area
+    setShowPicker(false);
   };
 
   const handleClick = async () => {
@@ -165,7 +172,7 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
             }}
             className="absolute bottom-full left-0 mb-2 z-50"
             onMouseEnter={handlePickerMouseEnter}
-            onMouseLeave={handleMouseLeave}
+            onMouseLeave={handlePickerMouseLeave}
           >
             <div className="flex items-center space-x-1 bg-background border border-border rounded-full px-3 py-2 shadow-lg">
               {Object.entries(REACTION_CONFIG).map(([type, config]) => (

@@ -146,7 +146,8 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                     loading="lazy"
                     onError={(e) => {
                       console.error('Image failed to load:', mediaItem.url);
-                      e.currentTarget.src = '/placeholder.svg';
+                      // Hide broken images instead of showing placeholder
+                      e.currentTarget.style.display = 'none';
                     }}
                   />
                 </div>
