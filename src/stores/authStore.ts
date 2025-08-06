@@ -8,6 +8,7 @@ interface AuthState {
   session: Session | null;
   isLoading: boolean;
   error: string | null;
+  isInitialized: boolean;
   initialize: () => void;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
@@ -15,7 +16,7 @@ interface AuthState {
   clearError: () => void;
 }
 
-// Single subscription and initialization ref
+// Stable subscription management
 let authSubscription: any = null;
 let isInitializing = false;
 
@@ -24,54 +25,52 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   session: null,
   isLoading: true,
   error: null,
+  isInitialized: false,
 
   clearError: () => set({ error: null }),
 
   initialize: () => {
     // Prevent multiple initialization calls
     if (isInitializing || authSubscription) {
+      console.log('Auth already initializing or initialized');
       return;
     }
     
+    console.log('Initializing auth store...');
     isInitializing = true;
     set({ isLoading: true, error: null });
 
-    // Single auth state listener - Supabase handles everything
-    authSubscription = supabase.auth.onAuthStateChange((event, session) => {
-      const user = session?.user ?? null;
-      
-      set({
-        session,
-        user,
-        isLoading: false,
-        error: null,
-      });
-      
-      isInitializing = false;
-    });
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        set({ 
-          error: error.message,
+    try {
+      // SINGLE source of truth - only use onAuthStateChange
+      authSubscription = supabase.auth.onAuthStateChange((event, session) => {
+        console.log('Auth state change:', event, session?.user?.id);
+        const user = session?.user ?? null;
+        
+        set({
+          session,
+          user,
           isLoading: false,
-          user: null,
-          session: null,
+          error: null,
+          isInitialized: true,
         });
+        
         isInitializing = false;
-        return;
+      });
+
+      // Handle subscription errors
+      if (!authSubscription) {
+        throw new Error('Failed to create auth subscription');
       }
 
-      const user = session?.user ?? null;
-      set({
-        session,
-        user,
+    } catch (error: any) {
+      console.error('Auth initialization error:', error);
+      set({ 
+        error: error.message || 'Auth initialization failed',
         isLoading: false,
-        error: null,
+        isInitialized: true,
       });
       isInitializing = false;
-    });
+    }
   },
 
   signIn: async (email: string, password: string) => {
@@ -141,16 +140,29 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   signOut: async () => {
     try {
-      // Clean up subscription
+      console.log('Signing out...');
+      
+      // Clean up subscription first
       if (authSubscription) {
         authSubscription.unsubscribe();
         authSubscription = null;
       }
       
+      // Reset initialization flags
       isInitializing = false;
+      
+      // Sign out from Supabase
       await supabase.auth.signOut();
       
-      // Auth state change will handle state reset
+      // Reset state immediately for faster UI response
+      set({
+        user: null,
+        session: null,
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      });
+      
     } catch (error: any) {
       console.error('Sign out error:', error);
       set({ error: error.message || 'Sign out failed' });

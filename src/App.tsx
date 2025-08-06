@@ -24,7 +24,7 @@ const queryClient = new QueryClient({
 
 const App = () => {
   const { theme } = useThemeStore();
-  const { initialize, user, isLoading, error } = useAuthStore();
+  const { initialize, user, isLoading, error, isInitialized } = useAuthStore();
 
   // Initialize auth once when app mounts
   useEffect(() => {
@@ -40,8 +40,8 @@ const App = () => {
     }
   }, [theme]);
 
-  // Show loading while initializing
-  if (isLoading) {
+  // Stabilize auth state before navigation decisions
+  if (isLoading || !isInitialized) {
     return (
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
@@ -73,7 +73,12 @@ const App = () => {
     );
   }
 
-  console.log('App: Rendering with auth state:', { user: !!user });
+  console.log('App: Rendering with auth state:', { 
+    user: !!user, 
+    isLoading, 
+    isInitialized,
+    path: window.location.pathname 
+  });
 
   return (
     <QueryClientProvider client={queryClient}>
