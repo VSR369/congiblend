@@ -760,7 +760,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           body: {
             post_id: postId,
             content,
-            parent_id: parentId || null
+            parent_comment_id: parentId || null
           }
         });
 
