@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Bell, Search, Settings, User, Menu, Sun, Moon } from 'lucide-react';
+import { Bell, Search, Settings, User, Menu, Sun, Moon, PanelLeft } from 'lucide-react';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +48,7 @@ export const Header = ({ onMenuToggle, showMenuButton = false }: HeaderProps) =>
       <div className="container flex h-20 items-center justify-between">
         {/* Left Section */}
         <div className="flex items-center space-x-4">
+          <SidebarTrigger className="md:hidden" />
           {showMenuButton && (
             <Button
               variant="ghost"
@@ -62,7 +64,7 @@ export const Header = ({ onMenuToggle, showMenuButton = false }: HeaderProps) =>
             <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center shadow-elegant">
               <span className="text-white font-bold text-lg">S</span>
             </div>
-            <span className="font-bold text-xl gradient-text-hero">
+            <span className="hidden sm:block font-bold text-xl gradient-text-hero">
               {APP_CONFIG.name}
             </span>
           </Link>
