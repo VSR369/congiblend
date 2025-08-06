@@ -19,11 +19,9 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
-          is_edited: boolean | null
-          parent_id: string | null
+          is_active: boolean | null
+          parent_comment_id: string | null
           post_id: string
-          reactions_count: number | null
-          replies_count: number | null
           updated_at: string | null
           user_id: string
         }
@@ -31,11 +29,9 @@ export type Database = {
           content: string
           created_at?: string | null
           id?: string
-          is_edited?: boolean | null
-          parent_id?: string | null
+          is_active?: boolean | null
+          parent_comment_id?: string | null
           post_id: string
-          reactions_count?: number | null
-          replies_count?: number | null
           updated_at?: string | null
           user_id: string
         }
@@ -43,18 +39,16 @@ export type Database = {
           content?: string
           created_at?: string | null
           id?: string
-          is_edited?: boolean | null
-          parent_id?: string | null
+          is_active?: boolean | null
+          parent_comment_id?: string | null
           post_id?: string
-          reactions_count?: number | null
-          replies_count?: number | null
           updated_at?: string | null
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "comments_parent_id_fkey"
-            columns: ["parent_id"]
+            foreignKeyName: "comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
             isOneToOne: false
             referencedRelation: "comments"
             referencedColumns: ["id"]
