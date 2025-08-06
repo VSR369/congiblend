@@ -2,7 +2,7 @@ import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MoreHorizontal, MessageCircle, Share2, Bookmark, Flag, Heart } from "lucide-react";
 import { formatRelativeTime } from "@/utils/formatters";
-import { ReactionButton, ReactionPicker } from "./reaction-system";
+import { ReactionButton } from "./reaction-button";
 import { PostErrorBoundary } from "./post-error-boundary";
 import { CommentInput } from "./comment-input";
 import { Button } from "./button";
@@ -429,23 +429,14 @@ export const PostCard = ({ post, className }: PostCardProps) => {
       {/* Actions */}
       <div className="flex items-center justify-between border-t pt-3 bg-card">
         <div className="flex items-center space-x-1">
-          <div className="relative">
-            <ReactionButton
-              type={post.userReaction || 'like'}
-              count={0}
-              isActive={!!post.userReaction}
-              onClick={handleReactionClick}
-              showCount={false}
-            />
-            <AnimatePresence>
-              {showReactionPicker && (
-                <ReactionPicker
-                  onReactionSelect={handleReactionSelect}
-                  currentReaction={post.userReaction}
-                />
-              )}
-            </AnimatePresence>
-          </div>
+          <ReactionButton
+            targetId={post.id}
+            targetType="post"
+            onReactionChange={(reactionType) => {
+              // Handle reaction change if needed
+              console.log('Reaction changed to:', reactionType);
+            }}
+          />
 
           <Button 
             variant="ghost" 
