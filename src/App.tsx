@@ -24,15 +24,12 @@ const queryClient = new QueryClient({
 
 const App = () => {
   const { theme } = useThemeStore();
-  const { initialize, isAuthenticated, isLoading, isInitialized, error } = useAuthStore();
+  const { initialize, user, isLoading, error } = useAuthStore();
 
   // Initialize auth once when app mounts
   useEffect(() => {
-    console.log('App: Starting auth initialization...');
-    initialize().catch((error) => {
-      console.error('App: Auth initialization failed:', error);
-    });
-  }, []); // No dependencies - initialize should be stable
+    initialize();
+  }, []);
 
   // Apply theme
   useEffect(() => {
@@ -44,13 +41,11 @@ const App = () => {
   }, [theme]);
 
   // Show loading while initializing
-  if (!isInitialized || isLoading) {
-    const message = !isInitialized ? "Initializing..." : "Loading...";
-    
+  if (isLoading) {
     return (
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <LoadingPage message={message} />
+          <LoadingPage message="Initializing..." />
         </TooltipProvider>
       </QueryClientProvider>
     );
@@ -78,7 +73,7 @@ const App = () => {
     );
   }
 
-  console.log('App: Rendering with auth state:', { isAuthenticated, isInitialized });
+  console.log('App: Rendering with auth state:', { user: !!user });
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -90,7 +85,7 @@ const App = () => {
             <Route 
               path="/" 
               element={
-                isAuthenticated ? (
+                user ? (
                   <MainLayout />
                 ) : (
                   <Navigate to="/login" replace />
@@ -102,22 +97,22 @@ const App = () => {
             <Route 
               path="/login" 
               element={
-                !isAuthenticated ? (
+                !user ? (
                   <Auth />
                 ) : (
                   <Navigate to="/" replace />
                 )
-              } 
+              }
             />
             <Route 
               path="/register" 
               element={
-                !isAuthenticated ? (
+                !user ? (
                   <Auth />
                 ) : (
                   <Navigate to="/" replace />
                 )
-              } 
+              }
             />
             <Route path="*" element={<NotFound />} />
           </Routes>

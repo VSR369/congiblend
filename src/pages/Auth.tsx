@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signIn, signUp, isLoading, error, clearError, isAuthenticated, isInitialized } = useAuthStore();
+  const { signIn, signUp, isLoading, error, clearError, user } = useAuthStore();
   
   const isLogin = location.pathname === '/login';
   const [email, setEmail] = useState('');
@@ -20,13 +20,12 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [localError, setLocalError] = useState('');
 
-  // Redirect if already authenticated - but only after initialization
+  // Redirect if already authenticated
   useEffect(() => {
-    if (isInitialized && isAuthenticated) {
-      console.log('Auth: User is authenticated, redirecting to home');
+    if (user) {
       navigate('/', { replace: true });
     }
-  }, [isAuthenticated, isInitialized, navigate]);
+  }, [user, navigate]);
 
   // Clear errors when switching between login/register
   useEffect(() => {

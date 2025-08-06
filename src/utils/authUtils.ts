@@ -1,5 +1,6 @@
 
 import { useAuthStore } from '@/stores/authStore';
+import { supabase } from '@/integrations/supabase/client';
 
 // Simplified authenticated request wrapper using AuthStore session
 export async function makeAuthenticatedRequest<T>(
@@ -14,25 +15,20 @@ export async function makeAuthenticatedRequest<T>(
   return await requestFn(session.access_token);
 }
 
-// Simplified edge function calls using AuthStore session
+// Simplified edge function calls using Supabase client directly
 export async function invokeEdgeFunction(
   functionName: string,
-  payload: any,
-  options: { retries?: number } = {}
+  payload: any
 ) {
   const { session } = useAuthStore.getState();
   
-  if (!session?.access_token) {
+  if (!session) {
     throw new Error('Authentication required for this operation');
   }
 
-  const { supabase } = await import('@/integrations/supabase/client');
-  
+  // Use Supabase client directly - it handles auth automatically
   const { data, error } = await supabase.functions.invoke(functionName, {
     body: payload,
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-    },
   });
 
   if (error) {

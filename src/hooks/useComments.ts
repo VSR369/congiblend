@@ -32,7 +32,7 @@ export function useComments(
 ): UseCommentsReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { isAuthenticated } = useAuthStore();
+  const { user } = useAuthStore();
 
   const clearError = useCallback(() => {
     setError(null);
@@ -43,7 +43,7 @@ export function useComments(
     content: string, 
     parentId?: string
   ) => {
-    if (!isAuthenticated) {
+    if (!user) {
       setError('Authentication required to add comments');
       return;
     }
@@ -100,10 +100,10 @@ export function useComments(
     } finally {
       setIsLoading(false);
     }
-  }, [onCommentAdded, isAuthenticated]);
+  }, [onCommentAdded, user]);
 
   const deleteComment = useCallback(async (commentId: string) => {
-    if (!isAuthenticated) {
+    if (!user) {
       setError('Authentication required to delete comments');
       return;
     }
@@ -138,7 +138,7 @@ export function useComments(
     } finally {
       setIsLoading(false);
     }
-  }, [onCommentDeleted, isAuthenticated]);
+  }, [onCommentDeleted, user]);
 
   return {
     isLoading,

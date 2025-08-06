@@ -26,7 +26,7 @@ export const CommentInput = ({
   parentId
 }: CommentInputProps) => {
   const [content, setContent] = React.useState("");
-  const { user, isAuthenticated } = useAuthStore();
+  const { user } = useAuthStore();
   
   const { isLoading, error, addComment, clearError } = useComments(onCommentAdded);
 
@@ -39,7 +39,7 @@ export const CommentInput = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || isLoading || !isAuthenticated) return;
+    if (!content.trim() || isLoading || !user) return;
 
     try {
       await addComment(postId, content.trim(), parentId);
@@ -56,7 +56,7 @@ export const CommentInput = ({
     }
   };
 
-  if (!isAuthenticated) {
+  if (!user) {
     return null;
   }
 
