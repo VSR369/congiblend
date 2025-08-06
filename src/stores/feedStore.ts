@@ -444,20 +444,27 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: sessionData } = await supabase.auth.getSession();
         if (!sessionData.session?.access_token) throw new Error('No access token');
 
-        // Optimistically update UI first
+        // Check if user already has this reaction
         const currentPost = get().posts.find(p => p.id === postId);
         const isCurrentlyReacted = currentPost?.userReaction === reaction;
         
+        console.log('Current reaction state:', { currentReaction: currentPost?.userReaction, isCurrentlyReacted });
+
+        // Optimistically update UI first
         set(state => ({
           posts: state.posts.map(post => {
             if (post.id === postId) {
               if (isCurrentlyReacted) {
+                // Remove reaction
+                console.log('Removing reaction');
                 return {
                   ...post,
                   userReaction: undefined,
                   reactions: post.reactions.filter(r => r.user.id !== user.id)
                 };
               } else {
+                // Add/change reaction
+                console.log('Adding/changing reaction to:', reaction);
                 return {
                   ...post,
                   userReaction: reaction,

@@ -39,8 +39,10 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
 
   const handleReactionClick = () => {
     if (post.userReaction) {
+      // If user has a reaction, clicking the button should remove it
       handleReactionSelect(post.userReaction);
     } else {
+      // If no reaction, show picker
       setShowReactionPicker(!showReactionPicker);
     }
   };
