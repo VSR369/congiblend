@@ -42,11 +42,11 @@ interface FeedState {
 // Helper function to transform database post to our Post type
 const transformDbPost = (dbPost: any, author: any): Post | null => {
   if (!author) {
-    console.warn('No author found for post:', dbPost.id);
+    
     return null;
   }
   
-  console.log('Transforming post:', dbPost.id, 'type:', dbPost.post_type, 'media_urls:', dbPost.media_urls);
+  
   
   // Handle media_urls array and transform to proper media format
   let media = [];
@@ -55,7 +55,7 @@ const transformDbPost = (dbPost: any, author: any): Post | null => {
       // Try to get MIME type from metadata if available
       const mimeType = dbPost.metadata?.media?.[index]?.mimeType;
       const mediaType = determineMediaType(url, mimeType);
-      console.log('Media item:', { url, type: mediaType, mimeType });
+      
       
       return {
         id: `${dbPost.id}-${index}`,
@@ -80,7 +80,7 @@ const transformDbPost = (dbPost: any, author: any): Post | null => {
   // Transform poll_data to poll object
   let poll = undefined;
   if (dbPost.poll_data && dbPost.poll_data.options) {
-    console.log('Transforming poll data:', dbPost.poll_data);
+    
     const totalVotes = dbPost.poll_data.options.reduce((sum: number, option: any) => sum + (option.votes || 0), 0);
     poll = {
       id: `${dbPost.id}-poll`,
@@ -96,7 +96,7 @@ const transformDbPost = (dbPost: any, author: any): Post | null => {
       allowMultiple: dbPost.poll_data.multiple_choice || false,
       userVote: undefined // TODO: Get user's vote from database
     };
-    console.log('Transformed poll:', poll);
+    
   }
 
   // Transform event_data to event object
@@ -150,21 +150,15 @@ const transformDbPost = (dbPost: any, author: any): Post | null => {
 
 // Helper function to determine media type from URL with MIME type support
 const determineMediaType = (url: string, mimeType?: string): 'image' | 'video' | 'audio' | 'document' => {
-  console.log('Determining media type for:', url, 'mimeType:', mimeType);
-  
   // First try to determine from MIME type if available
   if (mimeType) {
     if (mimeType.startsWith('video/')) {
-      console.log('Detected as video from MIME type');
       return 'video';
     } else if (mimeType.startsWith('audio/')) {
-      console.log('Detected as audio from MIME type');
       return 'audio';
     } else if (mimeType.startsWith('image/')) {
-      console.log('Detected as image from MIME type');
       return 'image';
     } else if (mimeType.includes('pdf') || mimeType.includes('document') || mimeType.includes('text')) {
-      console.log('Detected as document from MIME type');
       return 'document';
     }
   }
@@ -178,7 +172,6 @@ const determineMediaType = (url: string, mimeType?: string): 'image' | 'video' |
     const filenameWithQuery = pathParts[pathParts.length - 1];
     const filename = filenameWithQuery.split('?')[0]; // Remove query parameters
     extension = filename.split('.').pop()?.toLowerCase() || '';
-    console.log('Extracted extension from Supabase URL:', extension);
   } else {
     // Handle external URLs
     const urlWithoutQuery = url.split('?')[0];
@@ -187,24 +180,20 @@ const determineMediaType = (url: string, mimeType?: string): 'image' | 'video' |
   
   // Video extensions
   if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv', 'm4v', 'wmv', 'ogv', '3gp'].includes(extension)) {
-    console.log('Detected as video from extension:', extension);
     return 'video';
   }
   
   // Audio extensions  
   if (['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a', 'wma', 'opus'].includes(extension)) {
-    console.log('Detected as audio from extension:', extension);
     return 'audio';
   }
   
   // Document extensions
   if (['pdf', 'doc', 'docx', 'txt', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(extension)) {
-    console.log('Detected as document from extension:', extension);
     return 'document';
   }
   
   // Default to image
-  console.log('Defaulting to image for extension:', extension);
   return 'image';
 };
 
@@ -406,7 +395,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
     },
 
     createPost: async (data: CreatePostData) => {
-      console.log('Creating post:', data);
+      
       set(state => ({ ...state, loading: true }));
       
       try {
@@ -422,13 +411,13 @@ export const useFeedStore = create<FeedState>((set, get) => {
         let thumbnailUrl: string | undefined;
         
         if (data.media && data.media.length > 0) {
-          console.log('Uploading media files:', data.media.length);
+          
           
           for (const file of data.media) {
             const fileExt = file.name.split('.').pop()?.toLowerCase();
             const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
             
-            console.log('Uploading file:', fileName, 'type:', file.type);
+            
             
             const { data: uploadData, error: uploadError } = await supabase.storage
               .from('post-media')
@@ -447,7 +436,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
               .getPublicUrl(uploadData.path);
 
             mediaUrls.push(publicUrl);
-            console.log('File uploaded successfully:', publicUrl);
+            
             
             // For video files, we might want to generate a thumbnail later
             if (['mp4', 'webm', 'mov', 'avi'].includes(fileExt || '')) {
@@ -483,7 +472,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           }
         };
 
-        console.log('Sending post payload:', postPayload);
+        
 
         // Use the posts edge function with timeout
         const controller = new AbortController();
@@ -503,7 +492,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           throw error;
         }
 
-        console.log('Post created successfully:', newPost);
+        
         // Post will be added via real-time subscription
         
       } catch (error) {
@@ -539,7 +528,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
     },
 
     toggleReaction: async (postId: string, reaction: ReactionType | null) => {
-      console.log('Toggling reaction:', { postId, reaction });
+      
       
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -702,8 +691,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
-        console.log('Voting on poll:', { postId, optionIndex, userId: user.id });
-
         // First, check if user has already voted
         const { data: existingVote } = await supabase
           .from('votes')
@@ -711,8 +698,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
           .eq('user_id', user.id)
           .eq('post_id', postId)
           .single();
-
-        console.log('Existing vote:', existingVote);
 
         // Insert or update vote in the votes table
         const { data: voteData, error: voteError } = await supabase
@@ -727,11 +712,8 @@ export const useFeedStore = create<FeedState>((set, get) => {
           .select();
 
         if (voteError) {
-          console.error('Vote error:', voteError);
           throw voteError;
         }
-
-        console.log('Vote saved:', voteData);
 
         // Get all votes for this post to calculate accurate counts
         const { data: allVotes, error: votesError } = await supabase
@@ -740,11 +722,8 @@ export const useFeedStore = create<FeedState>((set, get) => {
           .eq('post_id', postId);
 
         if (votesError) {
-          console.error('Error fetching votes:', votesError);
           throw votesError;
         }
-
-        console.log('All votes for post:', allVotes);
 
         // Count votes per option
         const voteCounts: Record<number, number> = {};
@@ -752,7 +731,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           voteCounts[vote.option_index] = (voteCounts[vote.option_index] || 0) + 1;
         });
 
-        console.log('Vote counts:', voteCounts);
+        
 
         // Update local state with accurate vote counts
         set(state => ({

@@ -1,11 +1,11 @@
 import * as React from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+
 import { useInView } from "react-intersection-observer";
 import { motion } from "framer-motion";
 import { Plus, TrendingUp } from "lucide-react";
 import { PostCard } from "./post-card";
 import { PostCreationModal } from "./post-creation-modal";
-import { LoadingSkeleton } from "./loading-skeleton";
+import { Skeleton } from "./skeleton";
 import { Button } from "./button";
 import { AdvancedFilterSystem } from "./advanced-filter-system";
 import { useFeedStore } from "@/stores/feedStore";
@@ -93,19 +93,19 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="bg-card border rounded-lg p-6 space-y-4">
                 <div className="flex items-start space-x-3">
-                  <LoadingSkeleton className="h-10 w-10 rounded-full" />
+                  <Skeleton className="h-10 w-10 rounded-full" />
                   <div className="space-y-2 flex-1">
-                    <LoadingSkeleton className="h-4 w-32" />
-                    <LoadingSkeleton className="h-3 w-24" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-24" />
                   </div>
                 </div>
-                <LoadingSkeleton className="h-4 w-full" />
-                <LoadingSkeleton className="h-4 w-3/4" />
-                <LoadingSkeleton className="h-48 w-full rounded-lg" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-48 w-full rounded-lg" />
                 <div className="flex items-center space-x-4">
-                  <LoadingSkeleton className="h-8 w-16" />
-                  <LoadingSkeleton className="h-8 w-20" />
-                  <LoadingSkeleton className="h-8 w-16" />
+                  <Skeleton className="h-8 w-16" />
+                  <Skeleton className="h-8 w-20" />
+                  <Skeleton className="h-8 w-16" />
                 </div>
               </div>
             ))}
@@ -134,14 +134,14 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
               <div className="space-y-6 w-full">
                 <div className="bg-card border rounded-lg p-6 space-y-4">
                   <div className="flex items-start space-x-3">
-                    <LoadingSkeleton className="h-10 w-10 rounded-full" />
+                    <Skeleton className="h-10 w-10 rounded-full" />
                     <div className="space-y-2 flex-1">
-                      <LoadingSkeleton className="h-4 w-32" />
-                      <LoadingSkeleton className="h-3 w-24" />
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-24" />
                     </div>
                   </div>
-                  <LoadingSkeleton className="h-4 w-full" />
-                  <LoadingSkeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
                 </div>
               </div>
             )}
