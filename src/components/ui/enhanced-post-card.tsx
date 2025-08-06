@@ -1,6 +1,6 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageSquare, Share, Bookmark, Calendar, MapPin, Users, Clock, FileText, Volume2, MoreHorizontal, Flag } from "lucide-react";
+import { Heart, MessageSquare, Share, Bookmark, Calendar, MapPin, Users, Clock, FileText, Volume2, MoreHorizontal, Flag, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,7 +12,7 @@ import { ReactionButton, ReactionPicker } from "./reaction-system";
 import { CommentInput } from "./comment-input";
 import { useFeedStore } from "@/stores/feedStore";
 import { PostErrorBoundary } from "./post-error-boundary";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import type { Post, ReactionType } from "@/types/feed";
 
 interface PostCardProps {
@@ -28,10 +28,12 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
     reaction: false,
     comment: false,
     share: false,
-    vote: false
+    vote: false,
+    react: false
   });
   
   const { toggleReaction, addComment, sharePost, toggleSave, votePoll } = useFeedStore();
+  const { toast } = useToast();
 
   const updateLoadingState = (key: keyof typeof loadingStates, value: boolean) => {
     setLoadingStates(prev => ({ ...prev, [key]: value }));
@@ -42,9 +44,13 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
       // If user has a reaction, clicking the button should remove it
       handleReactionSelect(post.userReaction);
     } else {
-      // If no reaction, show picker
-      setShowReactionPicker(!showReactionPicker);
+      // If no reaction, directly apply "like" reaction
+      handleReactionSelect('like');
     }
+  };
+
+  const handleReactionPickerToggle = () => {
+    setShowReactionPicker(!showReactionPicker);
   };
 
   const handleReactionSelect = async (reaction: ReactionType) => {
@@ -54,9 +60,17 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
     try {
       await toggleReaction(post.id, reaction);
       setShowReactionPicker(false);
+      toast({
+        title: "Reaction updated",
+        description: `You ${post.userReaction === reaction ? 'removed your' : 'added a'} ${reaction} reaction`,
+      });
     } catch (error) {
       console.error('Failed to toggle reaction:', error);
-      toast.error('Failed to update reaction');
+      toast({
+        title: "Error",
+        description: "Failed to update reaction. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       updateLoadingState('reaction', false);
     }
@@ -68,13 +82,24 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
     
     try {
       await sharePost(post.id);
-      toast.success('Post shared successfully');
+      toast({
+        title: "Success",
+        description: "Post shared successfully",
+      });
     } catch (error: any) {
       console.error('Failed to share post:', error);
       if (error.message?.includes("own post")) {
-        toast.error('You cannot share your own posts');
+        toast({
+          title: "Error",
+          description: "You cannot share your own posts",
+          variant: "destructive",
+        });
       } else {
-        toast.error('Failed to share post');
+        toast({
+          title: "Error", 
+          description: "Failed to share post",
+          variant: "destructive",
+        });
       }
     } finally {
       updateLoadingState('share', false);
@@ -84,7 +109,10 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
   const handleSave = () => {
     if (isSubmitting) return;
     toggleSave(post.id);
-    toast.success(post.userSaved ? 'Post unsaved' : 'Post saved');
+    toast({
+      title: "Success",
+      description: post.userSaved ? 'Post unsaved' : 'Post saved',
+    });
   };
 
   const handleCommentSubmit = async (content: string) => {
@@ -93,10 +121,17 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
     
     try {
       await addComment(post.id, content);
-      toast.success('Comment added');
+      toast({
+        title: "Success",
+        description: "Comment added",
+      });
     } catch (error) {
       console.error('Failed to add comment:', error);
-      toast.error('Failed to add comment');
+      toast({
+        title: "Error",
+        description: "Failed to add comment",
+        variant: "destructive",
+      });
     } finally {
       updateLoadingState('comment', false);
     }
@@ -108,10 +143,17 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
     
     try {
       await votePoll(post.id, optionIndex);
-      toast.success('Vote recorded');
+      toast({
+        title: "Success", 
+        description: "Vote recorded",
+      });
     } catch (error) {
       console.error('Failed to vote:', error);
-      toast.error('Failed to record vote');
+      toast({
+        title: "Error",
+        description: "Failed to record vote", 
+        variant: "destructive",
+      });
     } finally {
       updateLoadingState('vote', false);
     }
@@ -435,15 +477,25 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
             )}
 
             {/* Actions */}
-            <div className="flex items-center justify-between border-t pt-3">
-              <div className="flex items-center space-x-1">
+            <div className="flex items-center justify-between border-t border-border pt-4 mt-4 bg-background">
+              <div className="flex items-center space-x-2">
                 <div className="relative">
                   <ReactionButton
                     type={post.userReaction || 'like'}
                     count={post.reactions.length}
                     isActive={!!post.userReaction}
                     onClick={handleReactionClick}
+                    showCount={true}
                   />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleReactionPickerToggle}
+                    className="ml-1 px-2 text-muted-foreground hover:text-foreground"
+                    disabled={loadingStates.reaction}
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
                   <AnimatePresence>
                     {showReactionPicker && (
                       <ReactionPicker
@@ -459,22 +511,22 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowComments(!showComments)}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                   disabled={loadingStates.comment}
                 >
-                  <MessageSquare className="h-5 w-5 mr-1" />
-                  {post.comments.length}
+                  <MessageSquare className="h-5 w-5" />
+                  <span className="text-sm font-medium">{post.comments.length}</span>
                 </Button>
                 
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleShare}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                   disabled={loadingStates.share}
                 >
-                  <Share className="h-5 w-5 mr-1" />
-                  {post.shares}
+                  <Share className="h-5 w-5" />
+                  <span className="text-sm font-medium">{post.shares}</span>
                 </Button>
               </div>
               
