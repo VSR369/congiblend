@@ -407,7 +407,7 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className={cn("bg-card border shadow-sm overflow-visible", className)}>
+        <Card className={cn("bg-card border shadow-sm overflow-visible mb-8", className)}>
           <div className="p-6">
             {/* Header */}
             <div className="flex items-start justify-between mb-4">

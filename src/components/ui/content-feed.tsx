@@ -39,15 +39,8 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
     }
   }, [inView, hasMore, loading, loadPosts]);
 
-  // Virtual scrolling for performance with large lists
-  const rowVirtualizer = useVirtualizer({
-    count: posts.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 400, // Estimated post height
-    overscan: 3,
-  });
-
-  const virtualItems = rowVirtualizer.getVirtualItems();
+  // Simple scrolling without virtualization to prevent overlap issues
+  const shouldUseVirtualization = posts.length > 50;
 
   return (
     <div className={cn("max-w-2xl mx-auto space-y-6", className)}>
@@ -89,10 +82,10 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
       </motion.div>
 
       {/* Feed Content */}
-      <div ref={parentRef} className="space-y-6">
+      <div ref={parentRef} className="space-y-8">
         {posts.length === 0 && loading ? (
           // Initial loading skeleton
-          <div className="space-y-6">
+          <div className="space-y-8">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="bg-card border rounded-lg p-6 space-y-4">
                 <div className="flex items-start space-x-3">
@@ -114,34 +107,19 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
             ))}
           </div>
         ) : (
-          // Virtual scrolling for better performance
-          <div
-            style={{
-              height: rowVirtualizer.getTotalSize(),
-              width: "100%",
-              position: "relative",
-            }}
-          >
-            {virtualItems.map((virtualItem) => {
-              const post = posts[virtualItem.index];
-              if (!post) return null;
-
-              return (
-                <div
-                  key={virtualItem.key}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: `${virtualItem.size}px`,
-                    transform: `translateY(${virtualItem.start}px)`,
-                  }}
-                >
-                  <PostCard post={post} className="mb-6" />
-                </div>
-              );
-            })}
+          // Simple feed layout with proper spacing
+          <div className="space-y-8">
+            {posts.map((post, index) => (
+              <motion.div
+                key={post.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                className="relative"
+              >
+                <PostCard post={post} className="w-full" />
+              </motion.div>
+            ))}
           </div>
         )}
 
