@@ -60,13 +60,6 @@ export type Database = {
             referencedRelation: "posts"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
         ]
       }
       companies: {
@@ -151,29 +144,7 @@ export type Database = {
           user1_id?: string
           user2_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "connections_initiated_by_fkey"
-            columns: ["initiated_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "connections_user1_id_fkey"
-            columns: ["user1_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "connections_user2_id_fkey"
-            columns: ["user2_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       conversation_participants: {
         Row: {
@@ -208,13 +179,6 @@ export type Database = {
             referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "conversation_participants_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
         ]
       }
       conversations: {
@@ -245,15 +209,7 @@ export type Database = {
           title?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "conversations_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       engagement_activations: {
         Row: {
@@ -518,13 +474,6 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "experiences_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
         ]
       }
       follows: {
@@ -552,22 +501,7 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "follows_follower_id_fkey"
-            columns: ["follower_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "follows_following_id_fkey"
-            columns: ["following_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       master_advance_payment_types: {
         Row: {
@@ -2611,15 +2545,7 @@ export type Database = {
           user_id?: string
           video_url?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "media_processing_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       member_status_change_alerts: {
         Row: {
@@ -2709,13 +2635,6 @@ export type Database = {
             referencedRelation: "messages"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
         ]
       }
       notifications: {
@@ -2758,22 +2677,7 @@ export type Database = {
           type?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       org_admins: {
         Row: {
@@ -2872,7 +2776,6 @@ export type Database = {
           organization_id: string
           organization_name: string
           organization_type_id: string | null
-          password_hash: string | null
           phone_number: string
           registration_status: string | null
           updated_at: string
@@ -2893,7 +2796,6 @@ export type Database = {
           organization_id: string
           organization_name: string
           organization_type_id?: string | null
-          password_hash?: string | null
           phone_number: string
           registration_status?: string | null
           updated_at?: string
@@ -2914,7 +2816,6 @@ export type Database = {
           organization_id?: string
           organization_name?: string
           organization_type_id?: string | null
-          password_hash?: string | null
           phone_number?: string
           registration_status?: string | null
           updated_at?: string
@@ -3017,13 +2918,6 @@ export type Database = {
             referencedRelation: "posts"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "post_interactions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
         ]
       }
       posts: {
@@ -3108,13 +3002,6 @@ export type Database = {
             columns: ["shared_post_id"]
             isOneToOne: false
             referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "posts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -3357,62 +3244,113 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          avatar_url: string | null
+          bio: string | null
+          company: string | null
           company_logo: string[] | null
           company_profile: string[] | null
           contact_person_name: string
           country: string
           country_code: string | null
+          cover_url: string | null
           created_at: string
+          current_streak_days: number | null
           custom_user_id: string
+          display_name: string | null
           entity_type: string
+          headline: string | null
           id: string
           industry_segment: string | null
+          is_active: boolean | null
+          is_verified: boolean | null
+          last_activity_date: string | null
+          last_seen_at: string | null
+          location: string | null
+          longest_streak_days: number | null
           organization_id: string | null
           organization_name: string
           organization_type: string
           phone_number: string | null
+          profile_views_count: number | null
           registration_documents: string[] | null
+          role: string | null
+          title: string | null
           updated_at: string
+          username: string | null
           website: string | null
         }
         Insert: {
           address?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          company?: string | null
           company_logo?: string[] | null
           company_profile?: string[] | null
           contact_person_name: string
           country: string
           country_code?: string | null
+          cover_url?: string | null
           created_at?: string
+          current_streak_days?: number | null
           custom_user_id: string
+          display_name?: string | null
           entity_type: string
+          headline?: string | null
           id: string
           industry_segment?: string | null
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          last_activity_date?: string | null
+          last_seen_at?: string | null
+          location?: string | null
+          longest_streak_days?: number | null
           organization_id?: string | null
           organization_name: string
           organization_type: string
           phone_number?: string | null
+          profile_views_count?: number | null
           registration_documents?: string[] | null
+          role?: string | null
+          title?: string | null
           updated_at?: string
+          username?: string | null
           website?: string | null
         }
         Update: {
           address?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          company?: string | null
           company_logo?: string[] | null
           company_profile?: string[] | null
           contact_person_name?: string
           country?: string
           country_code?: string | null
+          cover_url?: string | null
           created_at?: string
+          current_streak_days?: number | null
           custom_user_id?: string
+          display_name?: string | null
           entity_type?: string
+          headline?: string | null
           id?: string
           industry_segment?: string | null
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          last_activity_date?: string | null
+          last_seen_at?: string | null
+          location?: string | null
+          longest_streak_days?: number | null
           organization_id?: string | null
           organization_name?: string
           organization_type?: string
           phone_number?: string | null
+          profile_views_count?: number | null
           registration_documents?: string[] | null
+          role?: string | null
+          title?: string | null
           updated_at?: string
+          username?: string | null
           website?: string | null
         }
         Relationships: []
@@ -3442,15 +3380,7 @@ export type Database = {
           target_type?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "reactions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       roles: {
         Row: {
@@ -3619,15 +3549,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "shares_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       skills: {
         Row: {
@@ -3781,15 +3703,7 @@ export type Database = {
           user_id?: string
           video_posts?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_analytics_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -3810,15 +3724,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_skill_profiles: {
         Row: {
@@ -3848,15 +3754,7 @@ export type Database = {
           user_id?: string
           years_experience?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_skill_profiles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_skills: {
         Row: {
@@ -3894,89 +3792,7 @@ export type Database = {
             referencedRelation: "skills"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "user_skills_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
         ]
-      }
-      users: {
-        Row: {
-          avatar_url: string | null
-          bio: string | null
-          company: string | null
-          cover_url: string | null
-          created_at: string | null
-          current_streak_days: number | null
-          display_name: string | null
-          email: string | null
-          headline: string | null
-          id: string
-          is_active: boolean | null
-          is_verified: boolean | null
-          last_activity_date: string | null
-          last_seen_at: string | null
-          location: string | null
-          longest_streak_days: number | null
-          password_hash: string | null
-          profile_views_count: number | null
-          title: string | null
-          updated_at: string | null
-          username: string
-          website: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          bio?: string | null
-          company?: string | null
-          cover_url?: string | null
-          created_at?: string | null
-          current_streak_days?: number | null
-          display_name?: string | null
-          email?: string | null
-          headline?: string | null
-          id: string
-          is_active?: boolean | null
-          is_verified?: boolean | null
-          last_activity_date?: string | null
-          last_seen_at?: string | null
-          location?: string | null
-          longest_streak_days?: number | null
-          password_hash?: string | null
-          profile_views_count?: number | null
-          title?: string | null
-          updated_at?: string | null
-          username: string
-          website?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          bio?: string | null
-          company?: string | null
-          cover_url?: string | null
-          created_at?: string | null
-          current_streak_days?: number | null
-          display_name?: string | null
-          email?: string | null
-          headline?: string | null
-          id?: string
-          is_active?: boolean | null
-          is_verified?: boolean | null
-          last_activity_date?: string | null
-          last_seen_at?: string | null
-          location?: string | null
-          longest_streak_days?: number | null
-          password_hash?: string | null
-          profile_views_count?: number | null
-          title?: string | null
-          updated_at?: string | null
-          username?: string
-          website?: string | null
-        }
-        Relationships: []
       }
       votes: {
         Row: {
