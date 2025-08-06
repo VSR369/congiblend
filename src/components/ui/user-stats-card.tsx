@@ -1,7 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from './card';
 import { Avatar } from './avatar';
-import { Flame, Eye, BookOpen } from 'lucide-react';
+import { 
+  Flame, 
+  Eye, 
+  BookOpen, 
+  FileText, 
+  Image, 
+  Video, 
+  Mic, 
+  BarChart, 
+  Calendar, 
+  Briefcase, 
+  File, 
+  Link, 
+  Images,
+  MessageSquare
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
@@ -11,11 +26,17 @@ interface UserStats {
   headline?: string;
   avatar_url?: string;
   total_posts: number;
+  text_posts: number;
+  image_posts: number;
   video_posts: number;
   voice_posts: number;
   article_posts: number;
-  text_posts: number;
   poll_posts: number;
+  event_posts: number;
+  job_posts: number;
+  document_posts: number;
+  link_posts: number;
+  carousel_posts: number;
   total_comments: number;
   profile_views_count: number;
   current_streak_days: number;
@@ -58,11 +79,17 @@ export const UserStatsCard: React.FC = () => {
       // Process post statistics
       const postCounts = {
         total_posts: postStats?.length || 0,
+        text_posts: postStats?.filter(p => p.post_type === 'text').length || 0,
+        image_posts: postStats?.filter(p => p.post_type === 'image').length || 0,
         video_posts: postStats?.filter(p => p.post_type === 'video').length || 0,
         voice_posts: postStats?.filter(p => p.post_type === 'audio').length || 0,
         article_posts: postStats?.filter(p => p.post_type === 'article').length || 0,
-        text_posts: postStats?.filter(p => p.post_type === 'text').length || 0,
         poll_posts: postStats?.filter(p => p.post_type === 'poll').length || 0,
+        event_posts: postStats?.filter(p => p.post_type === 'event').length || 0,
+        job_posts: postStats?.filter(p => p.post_type === 'job').length || 0,
+        document_posts: postStats?.filter(p => p.post_type === 'document').length || 0,
+        link_posts: postStats?.filter(p => p.post_type === 'link').length || 0,
+        carousel_posts: postStats?.filter(p => p.post_type === 'carousel').length || 0,
       };
 
       setStats({
@@ -133,24 +160,150 @@ export const UserStatsCard: React.FC = () => {
           </div>
         </div>
 
-        {/* Post Statistics */}
-        <div className="grid grid-cols-4 gap-2">
-          <div className="text-center">
-            <div className="text-lg font-bold text-blue-600">{stats.voice_posts}</div>
-            <div className="text-xs text-muted-foreground">Voice Posts</div>
+        {/* Post Type Statistics */}
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium text-muted-foreground">Content Created</h4>
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+            {/* Text Posts */}
+            {stats.text_posts > 0 && (
+              <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-1 mb-1">
+                  <FileText className="h-4 w-4 text-slate-600" />
+                  <span className="text-sm font-bold text-slate-600">{stats.text_posts}</span>
+                </div>
+                <span className="text-xs text-muted-foreground text-center">Text</span>
+              </div>
+            )}
+            
+            {/* Image Posts */}
+            {stats.image_posts > 0 && (
+              <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-1 mb-1">
+                  <Image className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-bold text-blue-600">{stats.image_posts}</span>
+                </div>
+                <span className="text-xs text-muted-foreground text-center">Images</span>
+              </div>
+            )}
+            
+            {/* Video Posts */}
+            {stats.video_posts > 0 && (
+              <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-1 mb-1">
+                  <Video className="h-4 w-4 text-purple-600" />
+                  <span className="text-sm font-bold text-purple-600">{stats.video_posts}</span>
+                </div>
+                <span className="text-xs text-muted-foreground text-center">Videos</span>
+              </div>
+            )}
+            
+            {/* Voice/Audio Posts */}
+            {stats.voice_posts > 0 && (
+              <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-1 mb-1">
+                  <Mic className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-bold text-green-600">{stats.voice_posts}</span>
+                </div>
+                <span className="text-xs text-muted-foreground text-center">Voice</span>
+              </div>
+            )}
+            
+            {/* Poll Posts */}
+            {stats.poll_posts > 0 && (
+              <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-1 mb-1">
+                  <BarChart className="h-4 w-4 text-orange-600" />
+                  <span className="text-sm font-bold text-orange-600">{stats.poll_posts}</span>
+                </div>
+                <span className="text-xs text-muted-foreground text-center">Polls</span>
+              </div>
+            )}
+            
+            {/* Article Posts */}
+            {stats.article_posts > 0 && (
+              <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-1 mb-1">
+                  <BookOpen className="h-4 w-4 text-indigo-600" />
+                  <span className="text-sm font-bold text-indigo-600">{stats.article_posts}</span>
+                </div>
+                <span className="text-xs text-muted-foreground text-center">Articles</span>
+              </div>
+            )}
+            
+            {/* Event Posts */}
+            {stats.event_posts > 0 && (
+              <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-1 mb-1">
+                  <Calendar className="h-4 w-4 text-red-600" />
+                  <span className="text-sm font-bold text-red-600">{stats.event_posts}</span>
+                </div>
+                <span className="text-xs text-muted-foreground text-center">Events</span>
+              </div>
+            )}
+            
+            {/* Job Posts */}
+            {stats.job_posts > 0 && (
+              <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-1 mb-1">
+                  <Briefcase className="h-4 w-4 text-yellow-600" />
+                  <span className="text-sm font-bold text-yellow-600">{stats.job_posts}</span>
+                </div>
+                <span className="text-xs text-muted-foreground text-center">Jobs</span>
+              </div>
+            )}
+            
+            {/* Document Posts */}
+            {stats.document_posts > 0 && (
+              <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-1 mb-1">
+                  <File className="h-4 w-4 text-gray-600" />
+                  <span className="text-sm font-bold text-gray-600">{stats.document_posts}</span>
+                </div>
+                <span className="text-xs text-muted-foreground text-center">Docs</span>
+              </div>
+            )}
+            
+            {/* Link Posts */}
+            {stats.link_posts > 0 && (
+              <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-1 mb-1">
+                  <Link className="h-4 w-4 text-cyan-600" />
+                  <span className="text-sm font-bold text-cyan-600">{stats.link_posts}</span>
+                </div>
+                <span className="text-xs text-muted-foreground text-center">Links</span>
+              </div>
+            )}
+            
+            {/* Carousel Posts */}
+            {stats.carousel_posts > 0 && (
+              <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-1 mb-1">
+                  <Images className="h-4 w-4 text-pink-600" />
+                  <span className="text-sm font-bold text-pink-600">{stats.carousel_posts}</span>
+                </div>
+                <span className="text-xs text-muted-foreground text-center">Carousel</span>
+              </div>
+            )}
+            
+            {/* Comments */}
+            {stats.total_comments > 0 && (
+              <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-1 mb-1">
+                  <MessageSquare className="h-4 w-4 text-emerald-600" />
+                  <span className="text-sm font-bold text-emerald-600">{stats.total_comments}</span>
+                </div>
+                <span className="text-xs text-muted-foreground text-center">Comments</span>
+              </div>
+            )}
           </div>
-          <div className="text-center">
-            <div className="text-lg font-bold text-purple-600">{stats.video_posts}</div>
-            <div className="text-xs text-muted-foreground">Video Posts</div>
-          </div>
-          <div className="text-center">
-            <div className="text-lg font-bold text-green-600">{stats.article_posts}</div>
-            <div className="text-xs text-muted-foreground">Articles</div>
-          </div>
-          <div className="text-center">
-            <div className="text-lg font-bold text-orange-600">{stats.total_comments}</div>
-            <div className="text-xs text-muted-foreground">Comments</div>
-          </div>
+          
+          {/* Show message if no content created yet */}
+          {stats.total_posts === 0 && stats.total_comments === 0 && (
+            <div className="text-center py-4">
+              <p className="text-sm text-muted-foreground">No content created yet</p>
+              <p className="text-xs text-muted-foreground">Start sharing your thoughts!</p>
+            </div>
+          )}
         </div>
 
         {/* Additional Stats */}
