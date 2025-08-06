@@ -4,8 +4,12 @@ import { Header } from './Header';
 import { Footer } from './Footer';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { ScrollToTop } from '@/components/ui/scroll-to-top';
+import { PerformanceDashboard } from '@/components/ui/performance-dashboard';
+import { usePageLoadTracking } from '@/hooks/usePerformanceTracking';
 
 export const MainLayout = () => {
+  usePageLoadTracking('main_layout');
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -23,6 +27,7 @@ export const MainLayout = () => {
       
       <Footer />
       <ScrollToTop />
+      <PerformanceDashboard />
     </div>
   );
 };

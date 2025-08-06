@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Post, FeedSettings, CreatePostData, ReactionType, PostType, User } from '@/types/feed';
 
 import { supabase } from '@/integrations/supabase/client';
+import { performanceMonitor } from '@/utils/performance';
 
 export interface FeedFilters {
   userFilter: 'all' | 'my_posts' | 'others' | string; // 'string' for specific user
@@ -399,6 +400,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
     },
 
     createPost: async (data: CreatePostData) => {
+      performanceMonitor.startTimer('post_creation', { type: data.type });
       console.log('Creating post with data:', data);
       set(state => ({ ...state, loading: true }));
       
@@ -470,6 +472,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
         let thumbnailUrl: string | undefined;
         
         if (data.media && data.media.length > 0) {
+          performanceMonitor.startTimer('file_upload', { fileCount: data.media.length });
           console.log(`Uploading ${data.media.length} files in parallel...`);
           
           const uploadPromises = data.media.map(async (file) => {
@@ -510,6 +513,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           }
           
           console.log('All files uploaded successfully:', mediaUrls);
+          performanceMonitor.endTimer('file_upload');
         }
 
         const postPayload = {
@@ -563,6 +567,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
         }
 
         console.log('Post created successfully:', newPost);
+        performanceMonitor.endTimer('post_creation');
         
         // Replace optimistic post with real post data
         if (newPost && newPost.id) {
@@ -578,6 +583,14 @@ export const useFeedStore = create<FeedState>((set, get) => {
         
       } catch (error) {
         console.error('Error creating post:', error);
+        performanceMonitor.addMetric({
+          name: 'error',
+          value: 1,
+          timestamp: Date.now(),
+          type: 'count',
+          metadata: { operation: 'post_creation', error: error instanceof Error ? error.message : 'Unknown error' }
+        });
+        performanceMonitor.endTimer('post_creation');
         // Remove optimistic post on error
         set(state => ({
           posts: state.posts.filter(post => !post.id.startsWith('temp-'))
