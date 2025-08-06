@@ -407,7 +407,7 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className={cn("bg-card border shadow-sm", className)}>
+        <Card className={cn("bg-card border shadow-sm overflow-visible", className)}>
           <div className="p-6">
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
@@ -477,7 +477,7 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
             )}
 
             {/* Actions */}
-            <div className="flex items-center justify-between border-t border-border pt-4 mt-4 bg-background">
+            <div className="flex items-center justify-between border-t border-border pt-4 mt-4 bg-background min-h-[60px]">
               <div className="flex items-center space-x-2">
                 <div className="relative">
                   <ReactionButton
