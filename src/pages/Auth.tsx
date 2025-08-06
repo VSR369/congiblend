@@ -41,7 +41,7 @@ const Auth = () => {
         if (error) throw error;
         
         toast.success('Successfully signed in!');
-        navigate('/');
+        // Remove manual navigation - let ProtectedRoute handle it
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -54,7 +54,7 @@ const Auth = () => {
         if (error) throw error;
         
         toast.success('Check your email for verification link!');
-        navigate('/login');
+        // Remove manual navigation - let ProtectedRoute handle it
       }
     } catch (error: any) {
       setError(error.message || 'An error occurred');

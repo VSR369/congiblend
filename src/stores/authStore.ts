@@ -46,13 +46,17 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       // Set up SINGLE auth state listener
       authSubscription = supabase.auth.onAuthStateChange((event, session) => {
         console.log('Auth state changed:', event, !!session);
-        set({
-          session,
-          user: session?.user ?? null,
-          isAuthenticated: !!session,
-          isLoading: false,
-          isInitialized: true,
-        });
+        
+        // Add small delay to prevent rapid state changes causing navigation loops
+        setTimeout(() => {
+          set({
+            session,
+            user: session?.user ?? null,
+            isAuthenticated: !!session,
+            isLoading: false,
+            isInitialized: true,
+          });
+        }, 10);
       });
       
     } catch (error) {
