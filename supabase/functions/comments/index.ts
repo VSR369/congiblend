@@ -140,7 +140,7 @@ serve(async (req) => {
         })
         .select(`
           *,
-          author:user_id (
+          profiles:user_id (
             id,
             username,
             display_name,
@@ -187,7 +187,7 @@ serve(async (req) => {
         .from('comments')
         .select(`
           *,
-          author:user_id (
+          profiles:user_id (
             id,
             username,
             display_name,
@@ -233,7 +233,7 @@ serve(async (req) => {
           .from('comments')
           .select(`
             *,
-            author:user_id (
+            profiles:user_id (
               id,
               username,
               display_name,
@@ -284,7 +284,7 @@ serve(async (req) => {
         .from('comments')
         .select(`
           *,
-          author:user_id (
+          profiles:user_id (
             id,
             username,
             display_name,
