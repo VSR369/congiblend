@@ -36,14 +36,19 @@ const transformDbPost = (dbPost: any, author: any): Post => {
   let media = [];
   if (dbPost.media_urls && Array.isArray(dbPost.media_urls)) {
     media = dbPost.media_urls.map((url: string, index: number) => {
-      const mediaType = determineMediaType(url);
-      console.log('Media item:', { url, type: mediaType });
+      // Try to get MIME type from metadata if available
+      const mimeType = dbPost.metadata?.media?.[index]?.mimeType;
+      const mediaType = determineMediaType(url, mimeType);
+      console.log('Media item:', { url, type: mediaType, mimeType });
+      
       return {
         id: `${dbPost.id}-${index}`,
         type: mediaType,
         url,
-        alt: `Media ${index + 1}`,
-        thumbnail: dbPost.thumbnail_url // Use thumbnail if available
+        alt: `${mediaType} ${index + 1}`,
+        thumbnail: dbPost.thumbnail_url || (mediaType === 'video' ? url : undefined),
+        duration: dbPost.metadata?.media?.[index]?.duration,
+        size: dbPost.metadata?.media?.[index]?.size
       };
     });
   } else if (dbPost.images && Array.isArray(dbPost.images)) {
@@ -127,35 +132,63 @@ const transformDbPost = (dbPost: any, author: any): Post => {
   };
 };
 
-// Helper function to determine media type from URL
-const determineMediaType = (url: string): 'image' | 'video' | 'document' => {
-  // Handle Supabase storage URLs that may not have clear extensions
-  if (url.includes('/post-media/')) {
-    // Extract filename from Supabase URL
-    const pathParts = url.split('/');
-    const filename = pathParts[pathParts.length - 1];
-    const extension = filename.split('.').pop()?.toLowerCase();
-    
-    console.log('Determining media type for:', filename, 'extension:', extension);
-    
-    if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv', 'm4v', 'wmv'].includes(extension || '')) {
-      console.log('Detected as video');
+// Helper function to determine media type from URL with MIME type support
+const determineMediaType = (url: string, mimeType?: string): 'image' | 'video' | 'audio' | 'document' => {
+  console.log('Determining media type for:', url, 'mimeType:', mimeType);
+  
+  // First try to determine from MIME type if available
+  if (mimeType) {
+    if (mimeType.startsWith('video/')) {
+      console.log('Detected as video from MIME type');
       return 'video';
-    } else if (['pdf', 'doc', 'docx', 'txt', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx'].includes(extension || '')) {
-      console.log('Detected as document');
+    } else if (mimeType.startsWith('audio/')) {
+      console.log('Detected as audio from MIME type');
+      return 'audio';
+    } else if (mimeType.startsWith('image/')) {
+      console.log('Detected as image from MIME type');
+      return 'image';
+    } else if (mimeType.includes('pdf') || mimeType.includes('document') || mimeType.includes('text')) {
+      console.log('Detected as document from MIME type');
       return 'document';
     }
-    console.log('Detected as image (default)');
-    return 'image';
   }
   
-  // Fallback for external URLs
-  const extension = url.split('.').pop()?.toLowerCase();
-  if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv', 'm4v', 'wmv'].includes(extension || '')) {
+  // Fallback to extension-based detection
+  let extension = '';
+  
+  if (url.includes('/post-media/')) {
+    // Extract filename from Supabase URL, handling query parameters
+    const pathParts = url.split('/');
+    const filenameWithQuery = pathParts[pathParts.length - 1];
+    const filename = filenameWithQuery.split('?')[0]; // Remove query parameters
+    extension = filename.split('.').pop()?.toLowerCase() || '';
+    console.log('Extracted extension from Supabase URL:', extension);
+  } else {
+    // Handle external URLs
+    const urlWithoutQuery = url.split('?')[0];
+    extension = urlWithoutQuery.split('.').pop()?.toLowerCase() || '';
+  }
+  
+  // Video extensions
+  if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv', 'm4v', 'wmv', 'ogv', '3gp'].includes(extension)) {
+    console.log('Detected as video from extension:', extension);
     return 'video';
-  } else if (['pdf', 'doc', 'docx', 'txt', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx'].includes(extension || '')) {
+  }
+  
+  // Audio extensions  
+  if (['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a', 'wma', 'opus'].includes(extension)) {
+    console.log('Detected as audio from extension:', extension);
+    return 'audio';
+  }
+  
+  // Document extensions
+  if (['pdf', 'doc', 'docx', 'txt', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(extension)) {
+    console.log('Detected as document from extension:', extension);
     return 'document';
   }
+  
+  // Default to image
+  console.log('Defaulting to image for extension:', extension);
   return 'image';
 };
 
@@ -268,6 +301,9 @@ export const useFeedStore = create<FeedState>((set, get) => {
     },
 
     createPost: async (data: CreatePostData) => {
+      console.log('Creating post:', data);
+      set(state => ({ ...state, loading: true }));
+      
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
@@ -276,64 +312,100 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: sessionData } = await supabase.auth.getSession();
         if (!sessionData.session?.access_token) throw new Error('No access token');
 
-        // Upload media files if present
+        // Upload media files if present with progress tracking
         let mediaUrls: string[] = [];
+        let thumbnailUrl: string | undefined;
+        
         if (data.media && data.media.length > 0) {
+          console.log('Uploading media files:', data.media.length);
+          
           for (const file of data.media) {
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+            const fileExt = file.name.split('.').pop()?.toLowerCase();
+            const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+            
+            console.log('Uploading file:', fileName, 'type:', file.type);
             
             const { data: uploadData, error: uploadError } = await supabase.storage
               .from('post-media')
-              .upload(fileName, file);
+              .upload(fileName, file, {
+                cacheControl: '3600',
+                upsert: false
+              });
 
-            if (uploadError) throw uploadError;
+            if (uploadError) {
+              console.error('Upload error:', uploadError);
+              throw uploadError;
+            }
 
             const { data: { publicUrl } } = supabase.storage
               .from('post-media')
               .getPublicUrl(uploadData.path);
 
             mediaUrls.push(publicUrl);
+            console.log('File uploaded successfully:', publicUrl);
+            
+            // For video files, we might want to generate a thumbnail later
+            if (['mp4', 'webm', 'mov', 'avi'].includes(fileExt || '')) {
+              // Could set a placeholder thumbnail here
+              thumbnailUrl = publicUrl; // Use first video as thumbnail placeholder
+            }
           }
         }
 
-        // Use the posts edge function for consistent post creation
+        const postPayload = {
+          content: data.content,
+          post_type: data.type,
+          visibility: data.visibility || 'public',
+          media_urls: mediaUrls,
+          thumbnail_url: thumbnailUrl,
+          poll_data: data.poll ? {
+            options: data.poll.options.map(opt => ({ text: opt.text, votes: 0 })),
+            multiple_choice: data.poll.allowMultiple || false,
+            expires_at: data.poll.expiresAt?.toISOString()
+          } : undefined,
+          event_data: data.event ? {
+            title: data.event.title,
+            description: data.event.description,
+            start_date: data.event.startDate.toISOString(),
+            end_date: data.event.endDate?.toISOString(),
+            location: data.event.location,
+            is_virtual: data.event.isVirtual,
+            max_attendees: data.event.maxAttendees
+          } : undefined,
+          metadata: {
+            hashtags: data.hashtags || [],
+            mentions: data.mentions || []
+          }
+        };
+
+        console.log('Sending post payload:', postPayload);
+
+        // Use the posts edge function with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
         const { data: newPost, error } = await supabase.functions.invoke('posts', {
-          body: {
-            content: data.content,
-            post_type: data.type,
-            visibility: data.visibility,
-            media_urls: mediaUrls,
-            poll_data: data.poll ? {
-              options: data.poll.options.map(opt => ({ text: opt.text, votes: 0 })),
-              multiple_choice: data.poll.allowMultiple || false,
-              expires_at: data.poll.expiresAt?.toISOString()
-            } : undefined,
-            event_data: data.event ? {
-              title: data.event.title,
-              description: data.event.description,
-              start_date: data.event.startDate.toISOString(),
-              end_date: data.event.endDate?.toISOString(),
-              location: data.event.location,
-              is_virtual: data.event.isVirtual,
-              max_attendees: data.event.maxAttendees
-            } : undefined,
-            metadata: {
-              hashtags: data.hashtags,
-              mentions: data.mentions
-            }
-          },
+          body: postPayload,
           headers: {
             Authorization: `Bearer ${sessionData.session.access_token}`,
           },
         });
 
-        if (error) throw error;
+        clearTimeout(timeoutId);
 
+        if (error) {
+          console.error('Edge function error:', error);
+          throw error;
+        }
+
+        console.log('Post created successfully:', newPost);
         // Post will be added via real-time subscription
+        
       } catch (error) {
         console.error('Error creating post:', error);
         throw error;
+      } finally {
+        set(state => ({ ...state, loading: false }));
       }
     },
 
@@ -362,26 +434,24 @@ export const useFeedStore = create<FeedState>((set, get) => {
     },
 
     toggleReaction: async (postId: string, reaction: ReactionType) => {
+      console.log('Toggling reaction:', { postId, reaction });
+      
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
-        // Use the reactions Edge Function
-        const { data, error } = await supabase.functions.invoke('reactions', {
-          body: {
-            target_type: 'post',
-            target_id: postId,
-            reaction_type: reaction
-          }
-        });
+        // Get current session token
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session?.access_token) throw new Error('No access token');
 
-        if (error) throw error;
-
-        // Update local state based on the response
+        // Optimistically update UI first
+        const currentPost = get().posts.find(p => p.id === postId);
+        const isCurrentlyReacted = currentPost?.userReaction === reaction;
+        
         set(state => ({
           posts: state.posts.map(post => {
             if (post.id === postId) {
-              if (data.action === 'removed') {
+              if (isCurrentlyReacted) {
                 return {
                   ...post,
                   userReaction: undefined,
@@ -394,7 +464,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
                   reactions: [
                     ...post.reactions.filter(r => r.user.id !== user.id),
                     {
-                      id: data.reaction?.id || `temp-${Date.now()}`,
+                      id: `temp-${Date.now()}`,
                       type: reaction,
                       user: { 
                         id: user.id, 
@@ -411,6 +481,64 @@ export const useFeedStore = create<FeedState>((set, get) => {
           })
         }));
 
+        // Call the reactions Edge Function with proper timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+        const { data, error } = await supabase.functions.invoke('reactions', {
+          body: {
+            target_type: 'post',
+            target_id: postId,
+            reaction_type: reaction
+          },
+          headers: {
+            Authorization: `Bearer ${sessionData.session.access_token}`,
+          }
+        });
+
+        clearTimeout(timeoutId);
+
+        if (error) {
+          console.error('Reaction API error:', error);
+          
+          // Revert optimistic update on error
+          set(state => ({
+            posts: state.posts.map(post => {
+              if (post.id === postId) {
+                if (!isCurrentlyReacted) {
+                  return {
+                    ...post,
+                    userReaction: undefined,
+                    reactions: post.reactions.filter(r => r.user.id !== user.id)
+                  };
+                } else {
+                  return {
+                    ...post,
+                    userReaction: reaction,
+                    reactions: [
+                      ...post.reactions.filter(r => r.user.id !== user.id),
+                      {
+                        id: `restored-${Date.now()}`,
+                        type: reaction,
+                        user: { 
+                          id: user.id, 
+                          name: user.user_metadata?.display_name || 'User', 
+                          username: user.user_metadata?.username || 'user' 
+                        },
+                        createdAt: new Date()
+                      }
+                    ]
+                  };
+                }
+              }
+              return post;
+            })
+          }));
+          
+          throw error;
+        }
+
+        console.log('Reaction response:', data);
         return data;
       } catch (error) {
         console.error('Error toggling reaction:', error);

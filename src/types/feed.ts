@@ -10,11 +10,13 @@ export interface User {
 
 export interface PostMedia {
   id: string;
-  type: 'image' | 'video' | 'document';
+  type: 'image' | 'video' | 'audio' | 'document';
   url: string;
   thumbnail?: string;
   alt?: string;
   caption?: string;
+  duration?: number;
+  size?: number;
 }
 
 export interface PollOption {
@@ -68,7 +70,7 @@ export interface LinkPreview {
   domain: string;
 }
 
-export type PostType = 'text' | 'image' | 'video' | 'article' | 'poll' | 'event' | 'job' | 'document' | 'link' | 'carousel';
+export type PostType = 'text' | 'image' | 'video' | 'audio' | 'article' | 'poll' | 'event' | 'job' | 'document' | 'link' | 'carousel';
 
 export type ReactionType = 'like' | 'love' | 'celebrate' | 'support' | 'insightful' | 'curious';
 
