@@ -112,15 +112,19 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
     if (filesToUpload.length === 0) return;
 
     setUploadedFiles(prev => prev.map(file => ({ ...file, status: 'uploading' as const })));
+    console.log('Set files to uploading status');
 
     try {
       const uploadPromises = filesToUpload.map(async (fileItem) => {
+        console.log('Starting upload for:', fileItem.file.name);
         const formData = new FormData();
         formData.append('file', fileItem.file);
 
         const { data, error } = await supabase.functions.invoke('media', {
           body: formData,
         });
+
+        console.log('Upload response for', fileItem.file.name, '- data:', data, 'error:', error);
 
         if (error) {
           throw new Error(`Upload failed: ${error.message}`);
@@ -135,6 +139,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
       });
 
       const completedFiles = await Promise.all(uploadPromises);
+      console.log('All uploads completed:', completedFiles);
       setUploadedFiles(completedFiles);
       toast.success(`${completedFiles.length} file(s) uploaded successfully!`);
     } catch (error) {
@@ -531,7 +536,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
           loading={isPosting}
           loadingText="Posting..."
         >
-          Post
+          Post {uploadedFiles.length > 0 && `(Files: ${uploadedFiles.map(f => f.status).join(', ')})`}
         </Button>
       </ModalFooter>
     </Modal>
