@@ -3294,6 +3294,33 @@ export type Database = {
           },
         ]
       }
+      profile_views: {
+        Row: {
+          id: string
+          ip_address: unknown | null
+          profile_user_id: string
+          user_agent: string | null
+          viewed_at: string | null
+          viewer_user_id: string | null
+        }
+        Insert: {
+          id?: string
+          ip_address?: unknown | null
+          profile_user_id: string
+          user_agent?: string | null
+          viewed_at?: string | null
+          viewer_user_id?: string | null
+        }
+        Update: {
+          id?: string
+          ip_address?: unknown | null
+          profile_user_id?: string
+          user_agent?: string | null
+          viewed_at?: string | null
+          viewer_user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -3654,6 +3681,30 @@ export type Database = {
           },
         ]
       }
+      user_activity_log: {
+        Row: {
+          activity_date: string
+          activity_types: Json | null
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          activity_date?: string
+          activity_types?: Json | null
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          activity_date?: string
+          activity_types?: Json | null
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -3772,15 +3823,19 @@ export type Database = {
           bio: string | null
           cover_url: string | null
           created_at: string | null
+          current_streak_days: number | null
           display_name: string | null
           email: string | null
           headline: string | null
           id: string
           is_active: boolean | null
           is_verified: boolean | null
+          last_activity_date: string | null
           last_seen_at: string | null
           location: string | null
+          longest_streak_days: number | null
           password_hash: string | null
+          profile_views_count: number | null
           updated_at: string | null
           username: string
           website: string | null
@@ -3790,15 +3845,19 @@ export type Database = {
           bio?: string | null
           cover_url?: string | null
           created_at?: string | null
+          current_streak_days?: number | null
           display_name?: string | null
           email?: string | null
           headline?: string | null
           id: string
           is_active?: boolean | null
           is_verified?: boolean | null
+          last_activity_date?: string | null
           last_seen_at?: string | null
           location?: string | null
+          longest_streak_days?: number | null
           password_hash?: string | null
+          profile_views_count?: number | null
           updated_at?: string | null
           username: string
           website?: string | null
@@ -3808,15 +3867,19 @@ export type Database = {
           bio?: string | null
           cover_url?: string | null
           created_at?: string | null
+          current_streak_days?: number | null
           display_name?: string | null
           email?: string | null
           headline?: string | null
           id?: string
           is_active?: boolean | null
           is_verified?: boolean | null
+          last_activity_date?: string | null
           last_seen_at?: string | null
           location?: string | null
+          longest_streak_days?: number | null
           password_hash?: string | null
+          profile_views_count?: number | null
           updated_at?: string | null
           username?: string
           website?: string | null
@@ -4131,6 +4194,15 @@ export type Database = {
         Args: { user_id_param: string }
         Returns: Json
       }
+      increment_profile_view: {
+        Args: {
+          p_profile_user_id: string
+          p_viewer_user_id?: string
+          p_ip_address?: unknown
+          p_user_agent?: string
+        }
+        Returns: undefined
+      }
       is_org_admin: {
         Args: { check_user_id?: string }
         Returns: string
@@ -4138,6 +4210,10 @@ export type Database = {
       safe_delete_fee_component: {
         Args: { component_id: string; cascade_delete?: boolean }
         Returns: Json
+      }
+      update_user_activity: {
+        Args: { p_user_id: string; p_activity_type: string }
+        Returns: undefined
       }
       validate_engagement_model_switch: {
         Args: {
