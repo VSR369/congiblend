@@ -20,7 +20,6 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
-import { useAuthStore } from '@/stores/authStore';
 
 interface UserStats {
   display_name: string;
@@ -47,22 +46,20 @@ export const UserStatsCard: React.FC = () => {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const { trackActivity } = useActivityTracker();
-  const { user } = useAuthStore();
 
   useEffect(() => {
-    if (user) {
-      fetchUserStats();
-      trackActivity('view');
-    }
-  }, [user]);
+    fetchUserStats();
+    trackActivity('view');
+  }, []);
 
   const fetchUserStats = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       // Get user info and profile views
       const { data: userData } = await supabase
-        .from('profiles')
+        .from('users')
         .select('display_name, headline, avatar_url, profile_views_count, current_streak_days')
         .eq('id', user.id)
         .single();

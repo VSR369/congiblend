@@ -68,7 +68,7 @@ export const Header = ({ onMenuToggle, showMenuButton = false }: HeaderProps) =>
           
           <Link to="/" className="flex items-center space-x-3 hover-glow transition-all duration-300 rounded-xl p-2">
             <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center shadow-elegant">
-              <span className="text-white font-bold text-lg">C</span>
+              <span className="text-white font-bold text-lg">S</span>
             </div>
             <span className="hidden sm:block font-bold text-xl gradient-text-hero">
               {APP_CONFIG.name}

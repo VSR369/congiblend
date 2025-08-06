@@ -32,14 +32,10 @@ export const UserSearchFilter = ({
     }
   }, [users.length, loadUsers]);
 
-  const filteredUsers = users.filter(user => {
-    const userName = user.name || '';
-    const userUsername = user.username || '';
-    const query = searchQuery.toLowerCase();
-    
-    return userName.toLowerCase().includes(query) ||
-           userUsername.toLowerCase().includes(query);
-  });
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleUserSelect = (user: UserType) => {
     onUserSelect?.(user);
@@ -62,14 +58,14 @@ export const UserSearchFilter = ({
             aria-expanded={open}
             className="w-full justify-between"
           >
-             {selectedUser ? (
-               <div className="flex items-center space-x-2">
-                 <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs">
-                   {(selectedUser.name || 'U').charAt(0).toUpperCase()}
-                 </div>
-                 <span>{selectedUser.name || 'Unknown User'}</span>
-               </div>
-             ) : (
+            {selectedUser ? (
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs">
+                  {selectedUser.name.charAt(0).toUpperCase()}
+                </div>
+                <span>{selectedUser.name}</span>
+              </div>
+            ) : (
               <span className="text-muted-foreground">{placeholder}</span>
             )}
             <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -85,25 +81,25 @@ export const UserSearchFilter = ({
             <CommandList>
               <CommandEmpty>No users found.</CommandEmpty>
               <CommandGroup>
-                 {filteredUsers.map((user) => (
-                   <CommandItem
-                     key={user.id}
-                     value={user.username || user.id}
-                     onSelect={() => handleUserSelect(user)}
-                     className="flex items-center space-x-3"
-                   >
-                     <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs">
-                       {(user.name || 'U').charAt(0).toUpperCase()}
-                     </div>
-                     <div className="flex-1">
-                       <div className="font-medium">{user.name || 'Unknown User'}</div>
-                       <div className="text-sm text-muted-foreground">@{user.username || 'unknown'}</div>
-                       {user.title && (
-                         <div className="text-xs text-muted-foreground">{user.title}</div>
-                       )}
-                     </div>
-                   </CommandItem>
-                 ))}
+                {filteredUsers.map((user) => (
+                  <CommandItem
+                    key={user.id}
+                    value={user.username}
+                    onSelect={() => handleUserSelect(user)}
+                    className="flex items-center space-x-3"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium">{user.name}</div>
+                      <div className="text-sm text-muted-foreground">@{user.username}</div>
+                      {user.title && (
+                        <div className="text-xs text-muted-foreground">{user.title}</div>
+                      )}
+                    </div>
+                  </CommandItem>
+                ))}
               </CommandGroup>
             </CommandList>
           </Command>
@@ -111,9 +107,9 @@ export const UserSearchFilter = ({
       </Popover>
 
       {selectedUser && (
-         <Badge variant="secondary" className="inline-flex items-center space-x-1">
-           <User className="h-3 w-3" />
-           <span>{selectedUser.name || 'Unknown User'}</span>
+        <Badge variant="secondary" className="inline-flex items-center space-x-1">
+          <User className="h-3 w-3" />
+          <span>{selectedUser.name}</span>
           <button 
             onClick={handleClear}
             className="ml-1 hover:bg-muted-foreground/20 rounded-full"

@@ -2,10 +2,6 @@ import { create } from 'zustand';
 import type { Post, FeedSettings, CreatePostData, ReactionType, PostType, User } from '@/types/feed';
 
 import { supabase } from '@/integrations/supabase/client';
-import { performanceMonitor } from '@/utils/performance';
-import { profileCache } from '@/utils/profileCache';
-import { requestQueue } from '@/utils/requestQueue';
-import { useAuthStore } from '@/stores/authStore';
 
 export interface FeedFilters {
   userFilter: 'all' | 'my_posts' | 'others' | string; // 'string' for specific user
@@ -44,13 +40,8 @@ interface FeedState {
 }
 
 // Helper function to transform database post to our Post type
-const transformDbPost = (dbPost: any, author: any): Post | null => {
-  if (!author) {
-    
-    return null;
-  }
-  
-  
+const transformDbPost = (dbPost: any, author: any): Post => {
+  console.log('Transforming post:', dbPost.id, 'type:', dbPost.post_type, 'media_urls:', dbPost.media_urls);
   
   // Handle media_urls array and transform to proper media format
   let media = [];
@@ -59,7 +50,7 @@ const transformDbPost = (dbPost: any, author: any): Post | null => {
       // Try to get MIME type from metadata if available
       const mimeType = dbPost.metadata?.media?.[index]?.mimeType;
       const mediaType = determineMediaType(url, mimeType);
-      
+      console.log('Media item:', { url, type: mediaType, mimeType });
       
       return {
         id: `${dbPost.id}-${index}`,
@@ -84,7 +75,7 @@ const transformDbPost = (dbPost: any, author: any): Post | null => {
   // Transform poll_data to poll object
   let poll = undefined;
   if (dbPost.poll_data && dbPost.poll_data.options) {
-    
+    console.log('Transforming poll data:', dbPost.poll_data);
     const totalVotes = dbPost.poll_data.options.reduce((sum: number, option: any) => sum + (option.votes || 0), 0);
     poll = {
       id: `${dbPost.id}-poll`,
@@ -100,7 +91,7 @@ const transformDbPost = (dbPost: any, author: any): Post | null => {
       allowMultiple: dbPost.poll_data.multiple_choice || false,
       userVote: undefined // TODO: Get user's vote from database
     };
-    
+    console.log('Transformed poll:', poll);
   }
 
   // Transform event_data to event object
@@ -124,11 +115,11 @@ const transformDbPost = (dbPost: any, author: any): Post | null => {
     id: dbPost.id,
     type: dbPost.post_type || 'text',
     author: {
-      id: author?.id || 'unknown',
-      name: author?.display_name || author?.username || 'Unknown User',
-      username: author?.username || 'unknown',
-      avatar: author?.avatar_url,
-      verified: author?.is_verified || false,
+      id: author.id,
+      name: author.display_name || author.username,
+      username: author.username,
+      avatar: author.avatar_url,
+      verified: author.is_verified || false,
     },
     content: dbPost.content,
     media,
@@ -154,15 +145,21 @@ const transformDbPost = (dbPost: any, author: any): Post | null => {
 
 // Helper function to determine media type from URL with MIME type support
 const determineMediaType = (url: string, mimeType?: string): 'image' | 'video' | 'audio' | 'document' => {
+  console.log('Determining media type for:', url, 'mimeType:', mimeType);
+  
   // First try to determine from MIME type if available
   if (mimeType) {
     if (mimeType.startsWith('video/')) {
+      console.log('Detected as video from MIME type');
       return 'video';
     } else if (mimeType.startsWith('audio/')) {
+      console.log('Detected as audio from MIME type');
       return 'audio';
     } else if (mimeType.startsWith('image/')) {
+      console.log('Detected as image from MIME type');
       return 'image';
     } else if (mimeType.includes('pdf') || mimeType.includes('document') || mimeType.includes('text')) {
+      console.log('Detected as document from MIME type');
       return 'document';
     }
   }
@@ -176,6 +173,7 @@ const determineMediaType = (url: string, mimeType?: string): 'image' | 'video' |
     const filenameWithQuery = pathParts[pathParts.length - 1];
     const filename = filenameWithQuery.split('?')[0]; // Remove query parameters
     extension = filename.split('.').pop()?.toLowerCase() || '';
+    console.log('Extracted extension from Supabase URL:', extension);
   } else {
     // Handle external URLs
     const urlWithoutQuery = url.split('?')[0];
@@ -184,20 +182,24 @@ const determineMediaType = (url: string, mimeType?: string): 'image' | 'video' |
   
   // Video extensions
   if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv', 'm4v', 'wmv', 'ogv', '3gp'].includes(extension)) {
+    console.log('Detected as video from extension:', extension);
     return 'video';
   }
   
   // Audio extensions  
   if (['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a', 'wma', 'opus'].includes(extension)) {
+    console.log('Detected as audio from extension:', extension);
     return 'audio';
   }
   
   // Document extensions
   if (['pdf', 'doc', 'docx', 'txt', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(extension)) {
+    console.log('Detected as document from extension:', extension);
     return 'document';
   }
   
   // Default to image
+  console.log('Defaulting to image for extension:', extension);
   return 'image';
 };
 
@@ -237,30 +239,40 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
       try {
         const { filters } = state;
-        
-        // First get posts without join
         let query = supabase
           .from('posts')
-          .select('*');
+          .select(`
+            *,
+            user:user_id (
+              id,
+              username,
+              display_name,
+              avatar_url,
+              is_verified,
+              title,
+              company
+            )
+          `);
 
         // Apply user filter
-        const currentUser = useAuthStore.getState().user;
         if (filters.userFilter === 'my_posts') {
-          query = query.eq('user_id', currentUser?.id);
+          const currentUser = supabase.auth.getUser();
+          query = query.eq('user_id', (await currentUser).data.user?.id);
         } else if (filters.userFilter === 'others') {
-          query = query.neq('user_id', currentUser?.id);
-        } else if (filters.userFilter !== 'all') {
-          // For specific user filter, we'll join with profiles table
-          const { data: specificUser } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('username', filters.userFilter)
-            .single();
-          
-          if (specificUser) {
-            query = query.eq('user_id', specificUser.id);
-          }
-        }
+          const currentUser = supabase.auth.getUser();
+          query = query.neq('user_id', (await currentUser).data.user?.id);
+         } else if (filters.userFilter !== 'all') {
+           // For specific user filter, we'll join with users table
+           const { data: specificUser } = await supabase
+             .from('users')
+             .select('id')
+             .eq('username', filters.userFilter)
+             .single();
+           
+           if (specificUser) {
+             query = query.eq('user_id', specificUser.id);
+           }
+         }
 
         // Apply content type filter
         if (filters.contentTypes.length > 0 && filters.contentTypes.length < 7) {
@@ -293,32 +305,10 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
         if (postsError) throw postsError;
 
-        // Get all unique user IDs from posts
-        const userIds = [...new Set(postsData?.map(post => post.user_id) || [])];
-        
-        // Fetch profiles for all users
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, username, display_name, avatar_url, is_verified, title, company')
-          .in('id', userIds);
-
-        if (profilesError) {
-          console.warn('Error loading profiles:', profilesError);
-        }
-
-        // Create a map of user profiles for quick lookup and update cache
-        const profilesMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
-        
-        // Update profile cache with fetched profiles
-        if (profilesData) {
-          profileCache.setMultiple(profilesData);
-        }
-
         // Transform posts to our format
-        const transformedPosts = postsData?.map((dbPost) => {
-          const profile = profilesMap.get(dbPost.user_id);
-          return transformDbPost(dbPost, profile);
-        }).filter(Boolean) || [];
+        const transformedPosts = postsData?.map((dbPost) => 
+          transformDbPost(dbPost, dbPost.user)
+        ) || [];
 
         set({ 
           posts: reset ? transformedPosts : [...state.posts, ...transformedPosts],
@@ -335,45 +325,21 @@ export const useFeedStore = create<FeedState>((set, get) => {
               {
                 event: 'INSERT',
                 schema: 'public',
-                table: 'posts',
-                filter: 'visibility=eq.public' // Only listen to public posts for performance
+                table: 'posts'
               },
               async (payload) => {
-                const currentUser = useAuthStore.getState().user;
-                // Only add posts from other users via real-time (not our own optimistic posts)
-                if (payload.new.user_id !== currentUser?.id) {
-                  // Try to get author from cache first
-                  let authorData = profileCache.get(payload.new.user_id);
-                  
-                  if (!authorData) {
-                    // Fallback to DB query if not in cache
-                    const { data: dbAuthor } = await supabase
-                      .from('profiles')
-                      .select('id, username, display_name, avatar_url, is_verified')
-                      .eq('id', payload.new.user_id)
-                      .single();
-                    
-                    if (dbAuthor) {
-                      profileCache.set(dbAuthor);
-                      authorData = {
-                        id: dbAuthor.id,
-                        username: dbAuthor.username || '',
-                        display_name: dbAuthor.display_name || '',
-                        avatar_url: dbAuthor.avatar_url,
-                        is_verified: dbAuthor.is_verified || false,
-                        cached_at: Date.now()
-                      };
-                    }
-                  }
+                // Get author info for new post
+                const { data: authorData } = await supabase
+                  .from('users')
+                  .select('id, username, display_name, avatar_url, is_verified')
+                  .eq('id', payload.new.user_id)
+                  .single();
 
-                  if (authorData) {
-                    const newPost = transformDbPost(payload.new, authorData);
-                    if (newPost) {
-                      set(state => ({
-                        posts: [newPost, ...state.posts]
-                      }));
-                    }
-                  }
+                if (authorData) {
+                  const newPost = transformDbPost(payload.new, authorData);
+                  set(state => ({
+                    posts: [newPost, ...state.posts]
+                  }));
                 }
               }
             )
@@ -402,7 +368,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
     loadUsers: async () => {
       try {
         const { data: usersData, error } = await supabase
-          .from('profiles')
+          .from('users')
           .select('id, username, display_name, avatar_url, title, company')
           .order('display_name');
 
@@ -425,98 +391,29 @@ export const useFeedStore = create<FeedState>((set, get) => {
     },
 
     createPost: async (data: CreatePostData) => {
-      performanceMonitor.startTimer('post_creation', { type: data.type });
-      console.log('Creating post with data:', data);
+      console.log('Creating post:', data);
       set(state => ({ ...state, loading: true }));
       
       try {
-        const { user, session } = useAuthStore.getState();
+        const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
-        if (!session?.access_token) throw new Error('No access token');
 
-        // Try to get profile from cache first, fallback to DB
-        let userProfile = profileCache.get(user.id);
-        if (!userProfile) {
-          const { data: dbProfile } = await supabase
-            .from('profiles')
-            .select('id, username, display_name, avatar_url, is_verified')
-            .eq('id', user.id)
-            .single();
-          
-          if (dbProfile) {
-            profileCache.set(dbProfile);
-            userProfile = {
-              id: dbProfile.id,
-              username: dbProfile.username || '',
-              display_name: dbProfile.display_name || '',
-              avatar_url: dbProfile.avatar_url,
-              is_verified: dbProfile.is_verified || false,
-              cached_at: Date.now()
-            };
-          }
-        }
+        // Get the session token for API calls
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session?.access_token) throw new Error('No access token');
 
-        // Create optimistic post for immediate UI feedback
-        const optimisticPost: Post = {
-          id: `temp-${Date.now()}`,
-          type: data.type,
-          author: {
-            id: user.id,
-            name: userProfile?.display_name || userProfile?.username || 'You',
-            username: userProfile?.username || 'you',
-            avatar: userProfile?.avatar_url,
-            verified: userProfile?.is_verified || false,
-          },
-          content: data.content,
-          media: [],
-          poll: data.poll ? {
-            ...data.poll,
-            id: `temp-poll-${Date.now()}`,
-            totalVotes: 0,
-            options: data.poll.options.map((opt, idx) => ({
-              ...opt,
-              id: `temp-option-${idx}`,
-              votes: 0,
-              percentage: 0
-            }))
-          } : undefined,
-          event: data.event ? {
-            ...data.event,
-            id: `temp-event-${Date.now()}`,
-            attendees: 0
-          } : undefined,
-          hashtags: data.hashtags || [],
-          mentions: [],
-          reactions: [],
-          comments: [],
-          shares: 0,
-          saves: 0,
-          views: 0,
-          createdAt: new Date(),
-          visibility: data.visibility,
-          userReaction: undefined,
-          userSaved: false,
-          userShared: false,
-        };
-
-        // Add optimistic post to UI immediately
-        set(state => ({
-          posts: [optimisticPost, ...state.posts]
-        }));
-
-        // Upload media files in parallel if present
+        // Upload media files if present with progress tracking
         let mediaUrls: string[] = [];
         let thumbnailUrl: string | undefined;
         
         if (data.media && data.media.length > 0) {
-          performanceMonitor.startTimer('file_upload', { fileCount: data.media.length });
-          console.log(`Uploading ${data.media.length} files in parallel...`);
+          console.log('Uploading media files:', data.media.length);
           
-          const uploadPromises = data.media.map(async (file) => {
+          for (const file of data.media) {
             const fileExt = file.name.split('.').pop()?.toLowerCase();
             const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
             
-            console.log(`Uploading file: ${fileName}`);
+            console.log('Uploading file:', fileName, 'type:', file.type);
             
             const { data: uploadData, error: uploadError } = await supabase.storage
               .from('post-media')
@@ -534,23 +431,15 @@ export const useFeedStore = create<FeedState>((set, get) => {
               .from('post-media')
               .getPublicUrl(uploadData.path);
 
-            console.log(`File uploaded successfully: ${publicUrl}`);
-            return { url: publicUrl, type: fileExt };
-          });
-
-          const uploadResults = await Promise.all(uploadPromises);
-          mediaUrls = uploadResults.map(result => result.url);
-          
-          // Set thumbnail for first video
-          const firstVideo = uploadResults.find(result => 
-            ['mp4', 'webm', 'mov', 'avi'].includes(result.type || '')
-          );
-          if (firstVideo) {
-            thumbnailUrl = firstVideo.url;
+            mediaUrls.push(publicUrl);
+            console.log('File uploaded successfully:', publicUrl);
+            
+            // For video files, we might want to generate a thumbnail later
+            if (['mp4', 'webm', 'mov', 'avi'].includes(fileExt || '')) {
+              // Could set a placeholder thumbnail here
+              thumbnailUrl = publicUrl; // Use first video as thumbnail placeholder
+            }
           }
-          
-          console.log('All files uploaded successfully:', mediaUrls);
-          performanceMonitor.endTimer('file_upload');
         }
 
         const postPayload = {
@@ -579,8 +468,8 @@ export const useFeedStore = create<FeedState>((set, get) => {
           }
         };
 
-        
-        
+        console.log('Sending post payload:', postPayload);
+
         // Use the posts edge function with timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
@@ -588,7 +477,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: newPost, error } = await supabase.functions.invoke('posts', {
           body: postPayload,
           headers: {
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${sessionData.session.access_token}`,
           },
         });
 
@@ -596,42 +485,14 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
         if (error) {
           console.error('Edge function error:', error);
-          // Remove optimistic post on error
-          set(state => ({
-            posts: state.posts.filter(post => post.id !== optimisticPost.id)
-          }));
           throw error;
         }
 
         console.log('Post created successfully:', newPost);
-        performanceMonitor.endTimer('post_creation');
-        
-        // Replace optimistic post with real post data
-        if (newPost && newPost.id) {
-          const realPost = transformDbPost(newPost, userProfile);
-          if (realPost) {
-            set(state => ({
-              posts: state.posts.map(post => 
-                post.id === optimisticPost.id ? realPost : post
-              )
-            }));
-          }
-        }
+        // Post will be added via real-time subscription
         
       } catch (error) {
         console.error('Error creating post:', error);
-        performanceMonitor.addMetric({
-          name: 'error',
-          value: 1,
-          timestamp: Date.now(),
-          type: 'count',
-          metadata: { operation: 'post_creation', error: error instanceof Error ? error.message : 'Unknown error' }
-        });
-        performanceMonitor.endTimer('post_creation');
-        // Remove optimistic post on error
-        set(state => ({
-          posts: state.posts.filter(post => !post.id.startsWith('temp-'))
-        }));
         throw error;
       } finally {
         set(state => ({ ...state, loading: false }));
@@ -663,10 +524,10 @@ export const useFeedStore = create<FeedState>((set, get) => {
     },
 
     toggleReaction: async (postId: string, reaction: ReactionType | null) => {
-      
+      console.log('Toggling reaction:', { postId, reaction });
       
       try {
-        const { user } = useAuthStore.getState();
+        const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
         const state = get();
@@ -749,7 +610,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
     addComment: async (postId: string, content: string, parentId?: string) => {
       try {
-        const { user } = useAuthStore.getState();
+        const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
         // Use the comments Edge Function
@@ -757,7 +618,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           body: {
             post_id: postId,
             content,
-            parent_comment_id: parentId || null
+            parent_id: parentId || null
           }
         });
 
@@ -823,8 +684,10 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
     votePoll: async (postId: string, optionIndex: number) => {
       try {
-        const { user } = useAuthStore.getState();
+        const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
+
+        console.log('Voting on poll:', { postId, optionIndex, userId: user.id });
 
         // First, check if user has already voted
         const { data: existingVote } = await supabase
@@ -833,6 +696,8 @@ export const useFeedStore = create<FeedState>((set, get) => {
           .eq('user_id', user.id)
           .eq('post_id', postId)
           .single();
+
+        console.log('Existing vote:', existingVote);
 
         // Insert or update vote in the votes table
         const { data: voteData, error: voteError } = await supabase
@@ -847,8 +712,11 @@ export const useFeedStore = create<FeedState>((set, get) => {
           .select();
 
         if (voteError) {
+          console.error('Vote error:', voteError);
           throw voteError;
         }
+
+        console.log('Vote saved:', voteData);
 
         // Get all votes for this post to calculate accurate counts
         const { data: allVotes, error: votesError } = await supabase
@@ -857,8 +725,11 @@ export const useFeedStore = create<FeedState>((set, get) => {
           .eq('post_id', postId);
 
         if (votesError) {
+          console.error('Error fetching votes:', votesError);
           throw votesError;
         }
+
+        console.log('All votes for post:', allVotes);
 
         // Count votes per option
         const voteCounts: Record<number, number> = {};
@@ -866,7 +737,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           voteCounts[vote.option_index] = (voteCounts[vote.option_index] || 0) + 1;
         });
 
-        
+        console.log('Vote counts:', voteCounts);
 
         // Update local state with accurate vote counts
         set(state => ({
@@ -922,7 +793,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
     sharePost: async (postId: string) => {
       try {
-        const { user } = useAuthStore.getState();
+        const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
         // Check if user is trying to share their own post

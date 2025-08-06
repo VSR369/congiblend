@@ -136,11 +136,14 @@ serve(async (req) => {
           post_id: post_id,
           user_id: userId,
           content: content.trim(),
-          parent_comment_id: parent_comment_id || null
+          parent_id: parent_comment_id || null,
+          reactions_count: 0,
+          replies_count: 0,
+          is_edited: false
         })
         .select(`
           *,
-          profiles:user_id (
+          author:user_id (
             id,
             username,
             display_name,
@@ -161,16 +164,20 @@ serve(async (req) => {
       // Update post comment count
       await updatePostCommentCount(authSupabase, post_id, 1);
 
-      // If this is a reply, update parent comment reply count would go here
-      // (currently not implemented as replies_count column doesn't exist)
+      // If this is a reply, update parent comment reply count
+      if (parent_comment_id) {
+        await updateCommentReplyCount(authSupabase, parent_comment_id, 1);
+      }
 
       return new Response(
         JSON.stringify({
           ...newComment,
           author_id: newComment.user_id,
+          reaction_count: newComment.reactions_count,
+          reply_count: newComment.replies_count,
           hashtags,
           mentions,
-          parent_comment_id: newComment.parent_comment_id
+          parent_comment_id: newComment.parent_id
         }),
         { 
           status: 201, 
@@ -187,7 +194,7 @@ serve(async (req) => {
         .from('comments')
         .select(`
           *,
-          profiles:user_id (
+          author:user_id (
             id,
             username,
             display_name,
@@ -195,7 +202,7 @@ serve(async (req) => {
             is_verified
           )
         `)
-        .eq('parent_comment_id', commentId)
+        .eq('parent_id', commentId)
         .order('created_at', { ascending: true });
 
       if (repliesError) {
@@ -210,7 +217,9 @@ serve(async (req) => {
       const formattedReplies = replies?.map(reply => ({
         ...reply,
         author_id: reply.user_id,
-        parent_comment_id: reply.parent_comment_id
+        reaction_count: reply.reactions_count,
+        reply_count: reply.replies_count,
+        parent_comment_id: reply.parent_id
       })) || [];
 
       return new Response(
@@ -233,7 +242,7 @@ serve(async (req) => {
           .from('comments')
           .select(`
             *,
-            profiles:user_id (
+            author:user_id (
               id,
               username,
               display_name,
@@ -255,7 +264,9 @@ serve(async (req) => {
           JSON.stringify({
             ...comment,
             author_id: comment.user_id,
-            parent_comment_id: comment.parent_comment_id
+            reaction_count: comment.reactions_count,
+            reply_count: comment.replies_count,
+            parent_comment_id: comment.parent_id
           }),
           { 
             status: 200, 
@@ -284,7 +295,7 @@ serve(async (req) => {
         .from('comments')
         .select(`
           *,
-          profiles:user_id (
+          author:user_id (
             id,
             username,
             display_name,
@@ -293,7 +304,7 @@ serve(async (req) => {
           )
         `)
         .eq('post_id', postId)
-        .is('parent_comment_id', null)
+        .is('parent_id', null)
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -309,7 +320,9 @@ serve(async (req) => {
       const formattedComments = comments?.map(comment => ({
         ...comment,
         author_id: comment.user_id,
-        parent_comment_id: comment.parent_comment_id
+        reaction_count: comment.reactions_count,
+        reply_count: comment.replies_count,
+        parent_comment_id: comment.parent_id
       })) || [];
 
       return new Response(
@@ -374,8 +387,33 @@ async function updatePostCommentCount(authSupabase: any, postId: string, increme
   }
 }
 
-// Helper function to update comment reply count (not used since replies_count column doesn't exist)
+// Helper function to update comment reply count
 async function updateCommentReplyCount(authSupabase: any, commentId: string, increment: number) {
-  // This function is not implemented as the replies_count column doesn't exist in the current schema
-  console.log('Reply count update skipped - column not implemented');
+  try {
+    // Get current count
+    const { data: currentData, error: fetchError } = await authSupabase
+      .from('comments')
+      .select('replies_count')
+      .eq('id', commentId)
+      .single();
+
+    if (fetchError || !currentData) {
+      console.error('Failed to fetch current comment reply count:', fetchError);
+      return;
+    }
+
+    const newCount = Math.max(0, (currentData.replies_count || 0) + increment);
+
+    // Update count
+    const { error: updateError } = await authSupabase
+      .from('comments')
+      .update({ replies_count: newCount })
+      .eq('id', commentId);
+
+    if (updateError) {
+      console.error('Failed to update comment reply count:', updateError);
+    }
+  } catch (error) {
+    console.error('Error updating comment reply count:', error);
+  }
 }

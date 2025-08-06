@@ -5,7 +5,7 @@ import { Button } from "./button"
 import { Input } from "./input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./dropdown-menu"
 import { EnhancedPagination, PaginationInfo } from "./enhanced-pagination"
-import { Skeleton } from "./skeleton"
+import { LoadingSkeleton } from "./loading-skeleton"
 import { cn } from "@/lib/utils"
 
 export interface DataTableProps<TData> {
@@ -63,14 +63,14 @@ export function DataTable<TData>({
     return (
       <div className={cn("space-y-4", className)}>
         <div className="flex items-center space-x-2">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-10 w-20" />
+          <LoadingSkeleton className="h-10 w-64" />
+          <LoadingSkeleton className="h-10 w-20" />
         </div>
         <div className="border rounded-lg">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex space-x-4 p-4 border-b last:border-b-0">
               {Array.from({ length: columns.length }).map((_, j) => (
-                <Skeleton key={j} className="h-4 flex-1" />
+                <LoadingSkeleton key={j} className="h-4 flex-1" />
               ))}
             </div>
           ))}

@@ -3,7 +3,7 @@ import { Send } from "lucide-react";
 import { Button } from "./button";
 import { Textarea } from "./textarea";
 import { Avatar } from "./avatar";
-import { useAuthStore } from "@/stores/authStore";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 interface CommentInputProps {
@@ -21,7 +21,15 @@ export const CommentInput = ({
 }: CommentInputProps) => {
   const [content, setContent] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const { user } = useAuthStore();
+  const [user, setUser] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getUser();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -98,6 +98,34 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
     setIsPosting(true);
     
     try {
+      // Upload files directly to storage if any are selected
+      let mediaUrls: string[] = [];
+      if (selectedFiles.length > 0) {
+        const uploadPromises = selectedFiles.map(async (file) => {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+          
+          // Get current user ID for the file path structure
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          if (userError || !user) throw new Error('User not authenticated');
+          
+          const filePath = `${user.id}/${fileName}`;
+
+          const { data, error } = await supabase.storage
+            .from('post-media')
+            .upload(filePath, file);
+
+          if (error) throw error;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('post-media')
+            .getPublicUrl(filePath);
+
+          return publicUrl;
+        });
+
+        mediaUrls = await Promise.all(uploadPromises);
+      }
 
       const postData: CreatePostData = {
         type: activeTab,
@@ -105,7 +133,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
         hashtags,
         mentions,
         visibility: "public",
-        media: selectedFiles.length > 0 ? selectedFiles : undefined,
+        media: selectedFiles,
       };
 
       // Add poll data if it's a poll post

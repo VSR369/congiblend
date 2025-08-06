@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Filter, X, Check, RotateCcw } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { Button } from "./button";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { Separator } from "./separator";
@@ -7,9 +7,8 @@ import { Badge } from "./badge";
 import { PostOwnerFilter } from "./post-owner-filter";
 import { AdvancedContentTypeFilter } from "./advanced-content-type-filter";
 import { AdvancedTimeRangeFilter } from "./advanced-time-range-filter";
-import { useFeedStore, type FeedFilters } from "@/stores/feedStore";
+import { useFeedStore } from "@/stores/feedStore";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
 import type { PostType, User } from "@/types/feed";
 
 interface AdvancedFilterSystemProps {
@@ -17,87 +16,48 @@ interface AdvancedFilterSystemProps {
 }
 
 export const AdvancedFilterSystem = ({ className }: AdvancedFilterSystemProps) => {
-  const { filters, users, updateFilters, loading } = useFeedStore();
-  const { toast } = useToast();
+  const { filters, users, updateFilters } = useFeedStore();
   const [isOpen, setIsOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
-  const [isApplying, setIsApplying] = React.useState(false);
-  
-  // Local state for pending filter changes
-  const [pendingFilters, setPendingFilters] = React.useState<FeedFilters>(filters);
-  const [pendingUser, setPendingUser] = React.useState<User | null>(null);
 
-  // Sync local state with store when filters change externally
+  // Find the selected user object based on the filter
   React.useEffect(() => {
-    setPendingFilters(filters);
     if (filters.userFilter !== 'all' && filters.userFilter !== 'my_posts' && filters.userFilter !== 'others') {
       const user = users.find(u => u.username === filters.userFilter);
       setSelectedUser(user || null);
-      setPendingUser(user || null);
     } else {
       setSelectedUser(null);
-      setPendingUser(null);
     }
-  }, [filters, users]);
+  }, [filters.userFilter, users]);
 
   const handlePostOwnerFilterChange = (filter: 'all' | 'mine' | 'others') => {
-    setPendingFilters(prev => ({ 
-      ...prev,
+    updateFilters({ 
       userFilter: filter === 'mine' ? 'my_posts' : filter === 'others' ? 'others' : 'all' 
-    }));
-    setPendingUser(null);
+    });
   };
 
   const handleUserSelect = (user: User | null) => {
-    setPendingUser(user);
-    setPendingFilters(prev => ({ 
-      ...prev,
+    setSelectedUser(user);
+    updateFilters({ 
       userFilter: user ? user.username : 'all' 
-    }));
+    });
   };
 
   const handleContentTypesChange = (types: PostType[]) => {
-    setPendingFilters(prev => ({ ...prev, contentTypes: types }));
+    updateFilters({ contentTypes: types });
   };
 
   const handleTimeRangeChange = (range: 'recent' | 'week' | 'month' | 'all') => {
-    setPendingFilters(prev => ({ ...prev, timeRange: range }));
+    updateFilters({ timeRange: range });
   };
 
   const clearAllFilters = () => {
-    const defaultFilters = {
-      userFilter: 'all' as const,
-      contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event', 'job'] as PostType[],
-      timeRange: 'all' as const
-    };
-    setPendingFilters(defaultFilters);
-    setPendingUser(null);
-  };
-
-  const applyFilters = async () => {
-    setIsApplying(true);
-    try {
-      updateFilters(pendingFilters);
-      setSelectedUser(pendingUser);
-      setIsOpen(false);
-      toast({
-        title: "Filters applied",
-        description: "Your feed has been updated with the new filters.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error applying filters",
-        description: "Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsApplying(false);
-    }
-  };
-
-  const resetToApplied = () => {
-    setPendingFilters(filters);
-    setPendingUser(selectedUser);
+    updateFilters({
+      userFilter: 'all',
+      contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event', 'job'],
+      timeRange: 'all'
+    });
+    setSelectedUser(null);
   };
 
   const getActiveFilterCount = () => {
@@ -111,30 +71,16 @@ export const AdvancedFilterSystem = ({ className }: AdvancedFilterSystemProps) =
   const activeFilterCount = getActiveFilterCount();
 
   const getDisplayFilter = () => {
-    if (pendingFilters.userFilter === 'my_posts') return 'mine';
-    if (pendingFilters.userFilter === 'others') return 'others';
-    return pendingFilters.userFilter === 'all' ? 'all' : 'all';
-  };
-
-  const hasChanges = () => {
-    return JSON.stringify(pendingFilters) !== JSON.stringify(filters) || 
-           pendingUser?.id !== selectedUser?.id;
+    if (filters.userFilter === 'my_posts') return 'mine';
+    if (filters.userFilter === 'others') return 'others';
+    return filters.userFilter === 'all' ? 'all' : 'all';
   };
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className={cn(
-              "relative",
-              hasChanges() && "border-primary bg-primary/5",
-              loading && "opacity-60"
-            )}
-            disabled={loading}
-          >
+          <Button variant="outline" size="sm" className="relative">
             <Filter className="h-4 w-4 mr-2" />
             Filter
             {activeFilterCount > 0 && (
@@ -145,27 +91,13 @@ export const AdvancedFilterSystem = ({ className }: AdvancedFilterSystemProps) =
                 {activeFilterCount}
               </Badge>
             )}
-            {hasChanges() && (
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
-            )}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-96" align="start">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h4 className="font-medium">Advanced Filters</h4>
-              <div className="flex items-center gap-2">
-                {hasChanges() && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={resetToApplied}
-                    className="text-muted-foreground"
-                  >
-                    <RotateCcw className="h-3 w-3 mr-1" />
-                    Reset
-                  </Button>
-                )}
+              {activeFilterCount > 0 && (
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -175,14 +107,14 @@ export const AdvancedFilterSystem = ({ className }: AdvancedFilterSystemProps) =
                   <X className="h-4 w-4 mr-1" />
                   Clear All
                 </Button>
-              </div>
+              )}
             </div>
 
             <Separator />
 
             <PostOwnerFilter
               selectedFilter={getDisplayFilter()}
-              selectedUser={pendingUser}
+              selectedUser={selectedUser}
               onFilterChange={handlePostOwnerFilterChange}
               onUserSelect={handleUserSelect}
             />
@@ -190,46 +122,16 @@ export const AdvancedFilterSystem = ({ className }: AdvancedFilterSystemProps) =
             <Separator />
 
             <AdvancedContentTypeFilter
-              selectedTypes={pendingFilters.contentTypes}
+              selectedTypes={filters.contentTypes}
               onTypesChange={handleContentTypesChange}
             />
 
             <Separator />
 
             <AdvancedTimeRangeFilter
-              selectedRange={pendingFilters.timeRange}
+              selectedRange={filters.timeRange}
               onRangeChange={handleTimeRangeChange}
             />
-
-            <Separator />
-
-            <div className="flex items-center justify-between pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                onClick={applyFilters}
-                disabled={!hasChanges() || isApplying}
-                className="min-w-[100px]"
-              >
-                {isApplying ? (
-                  <>
-                    <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent mr-2" />
-                    Applying...
-                  </>
-                ) : (
-                  <>
-                    <Check className="h-3 w-3 mr-2" />
-                    Apply Filters
-                  </>
-                )}
-              </Button>
-            </div>
           </div>
         </PopoverContent>
       </Popover>

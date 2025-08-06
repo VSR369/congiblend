@@ -1,154 +1,189 @@
-interface PerformanceMetric {
-  name: string;
-  value: number;
-  timestamp: number;
-  type: 'timing' | 'count' | 'memory' | 'size';
-  metadata?: Record<string, any>;
-}
+// Performance monitoring utilities
+export class PerformanceMonitor {
+  private static instance: PerformanceMonitor;
+  private metrics: Map<string, number> = new Map();
 
-class PerformanceMonitor {
-  private metrics: PerformanceMetric[] = [];
-  private timers: Map<string, number> = new Map();
-  private metadata: Map<string, Record<string, any>> = new Map();
-
-  startTimer(name: string, metadata?: Record<string, any>) {
-    this.timers.set(name, performance.now());
-    if (metadata) {
-      this.metadata.set(name, metadata);
+  static getInstance() {
+    if (!PerformanceMonitor.instance) {
+      PerformanceMonitor.instance = new PerformanceMonitor();
     }
+    return PerformanceMonitor.instance;
   }
 
-  endTimer(name: string): number {
-    const startTime = this.timers.get(name);
-    if (!startTime) {
-      console.warn(`Timer ${name} was not started`);
-      return 0;
-    }
-
-    const duration = performance.now() - startTime;
-    const metadata = this.metadata.get(name);
-    
-    this.addMetric({
-      name,
-      value: duration,
-      timestamp: Date.now(),
-      type: 'timing',
-      metadata
-    });
-
-    this.timers.delete(name);
-    this.metadata.delete(name);
-    
-    return duration;
-  }
-
-  addMetric(metric: PerformanceMetric) {
-    this.metrics.push(metric);
-    
-    // Keep only last 1000 metrics to prevent memory leaks
-    if (this.metrics.length > 1000) {
-      this.metrics = this.metrics.slice(-1000);
-    }
-
-    // Log performance issues
-    if (metric.type === 'timing' && metric.value > 5000) {
-      console.warn(`Slow operation detected: ${metric.name} took ${metric.value}ms`);
-    }
-  }
-
-  getMetrics(type?: string, limit = 100): PerformanceMetric[] {
-    let filtered = this.metrics;
-    if (type) {
-      filtered = this.metrics.filter(m => m.type === type);
-    }
-    return filtered.slice(-limit);
-  }
-
-  measureMemoryUsage() {
-    if ('memory' in performance) {
-      const memory = (performance as any).memory;
-      this.addMetric({
-        name: 'memory_usage',
-        value: memory.usedJSHeapSize,
-        timestamp: Date.now(),
-        type: 'memory',
-        metadata: {
-          totalJSHeapSize: memory.totalJSHeapSize,
-          jsHeapSizeLimit: memory.jsHeapSizeLimit
+  // Web Vitals monitoring
+  measureWebVitals() {
+    if ('web-vital' in window) {
+      // CLS - Cumulative Layout Shift
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          console.log('CLS:', entry);
         }
+      }).observe({ type: 'layout-shift', buffered: true });
+
+      // LCP - Largest Contentful Paint
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          console.log('LCP:', entry);
+        }
+      }).observe({ type: 'largest-contentful-paint', buffered: true });
+
+      // FID - First Input Delay
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          console.log('FID:', entry);
+        }
+      }).observe({ type: 'first-input', buffered: true });
+    }
+  }
+
+  // Custom performance marks
+  mark(name: string) {
+    performance.mark(name);
+    this.metrics.set(name, performance.now());
+  }
+
+  measure(name: string, startMark: string, endMark?: string) {
+    if (endMark) {
+      performance.measure(name, startMark, endMark);
+    } else {
+      performance.measure(name, startMark);
+    }
+    
+    const measure = performance.getEntriesByName(name, 'measure')[0];
+    console.log(`${name}: ${measure.duration}ms`);
+    return measure.duration;
+  }
+
+  // Bundle size analysis
+  analyzeBundleSize() {
+    if ('navigator' in window && 'connection' in navigator) {
+      const connection = (navigator as any).connection;
+      console.log('Network info:', {
+        effectiveType: connection.effectiveType,
+        downlink: connection.downlink,
+        rtt: connection.rtt,
       });
     }
   }
 
-  measureBundleSize() {
-    // Estimate bundle size by counting loaded scripts
-    const scripts = document.querySelectorAll('script[src]') as NodeListOf<HTMLScriptElement>;
-    let totalSize = 0;
-    
-    scripts.forEach(script => {
-      // This is an approximation - in a real app you'd get actual sizes
-      totalSize += script.src.length;
-    });
-
-    this.addMetric({
-      name: 'estimated_bundle_size',
-      value: totalSize,
-      timestamp: Date.now(),
-      type: 'size',
-      metadata: { scriptCount: scripts.length }
-    });
+  // Memory usage monitoring
+  monitorMemory() {
+    if ('memory' in performance) {
+      const memory = (performance as any).memory;
+      console.log('Memory usage:', {
+        used: Math.round(memory.usedJSHeapSize / 1048576) + ' MB',
+        total: Math.round(memory.totalJSHeapSize / 1048576) + ' MB',
+        limit: Math.round(memory.jsHeapSizeLimit / 1048576) + ' MB',
+      });
+    }
   }
+}
 
-  generateReport() {
-    const timings = this.getMetrics('timing');
-    const memory = this.getMetrics('memory');
-    const errors = this.getMetrics('count');
+// Image optimization utilities
+export const optimizeImage = (
+  src: string,
+  width?: number,
+  height?: number,
+  format: 'webp' | 'avif' | 'jpeg' | 'png' = 'webp'
+) => {
+  if (!src) return src;
+  
+  // Add query parameters for optimization
+  const url = new URL(src, window.location.origin);
+  if (width) url.searchParams.set('w', width.toString());
+  if (height) url.searchParams.set('h', height.toString());
+  url.searchParams.set('format', format);
+  url.searchParams.set('q', '85'); // Quality
+  
+  return url.toString();
+};
 
-    return {
-      performance_summary: {
-        avg_post_creation_time: this.calculateAverage(timings.filter(m => m.name === 'post_creation')),
-        avg_page_load_time: this.calculateAverage(timings.filter(m => m.name === 'page_load')),
-        avg_file_upload_time: this.calculateAverage(timings.filter(m => m.name === 'file_upload')),
-        memory_usage_trend: memory.map(m => ({ timestamp: m.timestamp, value: m.value })),
-        error_count: errors.filter(m => m.name === 'error').length,
-        total_metrics: this.metrics.length
-      },
-      recent_timings: timings.slice(-10),
-      performance_issues: timings.filter(m => m.value > 3000),
-      memory_leaks: this.detectMemoryLeaks(memory)
+// Lazy loading utilities
+export const createIntersectionObserver = (
+  callback: IntersectionObserverCallback,
+  options?: IntersectionObserverInit
+) => {
+  const defaultOptions = {
+    root: null,
+    rootMargin: '50px',
+    threshold: 0.1,
+    ...options,
+  };
+
+  return new IntersectionObserver(callback, defaultOptions);
+};
+
+// Cache management
+export class CacheManager {
+  private static readonly CACHE_PREFIX = 'app-cache-';
+  private static readonly DEFAULT_TTL = 1000 * 60 * 60; // 1 hour
+
+  static async set(key: string, data: any, ttl = CacheManager.DEFAULT_TTL) {
+    const item = {
+      data,
+      timestamp: Date.now(),
+      ttl,
     };
-  }
-
-  private calculateAverage(metrics: PerformanceMetric[]): number {
-    if (metrics.length === 0) return 0;
-    return metrics.reduce((sum, m) => sum + m.value, 0) / metrics.length;
-  }
-
-  private detectMemoryLeaks(memory: PerformanceMetric[]): boolean {
-    if (memory.length < 10) return false;
     
-    const recent = memory.slice(-10);
-    const growth = recent[recent.length - 1].value - recent[0].value;
-    return growth > 10 * 1024 * 1024; // 10MB growth indicates potential leak
+    try {
+      localStorage.setItem(CacheManager.CACHE_PREFIX + key, JSON.stringify(item));
+    } catch (error) {
+      console.warn('Cache set failed:', error);
+    }
+  }
+
+  static async get(key: string) {
+    try {
+      const item = localStorage.getItem(CacheManager.CACHE_PREFIX + key);
+      if (!item) return null;
+
+      const parsed = JSON.parse(item);
+      const now = Date.now();
+
+      if (now - parsed.timestamp > parsed.ttl) {
+        CacheManager.delete(key);
+        return null;
+      }
+
+      return parsed.data;
+    } catch (error) {
+      console.warn('Cache get failed:', error);
+      return null;
+    }
+  }
+
+  static delete(key: string) {
+    localStorage.removeItem(CacheManager.CACHE_PREFIX + key);
+  }
+
+  static clear() {
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith(CacheManager.CACHE_PREFIX)) {
+        localStorage.removeItem(key);
+      }
+    });
   }
 }
 
-export const performanceMonitor = new PerformanceMonitor();
-
-// Auto-measure memory every 30 seconds
-setInterval(() => {
-  performanceMonitor.measureMemoryUsage();
-}, 30000);
-
-// Measure bundle size on load
-if (typeof window !== 'undefined') {
-  window.addEventListener('load', () => {
-    performanceMonitor.measureBundleSize();
-    performanceMonitor.addMetric({
-      name: 'page_load',
-      value: performance.now(),
-      timestamp: Date.now(),
-      type: 'timing'
-    });
-  });
-}
+// Performance-optimized debounce
+export const debounce = <T extends (...args: any[]) => any>(
+  func: T,
+  wait: number,
+  immediate = false
+): ((...args: Parameters<T>) => void) => {
+  let timeout: NodeJS.Timeout | null = null;
+  
+  return (...args: Parameters<T>) => {
+    const callNow = immediate && !timeout;
+    
+    if (timeout) clearTimeout(timeout);
+    
+    timeout = setTimeout(() => {
+      timeout = null;
+      if (!immediate) func(...args);
+    }, wait);
+    
+    if (callNow) func(...args);
+  };
+};

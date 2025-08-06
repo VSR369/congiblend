@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-
+import { createTestUsers } from '@/utils/create-test-users';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+  const [creatingTestUsers, setCreatingTestUsers] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +41,7 @@ const Auth = () => {
         if (error) throw error;
         
         toast.success('Successfully signed in!');
-        // Remove manual navigation - let ProtectedRoute handle it
+        navigate('/');
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -54,7 +54,7 @@ const Auth = () => {
         if (error) throw error;
         
         toast.success('Check your email for verification link!');
-        // Remove manual navigation - let ProtectedRoute handle it
+        navigate('/login');
       }
     } catch (error: any) {
       setError(error.message || 'An error occurred');
@@ -64,6 +64,17 @@ const Auth = () => {
     }
   };
 
+  const handleCreateTestUsers = async () => {
+    setCreatingTestUsers(true);
+    try {
+      await createTestUsers();
+      toast.success('Test users created successfully!');
+    } catch (error) {
+      toast.error('Failed to create test users');
+    } finally {
+      setCreatingTestUsers(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -131,6 +142,20 @@ const Auth = () => {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Loading...' : (isLogin ? 'Sign In' : 'Sign Up')}
             </Button>
+            
+            <Separator />
+            
+            {isLogin && (
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full" 
+                onClick={handleCreateTestUsers}
+                disabled={creatingTestUsers}
+              >
+                {creatingTestUsers ? 'Creating...' : 'Create Test Users'}
+              </Button>
+            )}
             
             <div className="text-center text-sm">
               {isLogin ? (
