@@ -32,10 +32,13 @@ export const UserSearchFilter = ({
     }
   }, [users.length, loadUsers]);
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.username.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = users.filter(user => {
+    // Safety check for null/undefined values
+    const name = user.name || '';
+    const username = user.username || '';
+    const query = searchQuery.toLowerCase();
+    return name.toLowerCase().includes(query) || username.toLowerCase().includes(query);
+  });
 
   const handleUserSelect = (user: UserType) => {
     onUserSelect?.(user);
@@ -61,9 +64,9 @@ export const UserSearchFilter = ({
             {selectedUser ? (
               <div className="flex items-center space-x-2">
                 <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs">
-                  {selectedUser.name.charAt(0).toUpperCase()}
+                  {(selectedUser.name || selectedUser.username || '?').charAt(0).toUpperCase()}
                 </div>
-                <span>{selectedUser.name}</span>
+                <span>{selectedUser.name || selectedUser.username}</span>
               </div>
             ) : (
               <span className="text-muted-foreground">{placeholder}</span>
@@ -89,11 +92,11 @@ export const UserSearchFilter = ({
                     className="flex items-center space-x-3"
                   >
                     <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs">
-                      {user.name.charAt(0).toUpperCase()}
+                      {(user.name || user.username || '?').charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1">
-                      <div className="font-medium">{user.name}</div>
-                      <div className="text-sm text-muted-foreground">@{user.username}</div>
+                      <div className="font-medium">{user.name || user.username}</div>
+                      <div className="text-sm text-muted-foreground">@{user.username || 'unknown'}</div>
                       {user.title && (
                         <div className="text-xs text-muted-foreground">{user.title}</div>
                       )}
@@ -109,7 +112,7 @@ export const UserSearchFilter = ({
       {selectedUser && (
         <Badge variant="secondary" className="inline-flex items-center space-x-1">
           <User className="h-3 w-3" />
-          <span>{selectedUser.name}</span>
+          <span>{selectedUser.name || selectedUser.username}</span>
           <button 
             onClick={handleClear}
             className="ml-1 hover:bg-muted-foreground/20 rounded-full"

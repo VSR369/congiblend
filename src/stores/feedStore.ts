@@ -456,15 +456,15 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
         if (error) throw error;
 
-        // Transform database users to our User type
+        // Transform database users to our User type with null safety
         const transformedUsers = usersData?.map(dbUser => ({
           id: dbUser.id,
-          name: dbUser.display_name || dbUser.username,
-          username: dbUser.username,
+          name: dbUser.display_name || dbUser.username || `User_${dbUser.id.slice(0, 8)}`,
+          username: dbUser.username || `user_${dbUser.id.slice(0, 8)}`,
           avatar: dbUser.avatar_url,
           title: dbUser.title,
           company: dbUser.company
-        })) || [];
+        })).filter(user => user.name && user.username) || [];
         
         set({ users: transformedUsers });
       } catch (error) {
