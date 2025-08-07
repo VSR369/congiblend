@@ -143,6 +143,26 @@
     margin: 0 auto;
   }
 
+  /* LinkedIn-style action buttons */
+  .linkedin-action-btn {
+    @apply transition-all duration-200 ease-in-out;
+    flex: 1;
+    border-radius: 0;
+    
+    &:hover {
+      @apply bg-muted/50;
+      transform: translateY(-1px);
+    }
+    
+    &:first-child {
+      border-radius: 0.375rem 0 0 0.375rem;
+    }
+    
+    &:last-child {
+      border-radius: 0 0.375rem 0.375rem 0;
+    }
+  }
+
   /* Clean Media Container */
   .media-container {
     aspect-ratio: 16 / 9;

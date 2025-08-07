@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, TrendingUp, Clock } from "lucide-react";
 import { CommentInput } from "./comment-input";
 import { Button } from "./button";
 import { Avatar } from "./avatar";
@@ -58,35 +58,45 @@ export const SimpleCommentsSection = React.memo(({
 
   return (
     <div className={cn("space-y-4 border-t pt-4", className)}>
-      {/* Always visible comment input */}
+      {/* LinkedIn-style comment sorting */}
+      {showComments && commentsCount > 0 && (
+        <div className="px-4 pb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground p-0 h-auto font-normal"
+          >
+            <TrendingUp className="h-4 w-4 mr-1" />
+            Most relevant
+            <ChevronDown className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      )}
+
+      {/* Enhanced comment input */}
       <CommentInput
         onSubmit={handleAddComment}
-        placeholder="Write a comment..."
-        className="mb-4"
+        placeholder="Add a comment..."
+        className="px-4"
       />
 
       {/* Comments toggle */}
-      {commentsCount > 0 && (
+      {commentsCount > 0 && !showComments && (
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setShowComments(!showComments)}
-          className="w-full justify-between text-muted-foreground hover:text-foreground"
+          onClick={() => setShowComments(true)}
+          className="w-full justify-start text-muted-foreground hover:text-foreground px-4"
         >
           <span>
-            {showComments ? 'Hide' : 'View'} {commentsCount} comment{commentsCount !== 1 ? 's' : ''}
+            View {commentsCount} comment{commentsCount !== 1 ? 's' : ''}
           </span>
-          {showComments ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
         </Button>
       )}
 
       {/* Comments list */}
       {showComments && topLevelComments.length > 0 && (
-        <div className="space-y-4 animate-fade-in">
+        <div className="space-y-4 animate-fade-in px-4">
           {topLevelComments.map((comment) => (
             <CommentItem
               key={comment.id}

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { MoreHorizontal, MessageCircle, Share2, Bookmark, Flag, Heart } from "lucide-react";
+import { MoreHorizontal, MessageCircle, Share2, Bookmark, Flag, Heart, Send } from "lucide-react";
 import { formatRelativeTime } from "@/utils/formatters";
 import { LikeButton } from "./like-button";
 import { PostErrorBoundary } from "./post-error-boundary";
@@ -347,31 +347,50 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
           )}
         </div>
 
-        {/* Engagement Stats */}
-        {(totalReactions > 0 || post.comments.length > 0) && (
-          <div className="flex items-center justify-between text-sm text-muted-foreground px-4 pb-2 border-b">
-            <div className="flex items-center space-x-4">
-              {totalReactions > 0 && (
-                <span className="flex items-center space-x-1">
-                  <Heart className="h-4 w-4 text-red-500" />
-                  <span>{totalReactions}</span>
-                </span>
-              )}
-              
-              {post.comments.length > 0 && (
-                <span>{post.comments.length} comments</span>
-              )}
-            </div>
-
-            <div className="flex items-center space-x-4">
-              {post.shares > 0 && <span>{post.shares} shares</span>}
-            </div>
+        {/* LinkedIn-Style Engagement Stats */}
+        {(totalReactions > 0 || post.comments.length > 0 || post.shares > 0) && (
+          <div className="px-4 pb-3">
+            {/* LinkedIn-style engagement summary */}
+            {totalReactions > 0 && (
+              <div className="flex items-center text-sm text-muted-foreground mb-2">
+                <div className="flex items-center space-x-1">
+                  <div className="flex -space-x-1">
+                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                      <Heart className="h-3 w-3 text-white" />
+                    </div>
+                  </div>
+                  <span className="ml-2 hover:text-primary cursor-pointer hover:underline">
+                    {post.author.name} and {totalReactions > 1 ? `${totalReactions - 1} others` : 'others'}
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            {/* LinkedIn-style metrics line */}
+            {(post.comments.length > 0 || post.shares > 0) && (
+              <div className="flex items-center justify-between text-sm text-muted-foreground border-b pb-3">
+                <div className="flex items-center space-x-2">
+                  {post.comments.length > 0 && (
+                    <span className="hover:text-primary cursor-pointer hover:underline">
+                      {post.comments.length} comment{post.comments.length !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  {post.shares > 0 && (
+                    <span className="hover:text-primary cursor-pointer hover:underline">
+                      {post.shares} repost{post.shares !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center justify-between px-4 py-2 border-b">
-          <div className="flex items-center space-x-1">
+        {/* LinkedIn-Style Actions */}
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center space-x-0">
             <LikeButton
               targetId={post.id}
               targetType="post"
@@ -379,26 +398,41 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
               reactions={post.reactions}
             />
 
-            <Button variant="ghost" size="sm" className="text-muted-foreground">
-              <MessageCircle className="h-4 w-4 mr-1" />
-              Comment
-            </Button>
-
-            <Button variant="ghost" size="sm" onClick={handleShare} className="text-muted-foreground">
-              <Share2 className="h-4 w-4 mr-1" />
-              Share
+            <Button 
+              variant="ghost" 
+              className="linkedin-action-btn text-muted-foreground hover:bg-muted h-12 px-4 rounded-none flex flex-col items-center"
+            >
+              <MessageCircle className="h-5 w-5 mb-1" />
+              <span className="text-xs font-medium">Comment</span>
             </Button>
 
             <Button 
               variant="ghost" 
-              size="sm"
+              onClick={handleShare} 
+              className="linkedin-action-btn text-muted-foreground hover:bg-muted h-12 px-4 rounded-none flex flex-col items-center"
+            >
+              <Share2 className="h-5 w-5 mb-1" />
+              <span className="text-xs font-medium">Repost</span>
+            </Button>
+
+            <Button 
+              variant="ghost" 
+              className="linkedin-action-btn text-muted-foreground hover:bg-muted h-12 px-4 rounded-none flex flex-col items-center"
+            >
+              <Send className="h-5 w-5 mb-1" />
+              <span className="text-xs font-medium">Send</span>
+            </Button>
+
+            <Button 
+              variant="ghost" 
               onClick={handleSaveToggle}
               className={cn(
-                "text-muted-foreground",
-                post.userSaved && "text-primary"
+                "linkedin-action-btn hover:bg-muted h-12 px-4 rounded-none flex flex-col items-center",
+                post.userSaved ? "text-primary" : "text-muted-foreground"
               )}
             >
-              <Bookmark className={cn("h-4 w-4", post.userSaved && "fill-current")} />
+              <Bookmark className={cn("h-5 w-5 mb-1", post.userSaved && "fill-current")} />
+              <span className="text-xs font-medium">Save</span>
             </Button>
           </div>
         </div>

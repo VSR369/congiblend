@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Send } from "lucide-react";
+import { Send, Image, Smile, Paperclip } from "lucide-react";
 import { Button } from "./button";
 import { Textarea } from "./textarea";
 import { Avatar } from "./avatar";
@@ -54,35 +54,76 @@ export const CommentInput = ({
 
   return (
     <form onSubmit={handleSubmit} className={cn("flex space-x-3", className)}>
-      <div className="h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
+      <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
         {user?.user_metadata?.avatar_url ? (
           <img src={user.user_metadata.avatar_url} alt={user.user_metadata?.display_name || "User"} className="w-full h-full object-cover" />
         ) : (
-          <span className="text-xs font-medium">
+          <span className="text-sm font-medium">
             {(user?.user_metadata?.display_name || user?.email?.split('@')[0] || "U").charAt(0).toUpperCase()}
           </span>
         )}
       </div>
       
-      <div className="flex-1 flex space-x-2">
-        <Textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={disabled || isSubmitting}
-          className="flex-1 min-h-[40px] max-h-[120px] resize-none"
-          rows={1}
-        />
-        
-        <Button
-          type="submit"
-          size="sm"
-          disabled={!content.trim() || isSubmitting || disabled}
-          className="self-end"
-        >
-          <Send className="h-4 w-4" />
-        </Button>
+      <div className="flex-1">
+        <div className="relative border rounded-lg bg-background">
+          <Textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            disabled={disabled || isSubmitting}
+            className="border-0 min-h-[44px] max-h-[120px] resize-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            rows={1}
+          />
+          
+          <div className="flex items-center justify-between p-2 border-t">
+            <div className="flex items-center space-x-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+              >
+                <Image className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+              >
+                <Smile className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs h-7 px-3"
+              >
+                AI Reply
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={!content.trim() || isSubmitting || disabled}
+                className="h-7 px-3"
+              >
+                Post
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </form>
   );
