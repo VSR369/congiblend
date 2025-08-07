@@ -6,8 +6,9 @@ import { Button } from "./button";
 import { Avatar } from "./avatar";
 import { formatRelativeTime } from "@/utils/formatters";
 import { useFeedStore } from "@/stores/feedStore";
+import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/lib/utils";
-import type { Comment } from "@/types/feed";
+import type { Comment, ReactionType } from "@/types/feed";
 
 interface SimpleCommentsSectionProps {
   postId: string;
@@ -147,6 +148,7 @@ const CommentItem = React.memo(({
   onAddReply,
   postId
 }: CommentItemProps) => {
+  const { user } = useAuthStore();
   const replies = React.useMemo(() => 
     allComments.filter(c => c.parentId === comment.id),
     [allComments, comment.id]
@@ -155,6 +157,10 @@ const CommentItem = React.memo(({
   const handleReplySubmit = React.useCallback(async (content: string) => {
     await onAddReply(content, comment.id);
   }, [onAddReply, comment.id]);
+
+  const currentUserReaction = comment.reactions?.find(
+    r => r.user.id === user?.id
+  )?.type;
 
   return (
     <div className="space-y-3">
@@ -187,16 +193,11 @@ const CommentItem = React.memo(({
             <LikeButton
               targetId={comment.id}
               targetType="comment"
-              currentReaction={undefined}
+              currentReaction={currentUserReaction}
               reactions={comment.reactions || []}
               postId={postId}
               className="text-xs"
             />
-            {comment.reactionsCount > 0 && (
-              <span className="text-xs text-muted-foreground">
-                {comment.reactionsCount} {comment.reactionsCount === 1 ? 'reaction' : 'reactions'}
-              </span>
-            )}
             <Button
               variant="ghost"
               size="sm"
