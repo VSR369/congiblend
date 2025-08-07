@@ -26,6 +26,7 @@ interface FeedState {
   
   // Engagement actions
   toggleReaction: (postId: string, reaction: ReactionType | null) => Promise<void>;
+  toggleCommentReaction: (commentId: string, postId: string, reaction: ReactionType | null) => Promise<void>;
   addComment: (postId: string, content: string, parentId?: string) => void;
   deleteComment: (postId: string, commentId: string) => void;
   toggleSave: (postId: string) => void;
@@ -102,6 +103,7 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
     createdAt: comment.created_at ? new Date(comment.created_at) : new Date(),
     parentId: comment.parent_comment_id,
     reactions: [],
+    reactionsCount: comment.reactions_count || 0,
     replies: []
   })) || [];
 
@@ -806,6 +808,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           createdAt: new Date(),
           parentId,
           reactions: [],
+          reactionsCount: 0,
           replies: []
         };
 
@@ -1032,6 +1035,70 @@ export const useFeedStore = create<FeedState>((set, get) => {
       }));
       // Reload posts with new filters
       get().loadPosts(true);
+    },
+
+    toggleCommentReaction: async (commentId: string, postId: string, reaction: ReactionType | null) => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        // Optimistic update - update comment reactions count
+        set(state => ({
+          posts: state.posts.map(p => {
+            if (p.id !== postId) return p;
+            
+            return {
+              ...p,
+              comments: p.comments.map(comment => {
+                if (comment.id !== commentId) return comment;
+                
+                const hasExistingReaction = comment.reactions.some(r => r.user.id === user.id);
+                const reactionCountChange = reaction ? 
+                  (hasExistingReaction ? 0 : 1) : 
+                  (hasExistingReaction ? -1 : 0);
+                
+                const updatedReactions = comment.reactions.filter(r => r.user.id !== user.id);
+                
+                if (reaction) {
+                  updatedReactions.push({
+                    id: `temp-${Date.now()}`,
+                    type: reaction,
+                    user: {
+                      id: user.id,
+                      name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
+                      username: user.user_metadata?.username || user.email?.split('@')[0] || 'user'
+                    },
+                    createdAt: new Date()
+                  });
+                }
+                
+                return {
+                  ...comment,
+                  reactions: updatedReactions,
+                  reactionsCount: Math.max(0, comment.reactionsCount + reactionCountChange)
+                };
+              })
+            };
+          })
+        }));
+
+        // Call backend API
+        const { data, error } = await supabase.functions.invoke('reactions', {
+          body: {
+            target_type: 'comment',
+            target_id: commentId,
+            reaction_type: reaction
+          }
+        });
+
+        if (error) throw error;
+
+      } catch (error) {
+        console.error('Error toggling comment reaction:', error);
+        // Revert optimistic update on error
+        get().loadPosts(true);
+        throw error;
+      }
     }
   };
 });

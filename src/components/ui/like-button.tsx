@@ -10,6 +10,7 @@ interface LikeButtonProps {
   currentReaction?: ReactionType | null;
   reactions?: Reaction[];
   className?: string;
+  postId?: string; // Required for comment reactions
 }
 
 export const LikeButton: React.FC<LikeButtonProps> = ({
@@ -17,11 +18,12 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
   targetType,
   currentReaction,
   reactions = [],
-  className
+  className,
+  postId
 }) => {
   const [showPicker, setShowPicker] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout>();
-  const { toggleReaction } = useFeedStore();
+  const { toggleReaction, toggleCommentReaction } = useFeedStore();
 
   // Calculate reaction counts from reactions array
   const reactionCounts = getReactionCounts(reactions);
@@ -56,16 +58,31 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
 
   const handleClick = async () => {
     // LinkedIn behavior: click toggles between Like and no reaction
-    if (currentReaction === 'like') {
-      await toggleReaction(targetId, null);
+    const reactionToToggle = currentReaction === 'like' ? null : 'like';
+    
+    if (targetType === 'comment') {
+      if (!postId) {
+        console.error('postId is required for comment reactions');
+        return;
+      }
+      await toggleCommentReaction(targetId, postId, reactionToToggle);
     } else {
-      await toggleReaction(targetId, 'like');
+      await toggleReaction(targetId, reactionToToggle);
     }
   };
 
   const handleReactionSelect = async (reactionType: ReactionType) => {
     setShowPicker(false);
-    await toggleReaction(targetId, reactionType);
+    
+    if (targetType === 'comment') {
+      if (!postId) {
+        console.error('postId is required for comment reactions');
+        return;
+      }
+      await toggleCommentReaction(targetId, postId, reactionType);
+    } else {
+      await toggleReaction(targetId, reactionType);
+    }
   };
 
   // Determine button appearance based on current reaction

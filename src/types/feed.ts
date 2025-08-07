@@ -99,6 +99,7 @@ export interface Comment {
   author: User;
   createdAt: Date;
   reactions: Reaction[];
+  reactionsCount: number;
   replies?: Comment[];
   parentId?: string;
   edited?: boolean;

@@ -112,6 +112,7 @@ export const SimpleCommentsSection = React.memo(({
               onReply={(commentId) => setReplyingTo(commentId)}
               replyingTo={replyingTo}
               onAddReply={handleAddReply}
+              postId={postId}
             />
           ))}
         </div>
@@ -135,6 +136,7 @@ interface CommentItemProps {
   onReply: (commentId: string) => void;
   replyingTo: string | null;
   onAddReply: (content: string, parentId: string) => Promise<void>;
+  postId: string;
 }
 
 const CommentItem = React.memo(({ 
@@ -142,7 +144,8 @@ const CommentItem = React.memo(({
   allComments, 
   onReply, 
   replyingTo, 
-  onAddReply 
+  onAddReply,
+  postId
 }: CommentItemProps) => {
   const replies = React.useMemo(() => 
     allComments.filter(c => c.parentId === comment.id),
@@ -186,8 +189,14 @@ const CommentItem = React.memo(({
               targetType="comment"
               currentReaction={undefined}
               reactions={comment.reactions || []}
+              postId={postId}
               className="text-xs"
             />
+            {comment.reactionsCount > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {comment.reactionsCount} {comment.reactionsCount === 1 ? 'reaction' : 'reactions'}
+              </span>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -221,6 +230,7 @@ const CommentItem = React.memo(({
               onReply={onReply}
               replyingTo={replyingTo}
               onAddReply={onAddReply}
+              postId={postId}
             />
           ))}
         </div>
