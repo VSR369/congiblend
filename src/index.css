@@ -448,9 +448,9 @@
   }
 
   .post-card-stable {
-    contain: layout style paint;
     overflow: hidden;
     min-height: 200px;
+    margin-bottom: 1rem;
     transform: translateZ(0);
     will-change: auto;
   }
@@ -549,6 +549,11 @@
 /* Modal-aware virtual scroll styles */
 .virtual-scroll-modal-open {
   contain: none !important;
+}
+
+/* Fix spacing for post cards */
+.stable-list > * + * {
+  margin-top: 1rem;
 }
 
 /* Utility class to disable CSS containment when modal is open */

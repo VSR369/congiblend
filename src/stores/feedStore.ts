@@ -293,31 +293,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
               is_verified,
               title,
               company
-            ),
-            reactions:reactions!target_id (
-              id,
-              reaction_type,
-              user_id,
-              created_at,
-              profiles (
-                id,
-                username,
-                display_name,
-                avatar_url
-              )
-            ),
-            comments:comments!post_id (
-              id,
-              content,
-              user_id,
-              parent_comment_id,
-              created_at,
-              profiles (
-                id,
-                username,
-                display_name,
-                avatar_url
-              )
             )
           `);
 
@@ -372,10 +347,65 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
         if (postsError) throw postsError;
 
-        // Transform posts to our format
-        const transformedPosts = postsData?.map((dbPost) => 
-          transformDbPost(dbPost, dbPost.profiles)
-        ) || [];
+        // Get current user for reactions
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        // Transform posts to our format with reactions and comments loaded separately
+        const transformedPosts = await Promise.all(
+          (postsData || []).map(async (dbPost) => {
+            try {
+              // Load reactions for this post
+              const { data: reactions } = await supabase
+                .from('reactions')
+                .select(`
+                  id,
+                  reaction_type,
+                  user_id,
+                  created_at,
+                  profiles (
+                    id,
+                    username,
+                    display_name,
+                    avatar_url
+                  )
+                `)
+                .eq('target_type', 'post')
+                .eq('target_id', dbPost.id);
+
+              // Load comments for this post
+              const { data: comments } = await supabase
+                .from('comments')
+                .select(`
+                  id,
+                  content,
+                  user_id,
+                  parent_comment_id,
+                  created_at,
+                  profiles (
+                    id,
+                    username,
+                    display_name,
+                    avatar_url
+                  )
+                `)
+                .eq('post_id', dbPost.id)
+                .order('created_at', { ascending: true });
+
+              // Add reactions and comments to the post data
+              const postWithData = {
+                ...dbPost,
+                reactions: reactions || [],
+                comments: comments || []
+              };
+
+              return transformDbPost(postWithData, dbPost.profiles, user?.id);
+            } catch (error) {
+              console.error('Error loading post data:', error);
+              // Return post without reactions/comments if there's an error
+              return transformDbPost({ ...dbPost, reactions: [], comments: [] }, dbPost.profiles, user?.id);
+            }
+          })
+        );
 
         set({ 
           posts: reset ? transformedPosts : [...state.posts, ...transformedPosts],

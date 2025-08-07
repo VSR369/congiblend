@@ -5,6 +5,7 @@ import { PostCreationModal } from "./post-creation-modal";
 import { FeedSkeleton } from "./post-card-skeleton";
 import { Button } from "./button";
 import { AdvancedFilterSystem } from "./advanced-filter-system";
+import { FeedErrorBoundary } from "./feed-error-boundary";
 import { useFeedStore } from "@/stores/feedStore";
 import { useVirtualScroll } from "@/hooks/useVirtualScroll";
 import { useAdvancedIntersectionObserver } from "@/hooks/useAdvancedIntersectionObserver";
@@ -62,7 +63,8 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
   }, [isIntersecting, debouncedLoadMore]);
 
   return (
-    <div className={cn("max-w-2xl mx-auto space-y-6", className)}>
+    <FeedErrorBoundary>
+      <div className={cn("max-w-2xl mx-auto space-y-6", className)}>
       {/* Feed Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
@@ -185,6 +187,7 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
       />
-    </div>
+      </div>
+    </FeedErrorBoundary>
   );
 };
