@@ -9,6 +9,8 @@ import { FeedErrorBoundary } from "@/components/boundaries/FeedErrorBoundary";
 import { useThemeStore } from "@/stores/themeStore";
 import { useAuthStore } from "@/stores/authStore";
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
+import DebugOverlay from "@/components/debug/DebugOverlay";
+import PerformanceMetrics from "@/components/debug/PerformanceMetrics";
 
 // Lazy load pages for better performance
 const MainLayout = lazy(() => import("@/components/layout/MainLayout").then(m => ({ default: m.MainLayout })));
@@ -48,6 +50,14 @@ const AppContent = () => {
           </Routes>
         </Suspense>
       </BrowserRouter>
+      
+      {/* Debug Tools - Only in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <>
+          <DebugOverlay enabled={true} />
+          <PerformanceMetrics enabled={true} position="bottom-left" compact={false} />
+        </>
+      )}
     </TooltipProvider>
   );
 };
