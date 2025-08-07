@@ -135,6 +135,7 @@ export interface Post {
   userSaved?: boolean;
   isSaved?: boolean;
   userShared?: boolean;
+  isOptimistic?: boolean;
 }
 
 export interface FeedSettings {

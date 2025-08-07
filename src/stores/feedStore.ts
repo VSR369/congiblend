@@ -553,17 +553,50 @@ export const useFeedStore = create<FeedState>((set, get) => {
               async (payload) => {
                 console.log('New post inserted:', payload);
                 if (payload.new) {
-                  // Get author info for new post
-                  const { data: authorData } = await supabase
-                    .from('profiles')
-                    .select('id, username, display_name, avatar_url, is_verified, title, company')
-                    .eq('id', payload.new.user_id)
+                  const { data: { user } } = await supabase.auth.getUser();
+                  const currentState = get();
+                  
+                  // Check if this is our own optimistic post
+                  const optimisticPost = currentState.posts.find(p => 
+                    p.id.startsWith('temp-') && p.author.id === payload.new.user_id
+                  );
+                  
+                  // Get complete post data with author info
+                  const { data: postData } = await supabase
+                    .from('posts')
+                    .select(`
+                      *,
+                      profiles:user_id (
+                        id,
+                        username,
+                        display_name,
+                        avatar_url,
+                        is_verified,
+                        title,
+                        company
+                      )
+                    `)
+                    .eq('id', payload.new.id)
                     .single();
 
-                  if (authorData) {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    // Reload posts to get the new post with all data properly loaded
-                    get().loadPosts(true);
+                  if (postData) {
+                    const transformedPost = transformDbPost(postData, postData.profiles, user?.id);
+                    
+                    set(state => {
+                      if (optimisticPost) {
+                        // Replace optimistic post with real post
+                        return {
+                          posts: state.posts.map(p => 
+                            p.id === optimisticPost.id ? transformedPost : p
+                          )
+                        };
+                      } else {
+                        // Add new post from other users
+                        return {
+                          posts: [transformedPost, ...state.posts.filter(p => p.id !== payload.new.id)]
+                        };
+                      }
+                    });
                   }
                 }
               }
@@ -640,6 +673,13 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
+        // Get user profile for optimistic update
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url, is_verified')
+          .eq('id', user.id)
+          .single();
+
         // Get the session token for API calls
         const { data: sessionData } = await supabase.auth.getSession();
         if (!sessionData.session?.access_token) throw new Error('No access token');
@@ -653,6 +693,73 @@ export const useFeedStore = create<FeedState>((set, get) => {
           console.log('Using provided media URLs:', data.media_urls.length);
           mediaUrls = data.media_urls;
         }
+
+        // Create optimistic post for immediate display
+        const optimisticPost: Post = {
+          id: `temp-${Date.now()}`,
+          type: data.post_type || 'text',
+          author: {
+            id: user.id,
+            name: userProfile?.display_name || userProfile?.username || user.email?.split('@')[0] || 'User',
+            username: userProfile?.username || user.email?.split('@')[0] || 'user',
+            avatar: userProfile?.avatar_url,
+            verified: userProfile?.is_verified || false,
+          },
+          content: data.content,
+          media: mediaUrls.map((url, index) => ({
+            id: `temp-media-${index}`,
+            type: determineMediaType(url, ''),
+            url,
+            alt: `Media ${index + 1}`,
+            thumbnail: url
+          })),
+          poll: data.poll_data ? {
+            id: `temp-poll-${Date.now()}`,
+            question: data.content,
+            options: data.poll_data.options.map((option, index) => ({
+              id: `temp-option-${index}`,
+              text: option.text,
+              votes: 0,
+              percentage: 0
+            })),
+            totalVotes: 0,
+            expiresAt: data.poll_data.expires_at ? new Date(data.poll_data.expires_at) : undefined,
+            allowMultiple: data.poll_data.multiple_choice || false,
+          } : undefined,
+          event: data.event_data ? {
+            id: `temp-event-${Date.now()}`,
+            title: data.event_data.title,
+            description: data.event_data.description || '',
+            startDate: new Date(data.event_data.start_date),
+            endDate: data.event_data.end_date ? new Date(data.event_data.end_date) : undefined,
+            location: data.event_data.location,
+            attendees: 0,
+            maxAttendees: data.event_data.max_attendees,
+          } : undefined,
+          hashtags: extractHashtags(data.content),
+          mentions: [],
+          reactions: [],
+          comments: [],
+          commentsCount: 0,
+          likes: 0,
+          shares: 0,
+          sharesCount: 0,
+          saves: 0,
+          views: 0,
+          createdAt: new Date(),
+          edited: false,
+          isPinned: false,
+          visibility: data.visibility || 'public',
+          userSaved: false,
+          isSaved: false,
+          userShared: false,
+        };
+
+        // Add optimistic post immediately
+        set(state => ({
+          posts: [optimisticPost, ...state.posts],
+          loading: false
+        }));
 
         const postPayload = {
           content: data.content,
@@ -682,17 +789,19 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
         if (error) {
           console.error('Edge function error:', error);
+          // Remove optimistic post on error
+          set(state => ({
+            posts: state.posts.filter(p => p.id !== optimisticPost.id)
+          }));
           throw error;
         }
 
         console.log('Post created successfully:', newPost);
-        // Post will be added via real-time subscription
+        // Real post will replace optimistic one via real-time subscription
         
       } catch (error) {
         console.error('Error creating post:', error);
         throw error;
-      } finally {
-        set(state => ({ ...state, loading: false }));
       }
     },
 
