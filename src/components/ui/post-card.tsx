@@ -137,6 +137,13 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
                         alt={media.alt || "Post image"}
                         className="w-full h-full object-cover"
                         loading="lazy"
+                        onError={(e) => {
+                          console.error('Image failed to load:', media.url);
+                          e.currentTarget.style.display = 'none';
+                        }}
+                        onLoad={() => {
+                          console.log('Image loaded successfully:', media.url);
+                        }}
                       />
                     )}
                     {post.media!.length > 4 && index === 3 && (

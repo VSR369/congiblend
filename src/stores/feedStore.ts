@@ -43,28 +43,34 @@ interface FeedState {
 // Helper function to transform database post to our Post type
 const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post => {
   console.log('🔄 Transforming post:', dbPost.id, 'type:', dbPost.post_type, 'media_urls:', dbPost.media_urls);
-  console.log('🔍 Raw post data:', JSON.stringify(dbPost, null, 2));
   
   // Handle media_urls array and transform to proper media format
   let media = [];
   if (dbPost.media_urls && Array.isArray(dbPost.media_urls) && dbPost.media_urls.length > 0) {
     console.log('📷 Processing media URLs:', dbPost.media_urls);
     media = dbPost.media_urls.map((url: string, index: number) => {
+      // Ensure URL is valid and accessible
+      if (!url || typeof url !== 'string') {
+        console.log('⚠️ Invalid URL:', url);
+        return null;
+      }
+
       // Try to get MIME type from metadata if available
       const mimeType = dbPost.metadata?.media?.[index]?.mimeType;
       const mediaType = determineMediaType(url, mimeType);
-      console.log('📷 Media item:', { url, type: mediaType, mimeType });
+      console.log('📷 Creating media item:', { url, type: mediaType, mimeType });
       
       return {
-        id: `${dbPost.id}-${index}`,
+        id: `${dbPost.id}-media-${index}`,
         type: mediaType,
-        url,
+        url: url.trim(),
         alt: `${mediaType} ${index + 1}`,
         thumbnail: dbPost.thumbnail_url || (mediaType === 'video' ? url : undefined),
         duration: dbPost.metadata?.media?.[index]?.duration,
         size: dbPost.metadata?.media?.[index]?.size
       };
-    });
+    }).filter(Boolean); // Remove null entries
+    
     console.log('✅ Final media array:', media);
   } else {
     console.log('❌ No media_urls found or empty array');
@@ -74,24 +80,31 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
   if (media.length === 0 && dbPost.images && Array.isArray(dbPost.images)) {
     console.log('🔄 Using legacy images field:', dbPost.images);
     media = dbPost.images.map((url: string, index: number) => ({
-      id: `${dbPost.id}-${index}`,
+      id: `${dbPost.id}-legacy-${index}`,
       type: 'image' as const,
       url,
       alt: 'Post image'
     }));
   }
 
-  // Transform reactions from database
-  const reactions = dbPost.reactions?.map((reaction: any) => ({
-    id: reaction.id,
-    type: reaction.reaction_type,
-    user: {
-      id: reaction.user_id,
-      name: reaction.profiles?.display_name || reaction.profiles?.username || 'User',
-      username: reaction.profiles?.username || 'user'
-    },
-    createdAt: reaction.created_at ? new Date(reaction.created_at) : new Date()
-  })) || [];
+  // Transform reactions from database with better error handling
+  const reactions = dbPost.reactions?.map((reaction: any) => {
+    if (!reaction || !reaction.id || !reaction.user_id) {
+      console.log('⚠️ Invalid reaction data:', reaction);
+      return null;
+    }
+    
+    return {
+      id: reaction.id,
+      type: reaction.reaction_type || 'like',
+      user: {
+        id: reaction.user_id,
+        name: reaction.profiles?.display_name || reaction.profiles?.username || 'User',
+        username: reaction.profiles?.username || 'user'
+      },
+      createdAt: reaction.created_at ? new Date(reaction.created_at) : new Date()
+    };
+  }).filter(Boolean) || [];
 
   // Find current user's reaction
   const userReaction = currentUserId 
@@ -303,8 +316,21 @@ export const useFeedStore = create<FeedState>((set, get) => {
         let query = supabase
           .from('posts')
           .select(`
-            *,
-            profiles (
+            id,
+            content,
+            post_type,
+            visibility,
+            media_urls,
+            metadata,
+            poll_data,
+            event_data,
+            reactions_count,
+            comments_count,
+            shares_count,
+            created_at,
+            updated_at,
+            user_id,
+            profiles!posts_user_id_fkey (
               id,
               username,
               display_name,
@@ -536,11 +562,8 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
                   if (authorData) {
                     const { data: { user } } = await supabase.auth.getUser();
-                    const transformedPost = transformDbPost(payload.new, authorData, user?.id);
-                    insertQueue.push({ post: transformedPost, author: authorData });
-                    clearTimeout(batchTimeout);
-                    // PHASE 4: Longer batch delay to reduce update frequency
-                    batchTimeout = setTimeout(processBatch, 1000);
+                    // Reload posts to get the new post with all data properly loaded
+                    get().loadPosts(true);
                   }
                 }
               }
