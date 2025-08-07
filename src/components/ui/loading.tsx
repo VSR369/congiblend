@@ -100,15 +100,13 @@ export const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
           )}
           {...props}
         >
-          <motion.div
+          <div
             className={cn(
-              "h-full rounded-full transition-all duration-300",
+              "h-full rounded-full smooth-transition",
               progressVariants.variant[variant],
               animated && "animate-pulse"
             )}
-            initial={{ width: 0 }}
-            animate={{ width: `${percentage}%` }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
+            style={{ width: `${percentage}%` }}
           />
         </div>
       </div>
@@ -149,17 +147,12 @@ export const LoadingOverlay = ({
   <div className={cn("relative", className)}>
     {children}
     {loading && (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10"
-      >
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10 animate-fade-in">
         <div className="text-center space-y-4">
           <Spinner size="lg" />
           <p className="text-sm text-muted-foreground">{message}</p>
         </div>
-      </motion.div>
+      </div>
     )}
   </div>
 )

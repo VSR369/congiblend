@@ -39,12 +39,7 @@ export const RightSidebar = () => {
   return (
     <div className="w-80 h-screen overflow-y-auto p-4 space-y-6">
       {/* Trending Topics */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="glass-card p-4 rounded-xl border border-white/10"
-      >
+      <div className="glass-card p-4 rounded-xl border border-white/10 animate-fade-in">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-foreground flex items-center">
             <TrendingUp className="h-4 w-4 mr-2 text-primary" />
@@ -79,15 +74,11 @@ export const RightSidebar = () => {
         <Button variant="ghost" className="w-full mt-3 text-xs text-muted-foreground hover:text-primary">
           View all trends
         </Button>
-      </motion.div>
+      </div>
 
       {/* Suggested Connections */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.3 }}
-        className="glass-card p-4 rounded-xl border border-white/10"
-      >
+      <div className="glass-card p-4 rounded-xl border border-white/10 animate-fade-in"
+        style={{ animationDelay: '0.1s' }}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-foreground flex items-center">
             <Users className="h-4 w-4 mr-2 text-primary" />
@@ -136,15 +127,11 @@ export const RightSidebar = () => {
         <Button variant="ghost" className="w-full mt-3 text-xs text-muted-foreground hover:text-primary">
           See more suggestions
         </Button>
-      </motion.div>
+      </div>
 
       {/* Recent Activity */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.3 }}
-        className="glass-card p-4 rounded-xl border border-white/10"
-      >
+      <div className="glass-card p-4 rounded-xl border border-white/10 animate-fade-in"
+        style={{ animationDelay: '0.2s' }}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-foreground flex items-center">
             <Sparkles className="h-4 w-4 mr-2 text-primary" />
@@ -178,15 +165,11 @@ export const RightSidebar = () => {
         <Button variant="ghost" className="w-full mt-3 text-xs text-muted-foreground hover:text-primary">
           View all activity
         </Button>
-      </motion.div>
+      </div>
 
       {/* Quick Links */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.3 }}
-        className="glass-card p-4 rounded-xl border border-white/10"
-      >
+      <div className="glass-card p-4 rounded-xl border border-white/10 animate-fade-in"
+        style={{ animationDelay: '0.3s' }}>
         <h3 className="font-semibold text-foreground mb-4">Quick Links</h3>
         
         <div className="space-y-2">
@@ -206,7 +189,7 @@ export const RightSidebar = () => {
             </div>
           ))}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };
