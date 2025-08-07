@@ -547,9 +547,6 @@
   min-height: 100px;
   contain: layout;
 }
-    background-position: 100% 50%;
-  }
-}
 
 /* PWA Styles */
 @media (display-mode: standalone) {
