@@ -46,12 +46,7 @@ const SimplePostCard = memo<SimplePostCardProps>(({ post, className }) => {
       {/* Fixed height actions - 56px */}
       <div className="h-14 flex-shrink-0 border-t border-border/20">
         <PostActions
-          postId={post.id}
-          initialLikes={post.likes}
-          commentsCount={post.commentsCount}
-          sharesCount={post.sharesCount}
-          isSaved={post.isSaved}
-          onComment={() => {}}
+          post={post}
           onShare={() => {}}
           onSave={() => {}}
         />

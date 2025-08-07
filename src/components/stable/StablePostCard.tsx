@@ -115,14 +115,9 @@ const StablePostCard = memo<StablePostCardProps>(({
           {/* Post Actions - Fixed Height */}
           <div className="post-actions-container h-14 flex-shrink-0 border-t border-border/50">
             <PostActions
-              postId={post.id}
-              initialLikes={post.likes}
-              commentsCount={post.commentsCount}
-              sharesCount={post.sharesCount}
-              isSaved={post.isSaved}
-              onComment={() => onAction(post.id, 'comment')}
-              onShare={() => onAction(post.id, 'share')}
-              onSave={() => onAction(post.id, 'save')}
+              post={post}
+              onShare={() => onAction?.(post.id, 'share')}
+              onSave={() => onAction?.(post.id, 'save')}
             />
           </div>
         </Card>

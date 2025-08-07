@@ -67,12 +67,7 @@ const AdaptivePostCard = memo<AdaptivePostCardProps>(({ post, className, index }
       {/* Actions */}
       <div className="flex-shrink-0 border-t border-border/20">
         <PostActions
-          postId={post.id}
-          initialLikes={post.likes}
-          commentsCount={post.commentsCount}
-          sharesCount={post.sharesCount}
-          isSaved={post.isSaved}
-          onComment={() => {}}
+          post={post}
           onShare={() => {}}
           onSave={() => {}}
         />

@@ -40,7 +40,7 @@ interface FeedState {
 }
 
 // Helper function to transform database post to our Post type
-const transformDbPost = (dbPost: any, author: any): Post => {
+const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post => {
   console.log('Transforming post:', dbPost.id, 'type:', dbPost.post_type, 'media_urls:', dbPost.media_urls);
   
   // Handle media_urls array and transform to proper media format
@@ -71,6 +71,39 @@ const transformDbPost = (dbPost: any, author: any): Post => {
       alt: 'Post image'
     }));
   }
+
+  // Transform reactions from database
+  const reactions = dbPost.reactions?.map((reaction: any) => ({
+    id: reaction.id,
+    type: reaction.reaction_type,
+    user: {
+      id: reaction.user_id,
+      name: reaction.profiles?.display_name || reaction.profiles?.username || 'User',
+      username: reaction.profiles?.username || 'user'
+    },
+    createdAt: new Date(reaction.created_at)
+  })) || [];
+
+  // Find current user's reaction
+  const userReaction = currentUserId 
+    ? reactions.find(r => r.user.id === currentUserId)?.type
+    : undefined;
+
+  // Transform comments from database
+  const comments = dbPost.comments?.map((comment: any) => ({
+    id: comment.id,
+    content: comment.content,
+    author: {
+      id: comment.user_id,
+      name: comment.profiles?.display_name || comment.profiles?.username || 'User',
+      username: comment.profiles?.username || 'user',
+      avatar: comment.profiles?.avatar_url
+    },
+    createdAt: new Date(comment.created_at),
+    parentId: comment.parent_comment_id,
+    reactions: [],
+    replies: []
+  })) || [];
 
   // Transform poll_data to poll object
   let poll = undefined;
@@ -127,8 +160,8 @@ const transformDbPost = (dbPost: any, author: any): Post => {
     event,
     hashtags: extractHashtags(dbPost.content),
     mentions: [],
-    reactions: [],
-    comments: [],
+    reactions,
+    comments,
     commentsCount: dbPost.comments_count || 0,
     likes: dbPost.likes_count || 0,
     shares: dbPost.shares_count || 0,
@@ -140,7 +173,7 @@ const transformDbPost = (dbPost: any, author: any): Post => {
     edited: false,
     isPinned: dbPost.is_pinned || false,
     visibility: dbPost.visibility || 'public',
-    userReaction: dbPost.user_reaction || undefined,
+    userReaction,
     userSaved: dbPost.user_saved || false,
     isSaved: dbPost.user_saved || false,
     userShared: dbPost.user_shared || false,
@@ -260,6 +293,31 @@ export const useFeedStore = create<FeedState>((set, get) => {
               is_verified,
               title,
               company
+            ),
+            reactions:reactions!target_id (
+              id,
+              reaction_type,
+              user_id,
+              created_at,
+              profiles (
+                id,
+                username,
+                display_name,
+                avatar_url
+              )
+            ),
+            comments:comments!post_id (
+              id,
+              content,
+              user_id,
+              parent_comment_id,
+              created_at,
+              profiles (
+                id,
+                username,
+                display_name,
+                avatar_url
+              )
             )
           `);
 
@@ -400,7 +458,9 @@ export const useFeedStore = create<FeedState>((set, get) => {
                     .single();
 
                   if (authorData) {
-                    insertQueue.push({ post: payload.new, author: authorData });
+                    const { data: { user } } = await supabase.auth.getUser();
+                    const transformedPost = transformDbPost(payload.new, authorData, user?.id);
+                    insertQueue.push({ post: transformedPost, author: authorData });
                     clearTimeout(batchTimeout);
                     // PHASE 4: Longer batch delay to reduce update frequency
                     batchTimeout = setTimeout(processBatch, 1000);
@@ -616,19 +676,16 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const post = state.posts.find(p => p.id === postId);
         if (!post) throw new Error('Post not found');
 
-        // Optimistic update first
+        // Store previous state for rollback
         const previousReaction = post.userReaction;
+        const previousReactions = [...post.reactions];
+
+        // Optimistic update
         set(state => ({
           posts: state.posts.map(p => {
             if (p.id !== postId) return p;
             
-            const updatedReactions = [...p.reactions];
-            const userReactionIndex = updatedReactions.findIndex(r => r.user.id === user.id);
-            
-            // Remove existing reaction if any
-            if (userReactionIndex >= 0) {
-              updatedReactions.splice(userReactionIndex, 1);
-            }
+            const updatedReactions = p.reactions.filter(r => r.user.id !== user.id);
             
             // Add new reaction if provided
             if (reaction) {
@@ -652,39 +709,50 @@ export const useFeedStore = create<FeedState>((set, get) => {
           })
         }));
 
-        // Call backend
-        if (reaction) {
-          // Add or update reaction
-          const { error } = await supabase.functions.invoke('reactions', {
-            body: {
-              target_type: 'post',
-              target_id: postId,
-              reaction_type: reaction
-            }
-          });
-          
-          if (error) throw error;
-        } else {
-          // Remove reaction
-          const { error } = await supabase.functions.invoke('reactions', {
-            body: {
-              target_type: 'post',
-              target_id: postId
-            }
-          });
-          
-          if (error) throw error;
+        // Call backend API
+        const { data, error } = await supabase.functions.invoke('reactions', {
+          body: {
+            target_type: 'post',
+            target_id: postId,
+            reaction_type: reaction
+          }
+        });
+
+        if (error) throw error;
+
+        // Update with real data from backend if available
+        if (data) {
+          set(state => ({
+            posts: state.posts.map(p => {
+              if (p.id !== postId) return p;
+              return {
+                ...p,
+                // Update reactions count if returned from backend
+                likes: data.reactions_count || p.likes
+              };
+            })
+          }));
         }
+
       } catch (error) {
         console.error('Error toggling reaction:', error);
         
         // Revert optimistic update on error
-        set(state => ({
-          posts: state.posts.map(p => {
-            if (p.id !== postId) return p;
-            return { ...p, userReaction: p.userReaction };
-          })
-        }));
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          set(state => ({
+            posts: state.posts.map(p => {
+              if (p.id !== postId) return p;
+              // Restore previous state
+              const post = state.posts.find(post => post.id === postId);
+              return {
+                ...p,
+                reactions: post?.reactions || [],
+                userReaction: post?.userReaction
+              };
+            })
+          }));
+        }
         
         throw error;
       }
@@ -694,6 +762,33 @@ export const useFeedStore = create<FeedState>((set, get) => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
+
+        // Optimistic update - add comment immediately to UI
+        const newComment = {
+          id: `temp-${Date.now()}`,
+          content,
+          author: {
+            id: user.id,
+            name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
+            username: user.user_metadata?.username || user.email?.split('@')[0] || 'user',
+            avatar: user.user_metadata?.avatar_url
+          },
+          createdAt: new Date(),
+          parentId,
+          reactions: [],
+          replies: []
+        };
+
+        set(state => ({
+          posts: state.posts.map(p => {
+            if (p.id !== postId) return p;
+            return {
+              ...p,
+              comments: [...p.comments, newComment],
+              commentsCount: p.commentsCount + 1
+            };
+          })
+        }));
 
         // Use the comments Edge Function
         const { data, error } = await supabase.functions.invoke('comments', {
@@ -705,32 +800,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
         });
 
         if (error) throw error;
-
-        // Optimistically update local state
-        const newComment = {
-          id: data.comment?.id || `temp-${Date.now()}`,
-          content,
-          author: {
-            id: user.id,
-            name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
-            username: user.user_metadata?.username || user.email?.split('@')[0] || 'user',
-            avatar: user.user_metadata?.avatar_url
-          },
-          createdAt: new Date(),
-          reactions: [],
-          parentId
-        };
-
-        set(state => ({
-          posts: state.posts.map(post => {
-            if (post.id !== postId) return post;
-            
-            return {
-              ...post,
-              comments: [...post.comments, newComment]
-            };
-          })
-        }));
 
         return data;
       } catch (error) {

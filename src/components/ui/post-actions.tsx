@@ -2,15 +2,12 @@ import * as React from "react";
 import { Heart, MessageCircle, Share2, Bookmark } from "lucide-react";
 import { Button } from "./button";
 import { LikeButton } from "./like-button";
+import { CommentsSection } from "./comments-section";
 import { cn } from "@/lib/utils";
+import type { Post } from "@/types/feed";
 
 interface PostActionsProps {
-  postId: string;
-  initialLikes?: number;
-  commentsCount?: number;
-  sharesCount?: number;
-  isSaved?: boolean;
-  onComment?: () => void;
+  post: Post;
   onShare?: () => void;
   onSave?: () => void;
   className?: string;
@@ -121,23 +118,51 @@ export const SaveButton = ({
 );
 
 export const PostActions = ({ 
-  postId, 
-  initialLikes = 0, 
-  commentsCount = 0, 
-  sharesCount = 0, 
-  isSaved = false,
-  onComment,
+  post,
   onShare,
   onSave,
   className 
-}: PostActionsProps) => (
-  <div className={cn("flex items-center justify-between pt-3 border-t border-border/50", className)}>
-    <div className="flex items-center space-x-1">
-      <LikeButton targetId={postId} targetType="post" />
-      <CommentButton postId={postId} commentsCount={commentsCount} onClick={onComment} />
-      <ShareButton postId={postId} sharesCount={sharesCount} onClick={onShare} />
+}: PostActionsProps) => {
+  const [showComments, setShowComments] = React.useState(false);
+
+  return (
+    <div className={cn("space-y-3", className)}>
+      {/* Action Buttons */}
+      <div className="flex items-center justify-between pt-3 border-t border-border/50">
+        <div className="flex items-center space-x-1">
+          <LikeButton 
+            targetId={post.id} 
+            targetType="post" 
+            currentReaction={post.userReaction}
+            reactions={post.reactions}
+          />
+          <CommentButton 
+            postId={post.id} 
+            commentsCount={post.commentsCount} 
+            onClick={() => setShowComments(!showComments)} 
+          />
+          <ShareButton 
+            postId={post.id} 
+            sharesCount={post.sharesCount} 
+            onClick={onShare} 
+          />
+        </div>
+        
+        <SaveButton 
+          postId={post.id} 
+          isSaved={post.isSaved} 
+          onClick={onSave} 
+        />
+      </div>
+
+      {/* Comments Section */}
+      {showComments && (
+        <CommentsSection
+          postId={post.id}
+          comments={post.comments}
+          commentsCount={post.commentsCount}
+        />
+      )}
     </div>
-    
-    <SaveButton postId={postId} isSaved={isSaved} onClick={onSave} />
-  </div>
-);
+  );
+};

@@ -1,14 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useFeedStore } from '@/stores/feedStore';
-import type { ReactionType } from '@/types/feed';
-import { REACTION_CONFIG } from '@/utils/reactions';
+import type { ReactionType, Reaction } from '@/types/feed';
+import { REACTION_CONFIG, getReactionCounts } from '@/utils/reactions';
 
 interface LikeButtonProps {
   targetId: string;
   targetType: 'post' | 'comment';
   currentReaction?: ReactionType | null;
-  reactionCounts?: Record<string, number>;
+  reactions?: Reaction[];
   className?: string;
 }
 
@@ -16,14 +16,16 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
   targetId,
   targetType,
   currentReaction,
-  reactionCounts = {},
+  reactions = [],
   className
 }) => {
   const [showPicker, setShowPicker] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout>();
   const { toggleReaction } = useFeedStore();
 
-  const totalReactions = Object.values(reactionCounts).reduce((sum, count) => sum + count, 0);
+  // Calculate reaction counts from reactions array
+  const reactionCounts = getReactionCounts(reactions);
+  const totalReactions = reactions.length;
   
   // PHASE 3: Debounced hover handlers to prevent rapid state changes
   const handleMouseEnter = React.useCallback(() => {

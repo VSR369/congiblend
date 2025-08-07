@@ -468,10 +468,7 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                   targetId={post.id}
                   targetType="post"
                   currentReaction={post.userReaction}
-                  reactionCounts={post.reactions.reduce((acc, reaction) => {
-                    acc[reaction.type] = (acc[reaction.type] || 0) + 1;
-                    return acc;
-                  }, {} as Record<string, number>)}
+                  reactions={post.reactions}
                 />
 
                  {/* Comment Button */}
