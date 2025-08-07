@@ -547,8 +547,14 @@
 }
 
 .post-skeleton {
-  @apply bg-card border rounded-lg p-6 space-y-4;
-  min-height: 300px;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 200px;
   contain: layout style paint;
 }
 

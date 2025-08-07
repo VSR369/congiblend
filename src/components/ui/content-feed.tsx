@@ -7,6 +7,7 @@ import { LoadingSkeleton } from "./loading-skeleton";
 import { Button } from "./button";
 import { AdvancedFilterSystem } from "./advanced-filter-system";
 import { useFeedStore } from "@/stores/feedStore";
+import { EmergencyFeed } from "./emergency-feed";
 import { cn } from "@/lib/utils";
 
 interface ContentFeedProps {
@@ -19,6 +20,9 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
   const { posts, loading, hasMore, loadPosts, filters, pendingUpdates, loadPendingUpdates } = useFeedStore();
   const parentRef = React.useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = React.useRef<NodeJS.Timeout>();
+  
+  // Emergency fallback for database issues
+  const [showEmergencyFeed, setShowEmergencyFeed] = React.useState(false);
 
   // Intersection observer for infinite scroll
   const { ref: loadMoreRef, inView } = useInView({
@@ -43,10 +47,12 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
     };
   }, []);
 
-  // Load initial posts
+  // Load initial posts with error handling
   React.useEffect(() => {
     if (posts.length === 0) {
-      loadPosts(true);
+      loadPosts(true).catch(() => {
+        setShowEmergencyFeed(true);
+      });
     }
   }, [posts.length, loadPosts]);
 
@@ -64,6 +70,11 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [loadPendingUpdates]);
+
+  // Emergency fallback
+  if (showEmergencyFeed) {
+    return <EmergencyFeed className={className} />;
+  }
 
   return (
     <div className={cn("max-w-2xl mx-auto space-y-6", className)}>
