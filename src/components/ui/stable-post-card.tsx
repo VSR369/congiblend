@@ -7,33 +7,41 @@ interface StablePostCardProps {
   className?: string;
 }
 
-// PHASE 3: Enhanced memoized PostCard with deep comparison and stability
+// PHASE 5: Enhanced memoized PostCard with deep comparison and performance optimization
 export const StablePostCard = React.memo(({ post, className }: StablePostCardProps) => {
-  // PHASE 3: Memoized className to prevent re-renders
+  // PHASE 5: Stable className with CSS containment
   const memoizedClassName = React.useMemo(() => 
-    `post-card-stable optimized-container ${className || ''}`.trim(), 
+    `post-card-stable optimized-container will-change-transform ${className || ''}`.trim(), 
     [className]
   );
 
   return <PostCard post={post} className={memoizedClassName} />;
 }, (prevProps, nextProps) => {
-  // PHASE 3: Deep comparison function with hash check for content stability
-  const postStable = 
-    prevProps.post.id === nextProps.post.id &&
-    prevProps.post.content === nextProps.post.content &&
-    prevProps.post.type === nextProps.post.type &&
-    prevProps.post.reactions.length === nextProps.post.reactions.length &&
-    prevProps.post.comments.length === nextProps.post.comments.length &&
-    prevProps.post.shares === nextProps.post.shares &&
-    prevProps.post.userReaction === nextProps.post.userReaction &&
-    prevProps.post.userSaved === nextProps.post.userSaved &&
-    prevProps.post.createdAt === nextProps.post.createdAt;
+  // PHASE 5: Optimized deep comparison with early bailout
+  if (prevProps.post.id !== nextProps.post.id) return false;
+  if (prevProps.className !== nextProps.className) return false;
+  
+  const post1 = prevProps.post;
+  const post2 = nextProps.post;
+  
+  // Check critical fields that affect UI
+  const contentStable = 
+    post1.content === post2.content &&
+    post1.type === post2.type &&
+    post1.userReaction === post2.userReaction &&
+    post1.userSaved === post2.userSaved;
+  
+  const countsStable = 
+    post1.reactions.length === post2.reactions.length &&
+    post1.comments.length === post2.comments.length &&
+    post1.shares === post2.shares;
   
   const mediaStable = 
-    (!prevProps.post.media && !nextProps.post.media) ||
-    (prevProps.post.media?.length === nextProps.post.media?.length);
+    (!post1.media && !post2.media) ||
+    (post1.media?.length === post2.media?.length &&
+     post1.media?.every((m1, i) => m1.url === post2.media?.[i]?.url));
     
-  return postStable && mediaStable && prevProps.className === nextProps.className;
+  return contentStable && countsStable && mediaStable;
 });
 
 StablePostCard.displayName = "StablePostCard";

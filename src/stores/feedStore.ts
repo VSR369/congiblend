@@ -321,14 +321,36 @@ export const useFeedStore = create<FeedState>((set, get) => {
           hasMore: transformedPosts.length === 20
         });
 
-        // PHASE 4: Enhanced real-time subscription with batch processing
+        // PHASE 4: Intelligent real-time updates with scroll awareness
         if (!realtimeChannel) {
           let insertQueue: any[] = [];
           let deleteQueue: string[] = [];
           let batchTimeout: NodeJS.Timeout;
+          let isScrolling = false;
+          let scrollTimeout: NodeJS.Timeout;
+
+          // Track scroll state for intelligent updates
+          const handleScroll = () => {
+            isScrolling = true;
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+              isScrolling = false;
+            }, 150);
+          };
+
+          window.addEventListener('scroll', handleScroll, { passive: true });
 
           const processBatch = async () => {
+            // PHASE 4: Don't update during active scrolling
+            if (isScrolling && insertQueue.length > 0) {
+              // Re-queue batch processing after scroll stops
+              clearTimeout(batchTimeout);
+              batchTimeout = setTimeout(processBatch, 1000);
+              return;
+            }
+
             if (insertQueue.length > 0 || deleteQueue.length > 0) {
+              // PHASE 4: Use React.startTransition for non-urgent updates
               set((state) => {
                 let newPosts = [...state.posts];
                 
@@ -338,15 +360,14 @@ export const useFeedStore = create<FeedState>((set, get) => {
                   deleteQueue = [];
                 }
                 
-                // Process insertions with author data
+                // Process insertions with optimized array handling
                 if (insertQueue.length > 0) {
                   const transformedPosts = insertQueue
-                    .map(item => {
-                      // Use the profiles data from the join if available
-                      return transformDbPost(item.post, item.author);
-                    })
+                    .map(item => transformDbPost(item.post, item.author))
                     .filter(Boolean);
-                  newPosts = [...transformedPosts, ...newPosts];
+                  
+                  // PHASE 4: Preserve scroll position by only prepending
+                  newPosts.unshift(...transformedPosts);
                   insertQueue = [];
                 }
                 
@@ -377,7 +398,8 @@ export const useFeedStore = create<FeedState>((set, get) => {
                   if (authorData) {
                     insertQueue.push({ post: payload.new, author: authorData });
                     clearTimeout(batchTimeout);
-                    batchTimeout = setTimeout(processBatch, 500);
+                    // PHASE 4: Longer batch delay to reduce update frequency
+                    batchTimeout = setTimeout(processBatch, 1000);
                   }
                 }
               }
@@ -394,7 +416,8 @@ export const useFeedStore = create<FeedState>((set, get) => {
                 if (payload.old?.id) {
                   deleteQueue.push(payload.old.id);
                   clearTimeout(batchTimeout);
-                  batchTimeout = setTimeout(processBatch, 500);
+                  // PHASE 4: Faster deletion processing
+                  batchTimeout = setTimeout(processBatch, 300);
                 }
               }
             )

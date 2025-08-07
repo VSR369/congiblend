@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowUp } from 'lucide-react';
 import { Button } from './button';
 
@@ -7,15 +6,24 @@ export const ScrollToTop = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    // PHASE 3: Throttled scroll event handler
+    let ticking = false;
+    
     const toggleVisibility = () => {
-      if (window.pageYOffset > 300) {
-        setIsVisible(true);
-      } else {
-        setIsVisible(false);
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          if (window.pageYOffset > 300) {
+            setIsVisible(true);
+          } else {
+            setIsVisible(false);
+          }
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
-    window.addEventListener('scroll', toggleVisibility);
+    window.addEventListener('scroll', toggleVisibility, { passive: true });
     return () => window.removeEventListener('scroll', toggleVisibility);
   }, []);
 
@@ -27,24 +35,19 @@ export const ScrollToTop = () => {
   };
 
   return (
-    <AnimatePresence>
+    <>
       {isVisible && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          className="fixed bottom-8 right-8 z-50"
-        >
+        <div className="fixed bottom-8 right-8 z-50 animate-fade-in">
           <Button
             onClick={scrollToTop}
             size="icon"
-            className="h-12 w-12 rounded-full shadow-lg hover:shadow-xl"
+            className="h-12 w-12 rounded-full shadow-lg hover:shadow-xl will-change-transform"
             aria-label="Scroll to top"
           >
             <ArrowUp className="h-5 w-5" />
           </Button>
-        </motion.div>
+        </div>
       )}
-    </AnimatePresence>
+    </>
   );
 };

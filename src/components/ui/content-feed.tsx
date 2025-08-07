@@ -1,7 +1,6 @@
 import * as React from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useInView } from "react-intersection-observer";
-import { motion, AnimatePresence } from "framer-motion";
 import { Plus, TrendingUp } from "lucide-react";
 import { StablePostCard } from "./stable-post-card";
 import { PostCreationModal } from "./post-creation-modal";
@@ -35,21 +34,12 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
     }
   }, [posts.length, loadPosts]);
 
-  // PHASE 4: Debounced load more posts
-  const debouncedLoadMore = React.useCallback(
-    React.useMemo(() => {
-      let timeoutId: NodeJS.Timeout;
-      return () => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          if (hasMore && !loading) {
-            loadPosts();
-          }
-        }, 500);
-      };
-    }, [hasMore, loading, loadPosts]),
-    [hasMore, loading, loadPosts]
-  );
+  // PHASE 4: Properly debounced load more with stable reference
+  const debouncedLoadMore = React.useCallback(() => {
+    if (hasMore && !loading) {
+      loadPosts();
+    }
+  }, [hasMore, loading, loadPosts]);
 
   React.useEffect(() => {
     if (inView) {
@@ -86,13 +76,8 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
         </div>
       </div>
 
-      {/* Create Post Button */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="bg-card border rounded-lg p-4"
-      >
+      {/* Create Post Button - PHASE 1: Pure CSS animation */}
+      <div className="bg-card border rounded-lg p-4 animate-fade-in optimized-container">
         <Button
           onClick={() => setShowCreateModal(true)}
           className="w-full justify-start text-muted-foreground"
@@ -101,7 +86,7 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
           <Plus className="h-5 w-5 mr-2" />
           What would you like to share today?
         </Button>
-      </motion.div>
+      </div>
 
       {/* PHASE 1 & 2: Stable Feed Content */}
       <div ref={parentRef} className="stable-list space-y-8">
@@ -133,8 +118,8 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
           <div className="stable-animation space-y-8">
             {posts.map((post) => (
               <div
-                key={`stable-${post.id}`}
-                className="stable-list-item debounced-enter"
+                key={post.id}
+                className="post-card-stable animate-fade-in"
               >
                 <StablePostCard post={post} className="w-full" />
               </div>

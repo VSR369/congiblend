@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Bell, Search, Settings, User, Menu, Sun, Moon, PanelLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -39,12 +38,8 @@ export const Header = ({ onMenuToggle, showMenuButton = false }: HeaderProps) =>
   };
 
   return (
-    <motion.header
-      initial={{ y: -100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      className="sticky top-0 z-50 w-full glass border-b border-glass-border"
-    >
+    <header className="sticky top-0 z-50 w-full glass border-b border-glass-border animate-slide-down">
+      
       <div className="container flex h-20 items-center justify-between">
         {/* Left Section */}
         <div className="flex items-center space-x-4">
@@ -200,6 +195,6 @@ export const Header = ({ onMenuToggle, showMenuButton = false }: HeaderProps) =>
           )}
         </div>
       </div>
-    </motion.header>
+    </header>
   );
 };

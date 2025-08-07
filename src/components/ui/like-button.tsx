@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useFeedStore } from '@/stores/feedStore';
 import type { ReactionType } from '@/types/feed';
@@ -26,29 +25,20 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
 
   const totalReactions = Object.values(reactionCounts).reduce((sum, count) => sum + count, 0);
   
-  const handleMouseEnter = () => {
-    // Clear any existing timeout
+  // PHASE 3: Debounced hover handlers to prevent rapid state changes
+  const handleMouseEnter = React.useCallback(() => {
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
-    
-    // Show picker after 300ms hover (LinkedIn timing)
-    hoverTimeoutRef.current = setTimeout(() => {
-      setShowPicker(true);
-    }, 300);
-  };
+    hoverTimeoutRef.current = setTimeout(() => setShowPicker(true), 500);
+  }, []);
 
-  const handleMouseLeave = () => {
-    // Clear the show timeout
+  const handleMouseLeave = React.useCallback(() => {
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
-    
-    // Add a small delay before hiding to allow moving to picker
-    hoverTimeoutRef.current = setTimeout(() => {
-      setShowPicker(false);
-    }, 200);
-  };
+    hoverTimeoutRef.current = setTimeout(() => setShowPicker(false), 300);
+  }, []);
 
   const handlePickerMouseEnter = () => {
     // Keep picker open when hovering over it - clear hide timeout
@@ -108,42 +98,34 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
         </span>
       </button>
 
-      <AnimatePresence>
-        {showPicker && (
-          <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.95 }}
-            transition={{ 
-              duration: 0.15,
-              ease: [0.16, 1, 0.3, 1]
-            }}
-            className="absolute bottom-full left-0 mb-2 z-50"
-            onMouseEnter={handlePickerMouseEnter}
-            onMouseLeave={handlePickerMouseLeave}
-          >
-            <div className="flex items-center space-x-1 bg-background border border-border rounded-full px-3 py-2 shadow-lg">
-              {Object.entries(REACTION_CONFIG).map(([type, config]) => (
-                <button
-                  key={type}
-                  onClick={() => handleReactionSelect(type as ReactionType)}
-                  className={cn(
-                    "p-2 rounded-full transition-all duration-150",
-                    "hover:scale-125 hover:shadow-md",
-                    config.bgHover,
-                    config.hoverColor
-                  )}
-                  title={config.label}
-                >
-                  <config.icon 
-                    className={cn("h-4 w-4", config.color)}
-                  />
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* PHASE 1: Pure CSS animation for picker */}
+      {showPicker && (
+        <div
+          className="absolute bottom-full left-0 mb-2 z-50 animate-scale-in"
+          onMouseEnter={handlePickerMouseEnter}
+          onMouseLeave={handlePickerMouseLeave}
+        >
+          <div className="flex items-center space-x-1 bg-background border border-border rounded-full px-3 py-2 shadow-lg optimized-container">
+            {Object.entries(REACTION_CONFIG).map(([type, config]) => (
+              <button
+                key={type}
+                onClick={() => handleReactionSelect(type as ReactionType)}
+                className={cn(
+                  "p-2 rounded-full transition-all duration-150",
+                  "hover:scale-125 hover:shadow-md will-change-transform",
+                  config.bgHover,
+                  config.hoverColor
+                )}
+                title={config.label}
+              >
+                <config.icon 
+                  className={cn("h-4 w-4", config.color)}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
