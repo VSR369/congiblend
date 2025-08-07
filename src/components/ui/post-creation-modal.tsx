@@ -563,7 +563,7 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
             isPosting || 
             characterCount > characterLimit || 
             (activeTab === 'text' && !content.trim()) ||
-            (activeTab === 'event' && (!eventData.title.trim() || !eventData.description.trim() || !eventData.start_date)) ||
+            (activeTab === 'event' && (!eventData.title || !eventData.title.trim() || !eventData.description || !eventData.description.trim() || !eventData.start_date)) ||
             (activeTab === 'poll' && (!content.trim() || !pollOptions.some(opt => opt.trim()))) ||
             (activeTab === 'job' && (!content.trim() || !jobData.title.trim() || !jobData.company.trim())) ||
             (['image', 'video', 'audio'].includes(activeTab) && selectedFiles.length === 0 && !content.trim())
