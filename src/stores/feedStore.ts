@@ -321,85 +321,92 @@ export const useFeedStore = create<FeedState>((set, get) => {
           hasMore: transformedPosts.length === 20
         });
 
-        // PHASE 4: Enhanced real-time subscription with batch processing
-        if (!realtimeChannel) {
-          let insertQueue: any[] = [];
-          let deleteQueue: string[] = [];
-          let batchTimeout: NodeJS.Timeout;
+        // Set up real-time subscriptions with batching
+        let pendingInserts: any[] = [];
+        let pendingDeletes: string[] = [];
+        let batchTimeout: NodeJS.Timeout | null = null;
 
-          const processBatch = async () => {
-            if (insertQueue.length > 0 || deleteQueue.length > 0) {
-              set((state) => {
-                let newPosts = [...state.posts];
-                
-                // Process deletions first
-                if (deleteQueue.length > 0) {
-                  newPosts = newPosts.filter(post => !deleteQueue.includes(post.id));
-                  deleteQueue = [];
-                }
-                
-                // Process insertions with author data
-                if (insertQueue.length > 0) {
-                  const transformedPosts = insertQueue
-                    .map(item => {
-                      // Use the profiles data from the join if available
-                      return transformDbPost(item.post, item.author);
-                    })
-                    .filter(Boolean);
-                  newPosts = [...transformedPosts, ...newPosts];
-                  insertQueue = [];
-                }
-                
-                return { posts: newPosts };
-              });
-            }
-          };
-
-          realtimeChannel = supabase
-            .channel('posts-changes')
-            .on(
-              'postgres_changes',
-              {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'posts'
-              },
-              async (payload) => {
-                console.log('New post inserted:', payload);
-                if (payload.new) {
-                  // Get author info for new post
-                  const { data: authorData } = await supabase
-                    .from('profiles')
-                    .select('id, username, display_name, avatar_url, is_verified, title, company')
-                    .eq('id', payload.new.user_id)
-                    .single();
-
-                  if (authorData) {
-                    insertQueue.push({ post: payload.new, author: authorData });
-                    clearTimeout(batchTimeout);
-                    batchTimeout = setTimeout(processBatch, 500);
-                  }
-                }
+        const processBatch = () => {
+          if (pendingInserts.length > 0 || pendingDeletes.length > 0) {
+            set(state => {
+              let newPosts = [...state.posts];
+              
+              // Process deletes first
+              if (pendingDeletes.length > 0) {
+                newPosts = newPosts.filter(post => !pendingDeletes.includes(post.id));
               }
-            )
-            .on(
-              'postgres_changes',
-              {
-                event: 'DELETE',
-                schema: 'public',
-                table: 'posts'
-              },
-              (payload) => {
-                console.log('Post deleted:', payload);
-                if (payload.old?.id) {
-                  deleteQueue.push(payload.old.id);
-                  clearTimeout(batchTimeout);
-                  batchTimeout = setTimeout(processBatch, 500);
-                }
+              
+              // Process inserts (add to end to prevent jumping)
+              if (pendingInserts.length > 0) {
+                const transformedPosts = pendingInserts.map(post => 
+                  transformDbPost(post, { 
+                    id: post.user_id, 
+                    username: 'Unknown', 
+                    display_name: 'Unknown User',
+                    avatar_url: null,
+                    is_verified: false 
+                  })
+                );
+                newPosts = [...newPosts, ...transformedPosts];
               }
-            )
-            .subscribe();
-        }
+              
+              return { posts: newPosts };
+            });
+            
+            pendingInserts = [];
+            pendingDeletes = [];
+          }
+          batchTimeout = null;
+        };
+
+        const scheduleUpdate = () => {
+          if (!batchTimeout) {
+            batchTimeout = setTimeout(processBatch, 500);
+          }
+        };
+
+        const channel = supabase
+          .channel('posts')
+          .on('postgres_changes', { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'posts' 
+          }, (payload) => {
+            console.log('New post queued:', payload);
+            pendingInserts.push(payload.new);
+            scheduleUpdate();
+          })
+          .on('postgres_changes', { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'posts' 
+          }, (payload) => {
+            console.log('Post updated:', payload);
+            const updatedPost = transformDbPost(payload.new as any, { 
+              id: payload.new.user_id, 
+              username: 'Unknown', 
+              display_name: 'Unknown User',
+              avatar_url: null,
+              is_verified: false 
+            });
+            set(state => ({
+              posts: state.posts.map(post => 
+                post.id === updatedPost.id ? updatedPost : post
+              )
+            }));
+          })
+          .on('postgres_changes', { 
+            event: 'DELETE', 
+            schema: 'public', 
+            table: 'posts' 
+          }, (payload) => {
+            console.log('Post delete queued:', payload);
+            pendingDeletes.push(payload.old.id);
+            scheduleUpdate();
+          })
+          .subscribe();
+
+        realtimeChannel = channel;
 
       } catch (error) {
         console.error('Error loading posts:', error);
