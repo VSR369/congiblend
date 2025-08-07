@@ -197,6 +197,30 @@
     contain: layout style;
   }
 
+  /* Performance optimizations for smooth scrolling */
+  .stable-list {
+    will-change: scroll-position;
+    transform: translateZ(0);
+  }
+
+  .optimized-container {
+    contain: layout style paint;
+  }
+
+  .post-card-stable {
+    contain: layout style;
+    transform: translateZ(0);
+  }
+
+  /* Throttled animation classes */
+  .animate-smooth {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-60fps {
+    animation-duration: 16.67ms;
+  }
+
   .gradient-primary {
     background: var(--gradient-primary);
     contain: layout style;

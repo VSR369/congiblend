@@ -1,6 +1,4 @@
 import * as React from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { useInView } from "react-intersection-observer";
 import { Plus, TrendingUp } from "lucide-react";
 import { StablePostCard } from "./stable-post-card";
 import { PostCreationModal } from "./post-creation-modal";
@@ -8,6 +6,8 @@ import { FeedSkeleton } from "./post-card-skeleton";
 import { Button } from "./button";
 import { AdvancedFilterSystem } from "./advanced-filter-system";
 import { useFeedStore } from "@/stores/feedStore";
+import { useVirtualScroll } from "@/hooks/useVirtualScroll";
+import { useAdvancedIntersectionObserver } from "@/hooks/useAdvancedIntersectionObserver";
 import { cn } from "@/lib/utils";
 
 interface ContentFeedProps {
@@ -17,14 +17,26 @@ interface ContentFeedProps {
 export const ContentFeed = ({ className }: ContentFeedProps) => {
   const [showCreateModal, setShowCreateModal] = React.useState(false);
   const { posts, loading, hasMore, loadPosts, filters } = useFeedStore();
-  const parentRef = React.useRef<HTMLDivElement>(null);
 
-  // Throttled intersection observer for infinite scroll to reduce jank
-  const { ref: loadMoreRef, inView } = useInView({
+  // Virtual scrolling for performance
+  const { 
+    parentRef, 
+    virtualizer, 
+    visibleItems, 
+    shouldVirtualize,
+    totalSize 
+  } = useVirtualScroll({
+    items: posts,
+    estimateSize: () => 300,
+    overscan: 3,
+    threshold: 50
+  });
+
+  // Advanced intersection observer for load more
+  const [loadMoreRef, { isIntersecting }] = useAdvancedIntersectionObserver({
     threshold: 0.1,
-    rootMargin: "100px",
-    triggerOnce: false,
-    delay: 100, // Throttle intersection observer
+    rootMargin: "200px",
+    delay: 100
   });
 
   // Load initial posts
@@ -34,21 +46,20 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
     }
   }, [posts.length, loadPosts]);
 
-  // PHASE 4: Properly debounced load more with stable reference
+  // Optimized load more with request animation frame
   const debouncedLoadMore = React.useCallback(() => {
     if (hasMore && !loading) {
-      loadPosts();
+      requestAnimationFrame(() => {
+        loadPosts();
+      });
     }
   }, [hasMore, loading, loadPosts]);
 
   React.useEffect(() => {
-    if (inView) {
+    if (isIntersecting) {
       debouncedLoadMore();
     }
-  }, [inView, debouncedLoadMore]);
-
-  // Simple scrolling without virtualization to prevent overlap issues
-  const shouldUseVirtualization = posts.length > 50;
+  }, [isIntersecting, debouncedLoadMore]);
 
   return (
     <div className={cn("max-w-2xl mx-auto space-y-6", className)}>
@@ -88,18 +99,60 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
         </Button>
       </div>
 
-      {/* PHASE 1 & 2: Stable Feed Content */}
-      <div ref={parentRef} className="stable-list space-y-8">
+      {/* Optimized Feed Content with Virtual Scrolling */}
+      <div 
+        ref={parentRef} 
+        className="stable-list"
+        style={{
+          height: shouldVirtualize ? '600px' : 'auto',
+          overflow: shouldVirtualize ? 'auto' : 'visible'
+        }}
+      >
         {posts.length === 0 && loading ? (
-          // PHASE 4: Exact-matching skeleton feed
           <FeedSkeleton count={3} />
+        ) : shouldVirtualize ? (
+          // Virtual scrolling for large lists
+          <div
+            style={{
+              height: totalSize,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {visibleItems.map((item) => {
+              // Type guard for virtualized items
+              if ('virtualItem' in item) {
+                const { item: post, index, virtualItem } = item as any;
+                return (
+                  <div
+                    key={post.id}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}
+                    ref={virtualizer!.measureElement}
+                    data-index={index}
+                  >
+                    <div className="pb-8">
+                      <StablePostCard post={post} className="w-full" />
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })}
+          </div>
         ) : (
-          // PHASE 1: Remove conflicting animations, use stable container
-          <div className="stable-animation space-y-8">
-            {posts.map((post) => (
+          // Regular scrolling for smaller lists
+          <div className="space-y-8">
+            {visibleItems.map(({ item: post, index }) => (
               <div
                 key={post.id}
-                className="post-card-stable animate-fade-in"
+                className="animate-fade-in"
+                style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
               >
                 <StablePostCard post={post} className="w-full" />
               </div>
@@ -109,7 +162,7 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
 
         {/* Load More Trigger */}
         {hasMore && (
-          <div ref={loadMoreRef} className="flex justify-center py-8">
+          <div ref={loadMoreRef as any} className="flex justify-center py-8">
             {loading && <FeedSkeleton count={1} />}
           </div>
         )}

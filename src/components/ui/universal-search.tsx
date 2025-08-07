@@ -6,7 +6,8 @@ import { Badge } from "./badge";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { Separator } from "./separator";
 import { useSearchStore } from "@/stores/searchStore";
-import { useDebounce } from "@/hooks/useDebounce";
+import { useSearchDebounce } from "@/hooks/useAdvancedDebounce";
+import { useSearchWorker } from "@/hooks/useWebWorker";
 import { cn } from "@/lib/utils";
 import type { SearchResultType, SearchSuggestion } from "@/types/search";
 
@@ -16,21 +17,6 @@ interface UniversalSearchProps {
 }
 
 export const UniversalSearch = React.memo(({ className, onResultClick }: UniversalSearchProps) => {
-  // Performance monitoring
-  const renderCountRef = React.useRef(0);
-  const lastRenderTime = React.useRef(Date.now());
-  
-  React.useEffect(() => {
-    renderCountRef.current++;
-    const now = Date.now();
-    console.log('🌍 UniversalSearch re-render:', {
-      count: renderCountRef.current,
-      timeSinceLastRender: now - lastRenderTime.current,
-      timestamp: now
-    });
-    lastRenderTime.current = now;
-  });
-
   const [isOpen, setIsOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
   
@@ -47,27 +33,26 @@ export const UniversalSearch = React.memo(({ className, onResultClick }: Univers
     clearRecentSearches
   } = useSearchStore();
 
-  const debouncedInput = useDebounce(inputValue, 300);
+  const [debouncedInput, cancelSearch, isSearchPending] = useSearchDebounce(inputValue, 300);
+  const { search: workerSearch } = useSearchWorker();
 
   React.useEffect(() => {
     if (debouncedInput) {
-      console.log('⏱️ UniversalSearch debounced input:', debouncedInput);
       loadSuggestions(debouncedInput);
     }
   }, [debouncedInput, loadSuggestions]);
 
   const handleSearch = React.useCallback((searchQuery: string) => {
-    console.log('🌍 UniversalSearch executing search:', searchQuery);
+    cancelSearch(); // Cancel pending debounced search
     setQuery(searchQuery);
     setInputValue(searchQuery);
     search(searchQuery);
     setIsOpen(false);
     onResultClick?.();
-  }, [setQuery, search, onResultClick]);
+  }, [setQuery, search, onResultClick, cancelSearch]);
 
   const handleInputChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    console.log('⌨️ UniversalSearch input change:', value.slice(0, 20));
     setInputValue(value);
     setIsOpen(value.length > 0 || recentSearches.length > 0);
   }, [recentSearches.length]);
@@ -98,12 +83,12 @@ export const UniversalSearch = React.memo(({ className, onResultClick }: Univers
     }
   }, []);
 
-  // Memoized clear input handler
+  // Optimized clear input handler
   const handleClearInput = React.useCallback(() => {
-    console.log('🧹 UniversalSearch clearing input');
+    cancelSearch(); // Cancel any pending search
     setInputValue("");
     setIsOpen(false);
-  }, []);
+  }, [cancelSearch]);
 
   return (
     <div className={cn("relative w-full max-w-2xl", className)}>
@@ -137,7 +122,7 @@ export const UniversalSearch = React.memo(({ className, onResultClick }: Univers
               )}
             </div>
             
-            {isSearching && (
+            {(isSearching || isSearchPending) && (
               <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
                 <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
               </div>
