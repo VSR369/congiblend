@@ -23,13 +23,39 @@ const PageLoader = () => (
   </div>
 );
 
+// App content component that uses context
+const AppContent = () => {
+  // Initialize performance monitoring inside context
+  usePerformanceMonitor(process.env.NODE_ENV === 'development');
+
+  return (
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={
+              <FeedErrorBoundary level="feed">
+                <MainLayout />
+              </FeedErrorBoundary>
+            }>
+              <Route index element={<Index />} />
+            </Route>
+            <Route path="/login" element={<Auth />} />
+            <Route path="/register" element={<Auth />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    </TooltipProvider>
+  );
+};
+
 // Performance-optimized App component
 const App = () => {
   const { theme } = useThemeStore();
   const { initialize } = useAuthStore();
-  
-  // Initialize performance monitoring
-  usePerformanceMonitor(process.env.NODE_ENV === 'development');
 
   useEffect(() => {
     // Initialize auth state on app start
@@ -50,26 +76,7 @@ const App = () => {
   return (
     <ErrorBoundary>
       <AppProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                <Route path="/" element={
-                  <FeedErrorBoundary level="feed">
-                    <MainLayout />
-                  </FeedErrorBoundary>
-                }>
-                  <Route index element={<Index />} />
-                </Route>
-                <Route path="/login" element={<Auth />} />
-                <Route path="/register" element={<Auth />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </BrowserRouter>
-        </TooltipProvider>
+        <AppContent />
       </AppProvider>
     </ErrorBoundary>
   );

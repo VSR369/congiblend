@@ -37,5 +37,5 @@ export function useIntersectionObserver(
     };
   }, [threshold, rootMargin, root]);
 
-  return { targetRef, isIntersecting };
+  return { ref: targetRef, isIntersecting };
 }

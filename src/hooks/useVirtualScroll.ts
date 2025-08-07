@@ -73,7 +73,7 @@ export function useVirtualInfiniteScroll<T>({
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Use intersection observer for load more trigger
-  const { targetRef: loadMoreTriggerRef } = useIntersectionObserver({
+  const { ref: loadMoreTriggerRef } = useIntersectionObserver({
     threshold: 0.1,
     rootMargin: '200px',
   });

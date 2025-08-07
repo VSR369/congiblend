@@ -115,7 +115,7 @@ export function useAdvancedIntersectionObserver(
 // Hook for lazy loading media with advanced intersection observer
 export function useLazyMedia(
   options: AdvancedIntersectionObserverOptions = {}
-): [React.RefObject<HTMLElement>, boolean, boolean] {
+): { ref: React.RefObject<HTMLElement>; shouldLoad: boolean; wasVisible: boolean } {
   const [ref, { isIntersecting, wasVisible }] = useAdvancedIntersectionObserver({
     rootMargin: '50px',
     triggerOnce: true,
@@ -124,14 +124,14 @@ export function useLazyMedia(
 
   const shouldLoad = isIntersecting || wasVisible;
 
-  return [ref, shouldLoad, wasVisible];
+  return { ref, shouldLoad, wasVisible };
 }
 
 // Hook for tracking post visibility for analytics
 export function usePostVisibility(
   postId: string,
   onVisibilityChange?: (postId: string, isVisible: boolean, visibilityTime: number) => void
-): [React.RefObject<HTMLElement>, boolean] {
+): { ref: React.RefObject<HTMLElement>; isIntersecting: boolean } {
   const [ref, { isIntersecting, visibilityTime }] = useAdvancedIntersectionObserver({
     threshold: 0.5, // 50% visible
     trackVisibilityTime: true,
@@ -142,5 +142,5 @@ export function usePostVisibility(
     onVisibilityChange?.(postId, isIntersecting, visibilityTime);
   }, [postId, isIntersecting, visibilityTime, onVisibilityChange]);
 
-  return [ref, isIntersecting];
+  return { ref, isIntersecting };
 }

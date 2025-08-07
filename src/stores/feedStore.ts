@@ -129,7 +129,10 @@ const transformDbPost = (dbPost: any, author: any): Post => {
     mentions: [],
     reactions: [],
     comments: [],
+    commentsCount: dbPost.comments_count || 0,
+    likes: dbPost.likes_count || 0,
     shares: dbPost.shares_count || 0,
+    sharesCount: dbPost.shares_count || 0,
     saves: 0,
     views: 0,
     createdAt: new Date(dbPost.created_at),
@@ -139,6 +142,7 @@ const transformDbPost = (dbPost: any, author: any): Post => {
     visibility: dbPost.visibility || 'public',
     userReaction: dbPost.user_reaction || undefined,
     userSaved: dbPost.user_saved || false,
+    isSaved: dbPost.user_saved || false,
     userShared: dbPost.user_shared || false,
   };
 };

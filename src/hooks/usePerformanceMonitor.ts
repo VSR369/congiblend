@@ -66,7 +66,8 @@ class PerformanceMonitor {
             console.log('LCP:', entry.startTime);
             break;
           case 'first-input':
-            console.log('FID:', entry.processingStart - entry.startTime);
+            const fidEntry = entry as PerformanceEventTiming;
+            console.log('FID:', fidEntry.processingStart - fidEntry.startTime);
             break;
           case 'measure':
             if (entry.name.startsWith('render-')) {

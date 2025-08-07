@@ -100,11 +100,10 @@ const LazyMedia = memo<LazyMediaProps>(({
   }
 
   return (
-    <StableContainer
-      ref={ref}
-      className={cn('lazy-media-container', className)}
-      preserveAspectRatio={media.length === 1}
-      aspectRatio={aspectRatio}
+    <div
+      ref={ref as React.RefObject<HTMLDivElement>}
+      className={cn('lazy-media-container', 'relative w-full overflow-hidden rounded-lg', className)}
+      style={{ aspectRatio: media.length === 1 ? aspectRatio : undefined }}
       data-post-id={postId}
     >
       {/* Loading placeholder */}
@@ -238,7 +237,7 @@ const LazyMedia = memo<LazyMediaProps>(({
           ))}
         </div>
       )}
-    </StableContainer>
+    </div>
   );
 });
 

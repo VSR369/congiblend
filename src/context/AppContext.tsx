@@ -210,7 +210,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Sync with existing stores (transition period)
   useEffect(() => {
-    dispatch({ type: 'SET_CURRENT_USER', payload: user });
+    if (user) {
+      dispatch({ type: 'SET_CURRENT_USER', payload: {
+        id: user.id,
+        name: (user as any).display_name || (user as any).email?.split('@')[0] || 'User',
+        username: (user as any).email?.split('@')[0] || 'user',
+        email: (user as any).email || '',
+        avatar: (user as any).avatar_url || '',
+        bio: (user as any).bio || '',
+        verified: false,
+        followersCount: 0,
+        followingCount: 0,
+        postsCount: 0,
+        isFollowing: false,
+        title: '',
+        company: '',
+        location: '',
+        website: '',
+        joinedAt: new Date((user as any).created_at || Date.now())
+      }});
+    } else {
+      dispatch({ type: 'SET_CURRENT_USER', payload: null });
+    }
   }, [user]);
 
   useEffect(() => {

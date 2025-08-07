@@ -2,10 +2,22 @@ export interface User {
   id: string;
   name: string;
   username: string;
+  email?: string;
   avatar?: string;
+  avatar_url?: string;
+  display_name?: string;
+  bio?: string;
   verified?: boolean;
   title?: string;
   company?: string;
+  location?: string;
+  website?: string;
+  followersCount?: number;
+  followingCount?: number;
+  postsCount?: number;
+  isFollowing?: boolean;
+  joinedAt?: Date;
+  created_at?: string;
 }
 
 export interface PostMedia {
@@ -107,7 +119,10 @@ export interface Post {
   mentions: User[];
   reactions: Reaction[];
   comments: Comment[];
+  commentsCount: number;
+  likes: number;
   shares: number;
+  sharesCount: number;
   saves: number;
   views: number;
   createdAt: Date;
@@ -117,6 +132,7 @@ export interface Post {
   visibility: 'public' | 'connections' | 'private';
   userReaction?: ReactionType;
   userSaved?: boolean;
+  isSaved?: boolean;
   userShared?: boolean;
 }
 

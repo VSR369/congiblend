@@ -26,7 +26,8 @@ const StablePostCard = memo<StablePostCardProps>(({
   onVisibilityChange
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const { queueRender } = useAppContext();
+  const { queueRender, state } = useAppContext();
+  const currentUser = state.currentUser;
   
   // Track post visibility for analytics
   const { ref: visibilityRef, isIntersecting } = usePostVisibility(
@@ -37,19 +38,13 @@ const StablePostCard = memo<StablePostCardProps>(({
   // Combine refs for both container and visibility tracking
   const combinedRef = useCallback((node: HTMLDivElement | null) => {
     cardRef.current = node;
-    visibilityRef(node);
+    (visibilityRef as any).current = node;
   }, [visibilityRef]);
 
-  // Memoized post actions to prevent unnecessary re-renders
-  const memoizedActions = useMemo(
-    () => ({
-      onLike: () => queueRender(`post-${post.id}-like`),
-      onComment: () => queueRender(`post-${post.id}-comment`),
-      onShare: () => queueRender(`post-${post.id}-share`),
-      onSave: () => queueRender(`post-${post.id}-save`),
-    }),
-    [post.id, queueRender]
-  );
+  // Memoized action handler
+  const onAction = useCallback((postId: string, action: string) => {
+    queueRender(`post-${postId}-${action}`);
+  }, [queueRender]);
 
   // Calculate stable minimum height based on content
   const minHeight = useMemo(() => {
@@ -91,24 +86,19 @@ const StablePostCard = memo<StablePostCardProps>(({
         <Card className="h-full w-full border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
           {/* Post Header - Fixed Height */}
           <div className="post-header-container h-16 flex-shrink-0">
-            <PostHeader
-              author={post.author}
-              createdAt={post.createdAt}
-              edited={post.edited}
-              visibility={post.visibility}
-              isPinned={post.isPinned}
-            />
+        <PostHeader
+          author={post.author}
+          createdAt={post.createdAt}
+          isOwnPost={currentUser?.id === post.author.id}
+        />
           </div>
 
           {/* Post Content - Variable Height with Container */}
           <div className="post-content-container flex-1 min-h-0">
-            <PostContent
-              content={post.content}
-              hashtags={post.hashtags}
-              mentions={post.mentions}
-              poll={post.poll}
-              event={post.event}
-            />
+        <PostContent
+          content={post.content}
+          hashtags={post.hashtags}
+        />
             
             {/* Lazy-loaded Media */}
             {post.media && post.media.length > 0 && (
@@ -125,11 +115,14 @@ const StablePostCard = memo<StablePostCardProps>(({
           {/* Post Actions - Fixed Height */}
           <div className="post-actions-container h-14 flex-shrink-0 border-t border-border/50">
             <PostActions
-              post={post}
-              onLike={memoizedActions.onLike}
-              onComment={memoizedActions.onComment}
-              onShare={memoizedActions.onShare}
-              onSave={memoizedActions.onSave}
+              postId={post.id}
+              initialLikes={post.likes}
+              commentsCount={post.commentsCount}
+              sharesCount={post.sharesCount}
+              isSaved={post.isSaved}
+              onComment={() => onAction(post.id, 'comment')}
+              onShare={() => onAction(post.id, 'share')}
+              onSave={() => onAction(post.id, 'save')}
             />
           </div>
         </Card>
