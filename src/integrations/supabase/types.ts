@@ -22,6 +22,7 @@ export type Database = {
           is_active: boolean | null
           parent_comment_id: string | null
           post_id: string
+          reactions_count: number | null
           updated_at: string | null
           user_id: string
         }
@@ -32,6 +33,7 @@ export type Database = {
           is_active?: boolean | null
           parent_comment_id?: string | null
           post_id: string
+          reactions_count?: number | null
           updated_at?: string | null
           user_id: string
         }
@@ -42,6 +44,7 @@ export type Database = {
           is_active?: boolean | null
           parent_comment_id?: string | null
           post_id?: string
+          reactions_count?: number | null
           updated_at?: string | null
           user_id?: string
         }
