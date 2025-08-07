@@ -1,4 +1,5 @@
 import * as React from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { MoreHorizontal, MessageCircle, Share2, Bookmark, Flag, Heart } from "lucide-react";
 import { formatRelativeTime } from "@/utils/formatters";
 import { LikeButton } from "./like-button";
@@ -18,11 +19,11 @@ interface PostCardProps {
   className?: string;
 }
 
-export const PostCard = React.memo(({ post, className }: PostCardProps) => {
+export const PostCard = ({ post, className }: PostCardProps) => {
   const [showComments, setShowComments] = React.useState(false);
   const { toggleSave, sharePost, addComment, votePoll } = useFeedStore();
 
-  const handleCommentSubmit = React.useCallback(async (content: string) => {
+  const handleCommentSubmit = async (content: string) => {
     try {
       await addComment(post.id, content);
       toast({
@@ -37,9 +38,9 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
       });
       throw error;
     }
-  }, [post.id, addComment]);
+  };
 
-  const handleShare = React.useCallback(async () => {
+  const handleShare = async () => {
     try {
       await sharePost(post.id);
       toast({
@@ -61,9 +62,9 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
         });
       }
     }
-  }, [post.id, sharePost]);
+  };
 
-  const handlePollVote = React.useCallback(async (optionIndex: number) => {
+  const handlePollVote = async (optionIndex: number) => {
     try {
       console.log('Voting for option index:', optionIndex);
       await votePoll(post.id, optionIndex);
@@ -79,7 +80,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
         variant: "destructive"
       });
     }
-  }, [post.id, votePoll]);
+  };
 
   const totalReactions = post.reactions.length;
   const topReactions = React.useMemo(() => {
@@ -305,8 +306,10 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
 
   return (
     <PostErrorBoundary>
-      <article
-        className={cn("post-card bg-card border rounded-lg p-6 space-y-4", className)}
+      <motion.article
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={cn("bg-card border rounded-lg p-6 space-y-4", className)}
       >
       {/* Post Header */}
       <div className="flex items-start justify-between">
@@ -455,51 +458,58 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
       </div>
 
       {/* Comments Section */}
-      {showComments && (
-        <div className="border-t pt-4 space-y-4 animate-fade-in">
-          {post.comments.slice(0, 3).map((comment) => (
-            <div key={comment.id} className="flex space-x-3">
-              <div className="h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-                {comment.author.avatar ? (
-                  <img src={comment.author.avatar} alt={comment.author.name} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-xs font-medium">{comment.author.name.charAt(0)}</span>
-                )}
-              </div>
-              <div className="flex-1 space-y-1">
-                <div className="bg-muted rounded-lg p-3">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <span className="font-medium text-sm">{comment.author.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatRelativeTime(comment.createdAt)}
-                    </span>
+      <AnimatePresence>
+        {showComments && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="border-t pt-4 space-y-4"
+          >
+            {post.comments.slice(0, 3).map((comment) => (
+              <div key={comment.id} className="flex space-x-3">
+                <div className="h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                  {comment.author.avatar ? (
+                    <img src={comment.author.avatar} alt={comment.author.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-xs font-medium">{comment.author.name.charAt(0)}</span>
+                  )}
+                </div>
+                <div className="flex-1 space-y-1">
+                  <div className="bg-muted rounded-lg p-3">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <span className="font-medium text-sm">{comment.author.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatRelativeTime(comment.createdAt)}
+                      </span>
+                    </div>
+                    <p className="text-sm">{comment.content}</p>
                   </div>
-                  <p className="text-sm">{comment.content}</p>
-                </div>
-                <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                  <button className="hover:underline">Like</button>
-                  <button className="hover:underline">Reply</button>
+                  <div className="flex items-center space-x-4 text-xs text-muted-foreground">
+                    <button className="hover:underline">Like</button>
+                    <button className="hover:underline">Reply</button>
+                  </div>
                 </div>
               </div>
+            ))}
+            
+            {post.comments.length > 3 && (
+              <button className="text-sm text-muted-foreground hover:underline">
+                View all {post.comments.length} comments
+              </button>
+            )}
+            
+            {/* Comment Input */}
+            <div className="pt-3 border-t">
+              <CommentInput 
+                onSubmit={handleCommentSubmit}
+                placeholder="Write a comment..."
+              />
             </div>
-          ))}
-          
-          {post.comments.length > 3 && (
-            <button className="text-sm text-muted-foreground hover:underline">
-              View all {post.comments.length} comments
-            </button>
-          )}
-          
-          {/* Comment Input */}
-          <div className="pt-3 border-t">
-            <CommentInput 
-              onSubmit={handleCommentSubmit}
-              placeholder="Write a comment..."
-            />
-          </div>
-        </div>
-      )}
-    </article>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      </motion.article>
     </PostErrorBoundary>
   );
-});
+};

@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useThemeStore } from "@/stores/themeStore";
-import { useAuthStore } from "@/stores/authStore";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -22,12 +21,6 @@ const queryClient = new QueryClient({
 
 const App = () => {
   const { theme } = useThemeStore();
-  const { initialize } = useAuthStore();
-
-  useEffect(() => {
-    // Initialize auth state on app start
-    initialize();
-  }, [initialize]);
 
   useEffect(() => {
     // Apply theme on mount

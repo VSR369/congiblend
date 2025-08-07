@@ -59,7 +59,7 @@ export const UserStatsCard: React.FC = () => {
 
       // Get user info and profile views
       const { data: userData } = await supabase
-        .from('profiles')
+        .from('users')
         .select('display_name, headline, avatar_url, profile_views_count, current_streak_days')
         .eq('id', user.id)
         .single();

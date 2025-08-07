@@ -27,7 +27,7 @@ interface HeaderProps {
 export const Header = ({ onMenuToggle, showMenuButton = false }: HeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const { theme, toggleTheme } = useThemeStore();
-  const { user, isAuthenticated, signOut } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const { unreadCount } = useNotificationStore();
 
   const handleSearch = (e: React.FormEvent) => {
@@ -136,55 +136,55 @@ export const Header = ({ onMenuToggle, showMenuButton = false }: HeaderProps) =>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-12 w-12 rounded-xl hover-glow transition-all duration-300 glass-card border-0 p-0">
-                   {user.user_metadata?.avatar_url ? (
-                     <img
-                       src={user.user_metadata.avatar_url}
-                       alt={user.user_metadata?.full_name || user.email}
-                       className="h-8 w-8 rounded-lg object-cover"
-                     />
-                   ) : (
-                     <User className="h-5 w-5" />
-                   )}
-                 </Button>
-               </DropdownMenuTrigger>
-               <DropdownMenuContent align="end" className="w-64 glass-card border-glass-border">
-                 <DropdownMenuLabel>
-                   <div className="flex items-center space-x-3 p-2">
-                     {user.user_metadata?.avatar_url ? (
-                       <img
-                         src={user.user_metadata.avatar_url}
-                         alt={user.user_metadata?.full_name || user.email}
-                         className="h-10 w-10 rounded-lg object-cover"
-                       />
-                     ) : (
-                       <div className="h-10 w-10 rounded-lg gradient-primary flex items-center justify-center">
-                         <User className="h-5 w-5 text-white" />
-                       </div>
-                     )}
-                     <div className="flex flex-col">
-                       <p className="font-semibold leading-none">{user.user_metadata?.full_name || user.email}</p>
-                       <p className="text-sm text-muted-foreground mt-1">
-                         {user.email}
-                       </p>
-                     </div>
-                   </div>
-                 </DropdownMenuLabel>
-                 <DropdownMenuSeparator />
-                 <DropdownMenuItem asChild className="p-3">
-                   <Link to="/profile" className="flex items-center">
-                     <User className="mr-3 h-5 w-5" />
-                     Profile
-                   </Link>
-                 </DropdownMenuItem>
-                 <DropdownMenuItem asChild className="p-3">
-                   <Link to="/settings" className="flex items-center">
-                     <Settings className="mr-3 h-5 w-5" />
-                     Settings
-                   </Link>
-                 </DropdownMenuItem>
-                 <DropdownMenuSeparator />
-                 <DropdownMenuItem onClick={signOut} className="p-3 text-destructive">
-                   Log out
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
+                      className="h-8 w-8 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <User className="h-5 w-5" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 glass-card border-glass-border">
+                <DropdownMenuLabel>
+                  <div className="flex items-center space-x-3 p-2">
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="h-10 w-10 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded-lg gradient-primary flex items-center justify-center">
+                        <User className="h-5 w-5 text-white" />
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <p className="font-semibold leading-none">{user.name}</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className="p-3">
+                  <Link to="/profile" className="flex items-center">
+                    <User className="mr-3 h-5 w-5" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="p-3">
+                  <Link to="/settings" className="flex items-center">
+                    <Settings className="mr-3 h-5 w-5" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="p-3 text-destructive">
+                  Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

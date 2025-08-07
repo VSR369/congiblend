@@ -1,32 +1,18 @@
 import { create } from 'zustand';
-import type { Post, FeedSettings, CreatePostData, ReactionType, PostType, User } from '@/types/feed';
-
+import type { Post, FeedSettings, CreatePostData, ReactionType } from '@/types/feed';
 import { supabase } from '@/integrations/supabase/client';
-
-export interface FeedFilters {
-  userFilter: 'all' | 'my_posts' | 'others' | string; // 'string' for specific user
-  contentTypes: PostType[];
-  timeRange: 'recent' | 'week' | 'month' | 'all';
-}
 
 interface FeedState {
   posts: Post[];
   loading: boolean;
   hasMore: boolean;
   feedSettings: FeedSettings;
-  filters: FeedFilters;
-  users: User[];
-  pendingUpdates: number;
-  queuedPosts: Post[];
-  isScrolling: boolean;
   
   // Actions
   loadPosts: (reset?: boolean) => Promise<void>;
-  loadUsers: () => Promise<void>;
   createPost: (data: CreatePostData) => Promise<void>;
   updatePost: (postId: string, updates: Partial<Post>) => void;
   deletePost: (postId: string) => void;
-  loadPendingUpdates: () => void;
   
   // Engagement actions
   toggleReaction: (postId: string, reaction: ReactionType | null) => Promise<void>;
@@ -40,7 +26,6 @@ interface FeedState {
   
   // Settings
   updateFeedSettings: (settings: Partial<FeedSettings>) => void;
-  updateFilters: (filters: Partial<FeedFilters>) => void;
 }
 
 // Helper function to transform database post to our Post type
@@ -220,10 +205,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
     posts: [],
     loading: false,
     hasMore: true,
-    users: [],
-    pendingUpdates: 0,
-    queuedPosts: [],
-    isScrolling: false,
     feedSettings: {
       showRecentFirst: true,
       contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event', 'job'],
@@ -231,11 +212,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
       showFromCompanies: true,
       showTrending: true,
       filterHashtags: []
-    },
-    filters: {
-      userFilter: 'all',
-      contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event', 'job'],
-      timeRange: 'all'
     },
 
     loadPosts: async (reset = false) => {
@@ -245,68 +221,20 @@ export const useFeedStore = create<FeedState>((set, get) => {
       set({ loading: true });
 
       try {
-        const { filters } = state;
-        let query = supabase
+        // Use direct database query for now, since edge function routing needs fix
+        const { data: postsData, error: postsError } = await supabase
           .from('posts')
           .select(`
             *,
-            profiles (
+            user:user_id (
               id,
               username,
               display_name,
               avatar_url,
-              is_verified,
-              title,
-              company
+              is_verified
             )
-          `);
-
-        // Apply user filter
-        if (filters.userFilter === 'my_posts') {
-          const currentUser = supabase.auth.getUser();
-          query = query.eq('user_id', (await currentUser).data.user?.id);
-        } else if (filters.userFilter === 'others') {
-          const currentUser = supabase.auth.getUser();
-          query = query.neq('user_id', (await currentUser).data.user?.id);
-         } else if (filters.userFilter !== 'all') {
-           // For specific user filter, we'll join with profiles table
-           const { data: specificUser } = await supabase
-             .from('profiles')
-             .select('id')
-             .eq('username', filters.userFilter)
-             .single();
-           
-           if (specificUser) {
-             query = query.eq('user_id', specificUser.id);
-           }
-         }
-
-        // Apply content type filter
-        if (filters.contentTypes.length > 0 && filters.contentTypes.length < 7) {
-          query = query.in('post_type', filters.contentTypes);
-        }
-
-        // Apply time range filter
-        if (filters.timeRange === 'recent') {
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          query = query.gte('created_at', yesterday.toISOString());
-        } else if (filters.timeRange === 'week') {
-          const weekAgo = new Date();
-          weekAgo.setDate(weekAgo.getDate() - 7);
-          query = query.gte('created_at', weekAgo.toISOString());
-        } else if (filters.timeRange === 'month') {
-          const monthAgo = new Date();
-          monthAgo.setMonth(monthAgo.getMonth() - 1);
-          query = query.gte('created_at', monthAgo.toISOString());
-        }
-
-        // Only show public posts unless it's user's own posts
-        if (filters.userFilter !== 'my_posts') {
-          query = query.eq('visibility', 'public');
-        }
-
-        const { data: postsData, error: postsError } = await query
+          `)
+          .eq('visibility', 'public')
           .order('created_at', { ascending: false })
           .limit(20);
 
@@ -314,7 +242,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
         // Transform posts to our format
         const transformedPosts = postsData?.map((dbPost) => 
-          transformDbPost(dbPost, dbPost.profiles)
+          transformDbPost(dbPost, dbPost.user)
         ) || [];
 
         set({ 
@@ -337,7 +265,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
               async (payload) => {
                 // Get author info for new post
                 const { data: authorData } = await supabase
-                  .from('profiles')
+                  .from('users')
                   .select('id, username, display_name, avatar_url, is_verified')
                   .eq('id', payload.new.user_id)
                   .single();
@@ -345,8 +273,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
                 if (authorData) {
                   const newPost = transformDbPost(payload.new, authorData);
                   set(state => ({
-                    queuedPosts: [...state.queuedPosts, newPost],
-                    pendingUpdates: state.pendingUpdates + 1
+                    posts: [newPost, ...state.posts]
                   }));
                 }
               }
@@ -370,39 +297,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
       } catch (error) {
         console.error('Error loading posts:', error);
         set({ loading: false });
-      }
-    },
-
-    loadPendingUpdates: () => {
-      set(state => ({
-        posts: [...state.queuedPosts, ...state.posts],
-        queuedPosts: [],
-        pendingUpdates: 0
-      }));
-    },
-
-    loadUsers: async () => {
-      try {
-        const { data: usersData, error } = await supabase
-          .from('profiles')
-          .select('id, username, display_name, avatar_url, title, company')
-          .order('display_name');
-
-        if (error) throw error;
-
-        // Transform database users to our User type
-        const transformedUsers = usersData?.map(dbUser => ({
-          id: dbUser.id,
-          name: dbUser.display_name || dbUser.username,
-          username: dbUser.username,
-          avatar: dbUser.avatar_url,
-          title: dbUser.title,
-          company: dbUser.company
-        })) || [];
-        
-        set({ users: transformedUsers });
-      } catch (error) {
-        console.error('Error loading users:', error);
       }
     },
 
@@ -859,14 +753,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
       set(state => ({
         feedSettings: { ...state.feedSettings, ...settings }
       }));
-    },
-
-    updateFilters: (newFilters: Partial<FeedFilters>) => {
-      set(state => ({
-        filters: { ...state.filters, ...newFilters }
-      }));
-      // Reload posts with new filters
-      get().loadPosts(true);
     }
   };
 });

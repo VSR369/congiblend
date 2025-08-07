@@ -14,7 +14,6 @@ import { useFeedStore } from "@/stores/feedStore";
 import { PostErrorBoundary } from "./post-error-boundary";
 import { useToast } from "@/hooks/use-toast";
 import type { Post, ReactionType } from "@/types/feed";
-import { REACTION_CONFIG, getMostCommonReactions } from "@/utils/reactions";
 
 interface PostCardProps {
   post: Post;
@@ -147,8 +146,7 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                     loading="lazy"
                     onError={(e) => {
                       console.error('Image failed to load:', mediaItem.url);
-                      // Hide broken images instead of showing placeholder
-                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.src = '/placeholder.svg';
                     }}
                   />
                 </div>
@@ -390,26 +388,19 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                     {post.author.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                 <div>
-                   <div className="flex items-center space-x-2">
-                     <h3 className="font-semibold text-sm">{post.author.name}</h3>
-                     {post.author.verified && (
-                       <Badge variant="secondary" className="text-xs">
-                         ✓
-                       </Badge>
-                     )}
-                     {/* Show "You" indicator for current user's posts */}
-                     <Badge variant="outline" className="text-xs">
-                       You
-                     </Badge>
-                   </div>
-                   <div className="text-xs text-muted-foreground">
-                     {post.author.title && post.author.company && (
-                       <span>{post.author.title} at {post.author.company} • </span>
-                     )}
-                     <span>@{post.author.username} • {formatDistanceToNow(post.createdAt, { addSuffix: true })}</span>
-                   </div>
-                 </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="font-semibold text-sm">{post.author.name}</h3>
+                    {post.author.verified && (
+                      <Badge variant="secondary" className="text-xs">
+                        ✓
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    @{post.author.username} • {formatDistanceToNow(post.createdAt, { addSuffix: true })}
+                  </p>
+                </div>
               </div>
               
               <DropdownMenu>
@@ -436,19 +427,9 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                 {post.reactions.length > 0 && (
                   <div className="flex items-center space-x-1">
                     <div className="flex -space-x-1">
-                      {getMostCommonReactions(post.reactions, 3).map(({ type, count }, i) => {
-                        const config = REACTION_CONFIG[type];
-                        const IconComponent = config.icon;
-                        return (
-                          <div 
-                            key={type} 
-                            className="flex items-center justify-center w-5 h-5 rounded-full bg-background border border-border -ml-1 first:ml-0"
-                            title={`${count} ${config.label}`}
-                          >
-                            <IconComponent className={`w-3 h-3 ${config.color}`} />
-                          </div>
-                        );
-                      })}
+                      {['❤️', '👍', '🎉'].slice(0, 3).map((emoji, i) => (
+                        <span key={i} className="text-xs">{emoji}</span>
+                      ))}
                     </div>
                     <span>{post.reactions.length}</span>
                   </div>

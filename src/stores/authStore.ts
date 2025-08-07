@@ -1,98 +1,68 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { supabase } from '@/integrations/supabase/client';
-import type { User, Session } from '@supabase/supabase-js';
+import type { User } from '@/types';
 
 interface AuthState {
   user: User | null;
-  session: Session | null;
+  token: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  initialize: () => Promise<void>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
-  signOut: () => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  logout: () => void;
   updateUser: (user: Partial<User>) => void;
+  clearAuth: () => void;
+}
+
+interface LoginCredentials {
+  email: string;
+  password: string;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
-      session: null,
+      token: null,
+      refreshToken: null,
       isAuthenticated: false,
-      isLoading: true,
+      isLoading: false,
 
-      initialize: async () => {
+      login: async (credentials: LoginCredentials) => {
+        set({ isLoading: true });
+        
         try {
-          set({ isLoading: true });
-          
-          // Set up auth state listener FIRST
-          supabase.auth.onAuthStateChange(
-            (event, session) => {
-              set({
-                session,
-                user: session?.user ?? null,
-                isAuthenticated: !!session,
-                isLoading: false,
-              });
-            }
-          );
-
-          // THEN check for existing session
-          const { data: { session } } = await supabase.auth.getSession();
-          set({
-            session,
-            user: session?.user ?? null,
-            isAuthenticated: !!session,
-            isLoading: false,
+          // This would be replaced with actual API call
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(credentials),
           });
-        } catch (error) {
-          console.error('Auth initialization error:', error);
-          set({ isLoading: false });
-        }
-      },
-
-      signIn: async (email: string, password: string) => {
-        set({ isLoading: true });
-        
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) {
-          set({ isLoading: false });
-        }
-        
-        return { error };
-      },
-
-      signUp: async (email: string, password: string) => {
-        set({ isLoading: true });
-        
-        const redirectUrl = `${window.location.origin}/`;
-        
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: redirectUrl
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            set({
+              user: data.user,
+              token: data.token,
+              refreshToken: data.refreshToken,
+              isAuthenticated: true,
+              isLoading: false,
+            });
+          } else {
+            throw new Error(data.message);
           }
-        });
-
-        if (error) {
+        } catch (error) {
           set({ isLoading: false });
+          throw error;
         }
-        
-        return { error };
       },
 
-      signOut: async () => {
-        await supabase.auth.signOut();
+      logout: () => {
         set({
           user: null,
-          session: null,
+          token: null,
+          refreshToken: null,
           isAuthenticated: false,
         });
       },
@@ -105,12 +75,23 @@ export const useAuthStore = create<AuthState>()(
           });
         }
       },
+
+      clearAuth: () => {
+        set({
+          user: null,
+          token: null,
+          refreshToken: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
+      },
     }),
     {
       name: 'auth-store',
       partialize: (state) => ({
         user: state.user,
-        session: state.session,
+        token: state.token,
+        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
     }

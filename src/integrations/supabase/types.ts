@@ -19,9 +19,11 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
-          is_active: boolean | null
-          parent_comment_id: string | null
+          is_edited: boolean | null
+          parent_id: string | null
           post_id: string
+          reactions_count: number | null
+          replies_count: number | null
           updated_at: string | null
           user_id: string
         }
@@ -29,9 +31,11 @@ export type Database = {
           content: string
           created_at?: string | null
           id?: string
-          is_active?: boolean | null
-          parent_comment_id?: string | null
+          is_edited?: boolean | null
+          parent_id?: string | null
           post_id: string
+          reactions_count?: number | null
+          replies_count?: number | null
           updated_at?: string | null
           user_id: string
         }
@@ -39,16 +43,18 @@ export type Database = {
           content?: string
           created_at?: string | null
           id?: string
-          is_active?: boolean | null
-          parent_comment_id?: string | null
+          is_edited?: boolean | null
+          parent_id?: string | null
           post_id?: string
+          reactions_count?: number | null
+          replies_count?: number | null
           updated_at?: string | null
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "comments_parent_comment_id_fkey"
-            columns: ["parent_comment_id"]
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "comments"
             referencedColumns: ["id"]
@@ -61,10 +67,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_comments_user_id"
+            foreignKeyName: "comments_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -151,7 +157,29 @@ export type Database = {
           user1_id?: string
           user2_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "connections_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connections_user1_id_fkey"
+            columns: ["user1_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connections_user2_id_fkey"
+            columns: ["user2_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conversation_participants: {
         Row: {
@@ -186,6 +214,13 @@ export type Database = {
             referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "conversation_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       conversations: {
@@ -216,7 +251,15 @@ export type Database = {
           title?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "conversations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       engagement_activations: {
         Row: {
@@ -481,6 +524,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "experiences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       follows: {
@@ -508,7 +558,22 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_following_id_fkey"
+            columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       master_advance_payment_types: {
         Row: {
@@ -2552,7 +2617,15 @@ export type Database = {
           user_id?: string
           video_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "media_processing_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       member_status_change_alerts: {
         Row: {
@@ -2642,6 +2715,13 @@ export type Database = {
             referencedRelation: "messages"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       notifications: {
@@ -2684,7 +2764,22 @@ export type Database = {
           type?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       org_admins: {
         Row: {
@@ -2783,6 +2878,7 @@ export type Database = {
           organization_id: string
           organization_name: string
           organization_type_id: string | null
+          password_hash: string | null
           phone_number: string
           registration_status: string | null
           updated_at: string
@@ -2803,6 +2899,7 @@ export type Database = {
           organization_id: string
           organization_name: string
           organization_type_id?: string | null
+          password_hash?: string | null
           phone_number: string
           registration_status?: string | null
           updated_at?: string
@@ -2823,6 +2920,7 @@ export type Database = {
           organization_id?: string
           organization_name?: string
           organization_type_id?: string | null
+          password_hash?: string | null
           phone_number?: string
           registration_status?: string | null
           updated_at?: string
@@ -2892,38 +2990,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organization_context"
             referencedColumns: ["organization_type_id"]
-          },
-        ]
-      }
-      post_interactions: {
-        Row: {
-          created_at: string | null
-          id: string
-          interaction_type: string
-          post_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          interaction_type: string
-          post_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          interaction_type?: string
-          post_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "post_interactions_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
           },
         ]
       }
@@ -3009,6 +3075,13 @@ export type Database = {
             columns: ["shared_post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -3251,113 +3324,62 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
-          avatar_url: string | null
-          bio: string | null
-          company: string | null
           company_logo: string[] | null
           company_profile: string[] | null
           contact_person_name: string
           country: string
           country_code: string | null
-          cover_url: string | null
           created_at: string
-          current_streak_days: number | null
           custom_user_id: string
-          display_name: string | null
           entity_type: string
-          headline: string | null
           id: string
           industry_segment: string | null
-          is_active: boolean | null
-          is_verified: boolean | null
-          last_activity_date: string | null
-          last_seen_at: string | null
-          location: string | null
-          longest_streak_days: number | null
           organization_id: string | null
           organization_name: string
           organization_type: string
           phone_number: string | null
-          profile_views_count: number | null
           registration_documents: string[] | null
-          role: string | null
-          title: string | null
           updated_at: string
-          username: string | null
           website: string | null
         }
         Insert: {
           address?: string | null
-          avatar_url?: string | null
-          bio?: string | null
-          company?: string | null
           company_logo?: string[] | null
           company_profile?: string[] | null
           contact_person_name: string
           country: string
           country_code?: string | null
-          cover_url?: string | null
           created_at?: string
-          current_streak_days?: number | null
           custom_user_id: string
-          display_name?: string | null
           entity_type: string
-          headline?: string | null
           id: string
           industry_segment?: string | null
-          is_active?: boolean | null
-          is_verified?: boolean | null
-          last_activity_date?: string | null
-          last_seen_at?: string | null
-          location?: string | null
-          longest_streak_days?: number | null
           organization_id?: string | null
           organization_name: string
           organization_type: string
           phone_number?: string | null
-          profile_views_count?: number | null
           registration_documents?: string[] | null
-          role?: string | null
-          title?: string | null
           updated_at?: string
-          username?: string | null
           website?: string | null
         }
         Update: {
           address?: string | null
-          avatar_url?: string | null
-          bio?: string | null
-          company?: string | null
           company_logo?: string[] | null
           company_profile?: string[] | null
           contact_person_name?: string
           country?: string
           country_code?: string | null
-          cover_url?: string | null
           created_at?: string
-          current_streak_days?: number | null
           custom_user_id?: string
-          display_name?: string | null
           entity_type?: string
-          headline?: string | null
           id?: string
           industry_segment?: string | null
-          is_active?: boolean | null
-          is_verified?: boolean | null
-          last_activity_date?: string | null
-          last_seen_at?: string | null
-          location?: string | null
-          longest_streak_days?: number | null
           organization_id?: string | null
           organization_name?: string
           organization_type?: string
           phone_number?: string | null
-          profile_views_count?: number | null
           registration_documents?: string[] | null
-          role?: string | null
-          title?: string | null
           updated_at?: string
-          username?: string | null
           website?: string | null
         }
         Relationships: []
@@ -3387,7 +3409,15 @@ export type Database = {
           target_type?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       roles: {
         Row: {
@@ -3556,7 +3586,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "shares_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       skills: {
         Row: {
@@ -3667,51 +3705,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_analytics: {
-        Row: {
-          id: string
-          image_posts: number | null
-          poll_posts: number | null
-          profile_views: number | null
-          text_posts: number | null
-          total_comments_received: number | null
-          total_likes_received: number | null
-          total_posts: number | null
-          total_shares_received: number | null
-          updated_at: string | null
-          user_id: string
-          video_posts: number | null
-        }
-        Insert: {
-          id?: string
-          image_posts?: number | null
-          poll_posts?: number | null
-          profile_views?: number | null
-          text_posts?: number | null
-          total_comments_received?: number | null
-          total_likes_received?: number | null
-          total_posts?: number | null
-          total_shares_received?: number | null
-          updated_at?: string | null
-          user_id: string
-          video_posts?: number | null
-        }
-        Update: {
-          id?: string
-          image_posts?: number | null
-          poll_posts?: number | null
-          profile_views?: number | null
-          text_posts?: number | null
-          total_comments_received?: number | null
-          total_likes_received?: number | null
-          total_posts?: number | null
-          total_shares_received?: number | null
-          updated_at?: string | null
-          user_id?: string
-          video_posts?: number | null
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -3731,7 +3724,15 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_skill_profiles: {
         Row: {
@@ -3761,7 +3762,15 @@ export type Database = {
           user_id?: string
           years_experience?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_skill_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_skills: {
         Row: {
@@ -3799,7 +3808,83 @@ export type Database = {
             referencedRelation: "skills"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_skills_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      users: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          cover_url: string | null
+          created_at: string | null
+          current_streak_days: number | null
+          display_name: string | null
+          email: string | null
+          headline: string | null
+          id: string
+          is_active: boolean | null
+          is_verified: boolean | null
+          last_activity_date: string | null
+          last_seen_at: string | null
+          location: string | null
+          longest_streak_days: number | null
+          password_hash: string | null
+          profile_views_count: number | null
+          updated_at: string | null
+          username: string
+          website: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          current_streak_days?: number | null
+          display_name?: string | null
+          email?: string | null
+          headline?: string | null
+          id: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          last_activity_date?: string | null
+          last_seen_at?: string | null
+          location?: string | null
+          longest_streak_days?: number | null
+          password_hash?: string | null
+          profile_views_count?: number | null
+          updated_at?: string | null
+          username: string
+          website?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          current_streak_days?: number | null
+          display_name?: string | null
+          email?: string | null
+          headline?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          last_activity_date?: string | null
+          last_seen_at?: string | null
+          location?: string | null
+          longest_streak_days?: number | null
+          password_hash?: string | null
+          profile_views_count?: number | null
+          updated_at?: string | null
+          username?: string
+          website?: string | null
+        }
+        Relationships: []
       }
       votes: {
         Row: {
@@ -4063,23 +4148,6 @@ export type Database = {
       check_fee_component_dependencies: {
         Args: { component_id: string }
         Returns: Json
-      }
-      create_post_optimized: {
-        Args: {
-          p_user_id: string
-          p_content: string
-          p_post_type?: string
-          p_visibility?: string
-          p_media_urls?: string[]
-          p_poll_data?: Json
-          p_event_data?: Json
-          p_metadata?: Json
-        }
-        Returns: {
-          post_id: string
-          created_at: string
-          author_profile: Json
-        }[]
       }
       generate_organization_id: {
         Args: Record<PropertyKey, never>
