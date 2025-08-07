@@ -318,6 +318,9 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
         // Set up real-time subscription for new posts (only once)
         if (!realtimeChannel) {
+          // Debounce real-time updates to prevent rapid re-renders
+          let updateTimeout: NodeJS.Timeout;
+          
           realtimeChannel = supabase
             .channel('posts-changes')
             .on(
@@ -328,19 +331,23 @@ export const useFeedStore = create<FeedState>((set, get) => {
                 table: 'posts'
               },
               async (payload) => {
-                // Get author info for new post
-                const { data: authorData } = await supabase
-                  .from('users')
-                  .select('id, username, display_name, avatar_url, is_verified')
-                  .eq('id', payload.new.user_id)
-                  .single();
+                // Debounce updates to prevent animation jumping
+                clearTimeout(updateTimeout);
+                updateTimeout = setTimeout(async () => {
+                  // Get author info for new post
+                  const { data: authorData } = await supabase
+                    .from('users')
+                    .select('id, username, display_name, avatar_url, is_verified')
+                    .eq('id', payload.new.user_id)
+                    .single();
 
-                if (authorData) {
-                  const newPost = transformDbPost(payload.new, authorData);
-                  set(state => ({
-                    posts: [newPost, ...state.posts]
-                  }));
-                }
+                  if (authorData) {
+                    const newPost = transformDbPost(payload.new, authorData);
+                    set(state => ({
+                      posts: [newPost, ...state.posts]
+                    }));
+                  }
+                }, 300); // 300ms debounce
               }
             )
             .on(
