@@ -132,9 +132,11 @@ const LazyMedia = memo<LazyMediaProps>(({
               {item.type === 'image' && (
                 <img
                   src={item.url}
-                  alt={item.alt}
-                  className={cn("w-full h-full transition-transform duration-300 group-hover:scale-105", 
-                    className?.includes('object-contain') ? 'object-contain' : 'object-cover')}
+                  alt={item.alt || 'Post image'}
+                  className={cn(
+                    "w-full h-full transition-transform duration-300 group-hover:scale-105",
+                    media.length === 1 ? 'max-h-96 object-contain' : 'object-cover'
+                  )}
                   loading="lazy"
                   onLoadStart={() => handleLoadStart(item.id)}
                   onLoad={() => handleLoadEnd(item.id)}

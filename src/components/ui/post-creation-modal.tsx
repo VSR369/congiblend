@@ -6,7 +6,7 @@ import { Input } from "./input";
 import { Textarea } from "./textarea";
 import { Badge } from "./badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
-import { Progress } from "./loading";
+import { Progress } from "./progress";
 import { useFeedStore } from "@/stores/feedStore";
 import { postSchema } from "@/schemas/post";
 import { supabase } from "@/integrations/supabase/client";
@@ -112,33 +112,34 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
     dispatch({ type: 'SET_IS_POSTING', payload: true });
     
     try {
-      // Upload files directly to storage if any are selected
+      // Upload files using the media edge function for better handling
       let mediaUrls: string[] = [];
       if (selectedFiles.length > 0) {
+        console.log('📤 Uploading files:', selectedFiles.length);
+        
         const uploadPromises = selectedFiles.map(async (file) => {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+          const formData = new FormData();
+          formData.append('file', file);
           
-          // Get current user ID for the file path structure
-          const { data: { user }, error: userError } = await supabase.auth.getUser();
-          if (userError || !user) throw new Error('User not authenticated');
-          
-          const filePath = `${user.id}/${fileName}`;
+          const { data, error } = await supabase.functions.invoke('media', {
+            body: formData,
+          });
 
-          const { data, error } = await supabase.storage
-            .from('post-media')
-            .upload(filePath, file);
+          if (error) {
+            console.error('Upload error:', error);
+            throw new Error(`Failed to upload ${file.name}: ${error.message}`);
+          }
 
-          if (error) throw error;
+          if (!data?.url) {
+            throw new Error(`Failed to get upload URL for ${file.name}`);
+          }
 
-          const { data: { publicUrl } } = supabase.storage
-            .from('post-media')
-            .getPublicUrl(filePath);
-
-          return publicUrl;
+          console.log('✅ File uploaded:', file.name, '-> URL:', data.url);
+          return data.url;
         });
 
         mediaUrls = await Promise.all(uploadPromises);
+        console.log('✅ All files uploaded:', mediaUrls);
       }
 
       const postData: CreatePostData = {
@@ -148,6 +149,7 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
         mentions,
         visibility: "public",
         media: selectedFiles,
+        mediaUrls: mediaUrls, // Include uploaded media URLs
       };
 
       // Add poll data if it's a poll post
@@ -479,8 +481,6 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
             <div className="w-8 h-8">
               <Progress
                 value={progressPercentage}
-                variant={progressPercentage > 90 ? "error" : progressPercentage > 75 ? "warning" : "default"}
-                size="sm"
               />
             </div>
             <span className={cn(

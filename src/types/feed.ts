@@ -150,6 +150,7 @@ export interface CreatePostData {
   type: PostType;
   content: string;
   media?: File[];
+  mediaUrls?: string[];
   poll?: Omit<Poll, 'id' | 'totalVotes' | 'userVote'>;
   event?: Omit<Event, 'id' | 'attendees' | 'userRSVP'>;
   job?: Omit<Job, 'id' | 'applications' | 'userApplied'>;

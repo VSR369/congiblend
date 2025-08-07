@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Upload, X, File, Image, FileText, Download } from "lucide-react"
 import { Button } from "./button"
-import { Progress } from "./loading"
+import { Progress } from "./progress"
 import { cn } from "@/lib/utils"
 
 export interface FileItem {
@@ -233,9 +233,6 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
                         <div className="mt-2">
                           <Progress
                             value={fileItem.uploadProgress}
-                            max={100}
-                            size="sm"
-                            variant={fileItem.error ? "error" : "default"}
                           />
                         </div>
                       )}

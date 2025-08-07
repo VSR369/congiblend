@@ -4,6 +4,7 @@ import { PostHeader } from '@/components/ui/post-header';
 import { PostContent } from '@/components/ui/post-content';
 import { PostActions } from '@/components/ui/post-actions';
 import { LazyMedia } from '@/components/stable/LazyMedia';
+import { EnhancedPostCard } from '@/components/ui/enhanced-post-card';
 import type { Post } from '@/types/feed';
 
 interface SimplePostCardProps {
@@ -11,48 +12,10 @@ interface SimplePostCardProps {
   className?: string;
 }
 
-// PHASE 2: Ultra-simple post card with fixed height and no dynamic calculations
+// PHASE 2: Enhanced post card with proper media handling
 const SimplePostCard = memo<SimplePostCardProps>(({ post, className }) => {
-  return (
-    <Card className={`post-card-simple h-96 overflow-hidden ${className || ''}`}>
-      {/* Fixed height header - 64px */}
-      <div className="h-16 flex-shrink-0 border-b border-border/20">
-        <PostHeader
-          author={post.author}
-          createdAt={post.createdAt}
-          isOwnPost={false}
-        />
-      </div>
-
-      {/* Fixed height content - 256px */}
-      <div className="h-64 overflow-y-auto p-4">
-        <PostContent
-          content={post.content}
-          hashtags={post.hashtags}
-        />
-        
-        {/* Media display with larger height for full image visibility */}
-        {post.media && post.media.length > 0 && (
-          <div className="mt-3 max-h-56 rounded-lg">
-            <LazyMedia
-              media={post.media}
-              postId={post.id}
-              className="h-full w-full object-contain"
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Fixed height actions - 56px */}
-      <div className="h-14 flex-shrink-0 border-t border-border/20">
-        <PostActions
-          post={post}
-          onShare={() => {}}
-          onSave={() => {}}
-        />
-      </div>
-    </Card>
-  );
+  // Use the enhanced post card for better post type support
+  return <EnhancedPostCard post={post} className={className} />;
 });
 
 SimplePostCard.displayName = 'SimplePostCard';

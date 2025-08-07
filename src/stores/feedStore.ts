@@ -617,7 +617,11 @@ export const useFeedStore = create<FeedState>((set, get) => {
         let mediaUrls: string[] = [];
         let thumbnailUrl: string | undefined;
         
-        if (data.media && data.media.length > 0) {
+        // Use provided media URLs if available, otherwise upload files
+        if (data.mediaUrls && data.mediaUrls.length > 0) {
+          console.log('Using provided media URLs:', data.mediaUrls.length);
+          mediaUrls = data.mediaUrls;
+        } else if (data.media && data.media.length > 0) {
           console.log('Uploading media files:', data.media.length);
           
           for (const file of data.media) {
