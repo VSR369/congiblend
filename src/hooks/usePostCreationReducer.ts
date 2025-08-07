@@ -11,9 +11,13 @@ interface PostCreationState {
   pollOptions: string[];
   eventData: {
     title: string;
+    description: string;
     location: string;
     start_date: string;
+    end_date: string;
     max_attendees: string;
+    is_virtual: boolean;
+    is_hybrid: boolean;
   };
   jobData: {
     title: string;
@@ -45,9 +49,13 @@ const initialState: PostCreationState = {
   pollOptions: ['', ''],
   eventData: {
     title: '',
+    description: '',
     location: '',
     start_date: '',
-    max_attendees: ''
+    end_date: '',
+    max_attendees: '',
+    is_virtual: false,
+    is_hybrid: false
   },
   jobData: {
     title: '',

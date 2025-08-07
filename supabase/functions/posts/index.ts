@@ -114,6 +114,28 @@ serve(async (req) => {
         );
       }
 
+      // Validate event data if it's an event post
+      if (postData.post_type === 'event') {
+        if (!postData.event_data?.title?.trim()) {
+          return new Response(
+            JSON.stringify({ error: 'Event title is required' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (!postData.event_data?.description?.trim()) {
+          return new Response(
+            JSON.stringify({ error: 'Event description is required' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (!postData.event_data?.start_date) {
+          return new Response(
+            JSON.stringify({ error: 'Event start date is required' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+
       // Extract hashtags and mentions
       const hashtags = extractHashtags(postData.content);
       const mentions = extractMentions(postData.content);

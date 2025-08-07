@@ -56,6 +56,7 @@ export interface Event {
   endDate?: Date;
   location?: string;
   isVirtual?: boolean;
+  isHybrid?: boolean;
   attendees: number;
   maxAttendees?: number;
   userRSVP?: 'going' | 'interested' | 'not_going';
@@ -161,9 +162,11 @@ export interface CreatePostData {
     title: string;
     description?: string;
     start_date: string;
-    end_date?: string;
-    location?: string;
-    max_attendees?: number;
+    end_date?: string | null;
+    location?: string | null;
+    max_attendees?: number | null;
+    is_virtual?: boolean;
+    is_hybrid?: boolean;
   };
   metadata?: any;
 }

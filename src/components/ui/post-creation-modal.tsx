@@ -177,12 +177,26 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
 
       // Add event data if it's an event post
       if (activeTab === 'event') {
+        // Validate required event fields
+        if (!eventData.title.trim()) {
+          throw new Error('Event title is required');
+        }
+        if (!eventData.description.trim()) {
+          throw new Error('Event description is required');
+        }
+        if (!eventData.start_date) {
+          throw new Error('Event start date is required');
+        }
+
         postData.event_data = {
-          title: eventData.title,
-          description: content.trim(),
+          title: eventData.title.trim(),
+          description: eventData.description.trim(),
           start_date: eventData.start_date,
-          location: eventData.location,
-          max_attendees: eventData.max_attendees ? parseInt(eventData.max_attendees) : undefined
+          end_date: eventData.end_date || null,
+          location: eventData.location.trim() || null,
+          max_attendees: eventData.max_attendees ? parseInt(eventData.max_attendees) : null,
+          is_virtual: eventData.is_virtual,
+          is_hybrid: eventData.is_hybrid
         };
       }
 
@@ -289,27 +303,23 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
       case "event":
         return (
           <div className="space-y-4">
+            <Input 
+              placeholder="Event title *"
+              value={eventData.title}
+              onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { title: e.target.value } })}
+              className="w-full"
+            />
             <Textarea
-              placeholder="Tell people about your event..."
-              value={content}
-              onChange={(e) => dispatch({ type: 'SET_CONTENT', payload: e.target.value })}
+              placeholder="Event description *"
+              value={eventData.description}
+              onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { description: e.target.value } })}
               className="min-h-24"
             />
             <div className="grid grid-cols-2 gap-4">
               <Input 
-                placeholder="Event title"
-                value={eventData.title}
-                onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { title: e.target.value } })}
-              />
-              <Input 
                 placeholder="Location"
                 value={eventData.location}
                 onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { location: e.target.value } })}
-              />
-              <Input 
-                type="datetime-local"
-                value={eventData.start_date}
-                onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { start_date: e.target.value } })}
               />
               <Input 
                 type="number" 
@@ -317,6 +327,36 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
                 value={eventData.max_attendees}
                 onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { max_attendees: e.target.value } })}
               />
+              <Input 
+                type="datetime-local"
+                placeholder="Start date & time *"
+                value={eventData.start_date}
+                onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { start_date: e.target.value } })}
+              />
+              <Input 
+                type="datetime-local"
+                placeholder="End date & time"
+                value={eventData.end_date}
+                onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { end_date: e.target.value } })}
+              />
+            </div>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={eventData.is_virtual}
+                  onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { is_virtual: e.target.checked } })}
+                />
+                <span className="text-sm">Virtual Event</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={eventData.is_hybrid}
+                  onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { is_hybrid: e.target.checked } })}
+                />
+                <span className="text-sm">Hybrid Event</span>
+              </label>
             </div>
           </div>
         );
