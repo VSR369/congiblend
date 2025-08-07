@@ -197,33 +197,15 @@
     contain: layout style;
   }
 
-  /* PHASE 2: CSS-only performance optimizations - no containment */
-  .post-card-simple {
-    height: 384px; /* 24rem = 384px - fixed height */
-    will-change: auto;
-    transform: translateZ(0); /* Force hardware acceleration */
+  /* LinkedIn-Style Clean Post Cards */
+  .linkedin-post-card {
+    /* Clean, simple styling without containment issues */
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 8px;
   }
-
-  /* Eliminate layout shift with fixed skeleton dimensions */
-  .post-card-simple,
-  .post-card-simple * {
-    box-sizing: border-box;
-  }
-
-  /* Performance optimizations for smooth scrolling */
-  .stable-list {
-    will-change: scroll-position;
-    transform: translateZ(0);
-  }
-
-  .optimized-container {
-    /* No containment to prevent overlapping */
-  }
-
-  .post-card-stable {
-    /* No containment to prevent overlapping */
-    transform: translateZ(0);
-  }
+  
+  /* Remove all conflicting containment and virtual scroll classes */
 
   /* Throttled animation classes */
   .animate-smooth {
@@ -297,17 +279,11 @@
     animation: shimmer 1.5s infinite;
   }
 
-  /* PHASE 3: Feed and List Containers */
-  .stable-list {
+  /* LinkedIn-Style Feed Container */
+  .linkedin-feed {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
-    transform: translateZ(0);
-  }
-
-  .stable-animation {
-    contain: layout;
-    transform: translateZ(0);
+    gap: 1.5rem;
   }
 
   /* PHASE 4: Skeleton Exact Dimensions */

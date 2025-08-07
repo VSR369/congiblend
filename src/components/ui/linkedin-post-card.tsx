@@ -1,11 +1,10 @@
 import * as React from "react";
-import { MoreHorizontal, MessageCircle, Share2, Bookmark, Flag, Heart } from "lucide-react";
+import { MoreHorizontal, MessageCircle, Share2, Bookmark, Heart } from "lucide-react";
 import { formatRelativeTime } from "@/utils/formatters";
 import { LikeButton } from "./like-button";
 import { PostErrorBoundary } from "./post-error-boundary";
 import { SimpleCommentsSection } from "./simple-comments-section";
 import { Button } from "./button";
-import { Avatar } from "./avatar";
 import { Badge } from "./badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./dropdown-menu";
 import { useFeedStore } from "@/stores/feedStore";
@@ -13,19 +12,18 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import type { Post, ReactionType } from "@/types/feed";
 
-interface PostCardProps {
+interface LinkedInPostCardProps {
   post: Post;
   className?: string;
 }
 
-export const PostCard = React.memo(({ post, className }: PostCardProps) => {
+export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCardProps) => {
   const { toggleSave, sharePost, votePoll } = useFeedStore();
 
   const handleSaveToggle = React.useCallback(() => {
     toggleSave(post.id);
   }, [post.id, toggleSave]);
 
-  // PHASE 3: Memoized share handler
   const handleShare = React.useCallback(async () => {
     try {
       await sharePost(post.id);
@@ -34,33 +32,22 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
         description: "Post has been shared successfully.",
       });
     } catch (error: any) {
-      if (error.message?.includes("own post")) {
-        toast({
-          title: "Cannot share",
-          description: "You cannot share your own posts. Try copying the link instead.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Share failed",
-          description: "Failed to share post. Please try again.",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Share failed",
+        description: "Failed to share post. Please try again.",
+        variant: "destructive"
+      });
     }
   }, [post.id, sharePost]);
 
-  // PHASE 3: Memoized poll vote handler
   const handlePollVote = React.useCallback(async (optionIndex: number) => {
     try {
-      console.log('Voting for option index:', optionIndex);
       await votePoll(post.id, optionIndex);
       toast({
         title: "Vote submitted",
         description: "Your vote has been recorded successfully.",
       });
     } catch (error) {
-      console.error("Poll voting error:", error);
       toast({
         title: "Vote failed", 
         description: "Failed to submit your vote. Please try again.",
@@ -94,7 +81,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
           <div className="space-y-3">
             <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
             {post.media && post.media.length > 0 && (
-                <div className={cn(
+              <div className={cn(
                 "grid gap-2 rounded-lg overflow-hidden",
                 post.media.length === 1 ? "grid-cols-1" : 
                 post.media.length === 2 ? "grid-cols-2" :
@@ -111,24 +98,13 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
                         className="w-full h-full object-cover"
                         controls
                         preload="metadata"
-                        poster={media.thumbnail}
-                      >
-                        Your browser does not support the video tag.
-                      </video>
+                      />
                     ) : media.type === 'document' ? (
                       <div className="w-full h-full flex flex-col items-center justify-center bg-muted p-4">
                         <div className="text-4xl mb-2">📄</div>
-                        <p className="text-sm font-medium text-center truncate w-full">
+                        <p className="text-sm font-medium text-center">
                           {media.alt || 'Document'}
                         </p>
-                        <a 
-                          href={media.url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-xs text-primary hover:underline mt-2"
-                        >
-                          Open Document
-                        </a>
                       </div>
                     ) : (
                       <img
@@ -138,13 +114,6 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
                         loading="lazy"
                       />
                     )}
-                    {post.media!.length > 4 && index === 3 && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <span className="text-white text-lg font-semibold">
-                          +{post.media!.length - 4}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
@@ -153,12 +122,10 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
         );
 
       case 'poll':
-        console.log('Rendering poll post:', post);
-        console.log('Post poll data:', post.poll);
         return (
           <div className="space-y-4">
             <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
-            {post.poll ? (
+            {post.poll && (
               <div className="space-y-3 p-4 border rounded-lg">
                 <h4 className="font-medium">{post.poll.question}</h4>
                 <div className="space-y-2">
@@ -168,50 +135,24 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
                       <button
                         key={option.id} 
                         className={cn(
-                          "w-full text-left space-y-2 p-4 border-2 rounded-lg transition-colors bg-card",
+                          "w-full text-left p-3 border rounded-lg transition-colors",
                           isSelected 
                             ? "border-primary bg-primary/10" 
-                            : "hover:bg-primary/5 hover:border-primary"
+                            : "hover:bg-muted"
                         )}
                         onClick={() => handlePollVote(index)}
                         disabled={!!post.poll?.userVote?.length}
                       >
-                        <div className="flex justify-between items-center mb-2">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-medium text-foreground">{option.text}</span>
-                            {isSelected && (
-                              <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
-                                ✓ Selected
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-xs text-muted-foreground font-medium">
-                            {option.percentage}% ({option.votes} vote{option.votes !== 1 ? 's' : ''})
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm">{option.text}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {option.percentage}%
                           </span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
-                          <div
-                            className={cn(
-                              "h-full rounded-full transition-all duration-500 ease-out",
-                              isSelected ? "bg-primary" : "bg-primary/70"
-                            )}
-                            style={{ width: `${Math.max(option.percentage, 2)}%` }}
-                          />
                         </div>
                       </button>
                     );
                   })}
                 </div>
-                <div className="flex justify-between items-center text-xs text-muted-foreground pt-2 border-t">
-                  <span className="font-medium">{post.poll.totalVotes} total vote{post.poll.totalVotes !== 1 ? 's' : ''}</span>
-                  {post.poll.expiresAt && (
-                    <span>Expires {formatRelativeTime(post.poll.expiresAt)}</span>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="p-4 border rounded-lg">
-                <p className="text-muted-foreground">Poll data not available</p>
               </div>
             )}
           </div>
@@ -225,57 +166,13 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
               <div className="p-4 border rounded-lg space-y-3">
                 <h4 className="font-semibold">{post.event.title}</h4>
                 <p className="text-sm text-muted-foreground">{post.event.description}</p>
-                <div className="flex items-center justify-between text-sm">
-                  <div>
-                    <p className="font-medium">
-                      {post.event.startDate.toLocaleDateString()} at{" "}
-                      {post.event.startDate.toLocaleTimeString()}
-                    </p>
-                    {post.event.location && (
-                      <p className="text-muted-foreground">{post.event.location}</p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">{post.event.attendees} attending</p>
-                    {post.event.maxAttendees && (
-                      <p className="text-muted-foreground">
-                        of {post.event.maxAttendees} max
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <Button className="w-full" variant="outline">
-                  {post.event.userRSVP === 'going' ? 'Going' : 'RSVP'}
-                </Button>
-              </div>
-            )}
-          </div>
-        );
-
-      case 'article':
-        return (
-          <div className="space-y-3">
-            <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
-            {post.linkPreview && (
-              <div className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
-                {post.linkPreview.image && (
-                  <img
-                    src={post.linkPreview.image}
-                    alt={post.linkPreview.title}
-                    className="w-full h-48 object-cover"
-                  />
-                )}
-                <div className="p-4">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                    {post.linkPreview.domain}
+                <div className="text-sm">
+                  <p className="font-medium">
+                    {post.event.startDate.toLocaleDateString()} at{" "}
+                    {post.event.startDate.toLocaleTimeString()}
                   </p>
-                  <h4 className="font-semibold mt-1 line-clamp-2">
-                    {post.linkPreview.title}
-                  </h4>
-                  {post.linkPreview.description && (
-                    <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                      {post.linkPreview.description}
-                    </p>
+                  {post.event.location && (
+                    <p className="text-muted-foreground">{post.event.location}</p>
                   )}
                 </div>
               </div>
@@ -290,7 +187,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
 
   return (
     <PostErrorBoundary>
-      <article className={cn("bg-card border rounded-lg linkedin-post-card", className)}>
+      <article className={cn("bg-card border rounded-lg", className)}>
         {/* Post Header */}
         <div className="flex items-start justify-between p-4">
           <div className="flex items-start space-x-3">
@@ -311,7 +208,6 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
               <p className="text-sm text-muted-foreground">
                 {post.author.title && `${post.author.title} • `}
                 {formatRelativeTime(post.createdAt)}
-                {post.edited && " • Edited"}
               </p>
             </div>
           </div>
@@ -370,7 +266,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
         )}
 
         {/* Actions */}
-        <div className="flex items-center justify-between px-4 py-2 border-b">
+        <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center space-x-1">
             <LikeButton
               targetId={post.id}
@@ -414,4 +310,4 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
   );
 });
 
-PostCard.displayName = "PostCard";
+LinkedInPostCard.displayName = "LinkedInPostCard";
