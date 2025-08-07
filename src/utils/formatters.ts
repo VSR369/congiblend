@@ -1,6 +1,15 @@
 // Date Formatters
-export const formatDate = (date: Date | string, options?: Intl.DateTimeFormatOptions) => {
+export const formatDate = (date: Date | string | null | undefined, options?: Intl.DateTimeFormatOptions) => {
+  // Handle null, undefined, or invalid dates gracefully
+  if (!date) return 'Date unavailable';
+  
   const dateObj = typeof date === 'string' ? new Date(date) : date;
+  
+  // Check if the date is valid
+  if (isNaN(dateObj.getTime())) {
+    console.warn('Invalid date provided to formatDate:', date);
+    return 'Invalid date';
+  }
   
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
@@ -10,8 +19,18 @@ export const formatDate = (date: Date | string, options?: Intl.DateTimeFormatOpt
   }).format(dateObj);
 };
 
-export const formatRelativeTime = (date: Date | string) => {
+export const formatRelativeTime = (date: Date | string | null | undefined) => {
+  // Handle null, undefined, or invalid dates gracefully
+  if (!date) return 'Date unavailable';
+  
   const dateObj = typeof date === 'string' ? new Date(date) : date;
+  
+  // Check if the date is valid
+  if (isNaN(dateObj.getTime())) {
+    console.warn('Invalid date provided to formatRelativeTime:', date);
+    return 'Invalid date';
+  }
+  
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000);
 

@@ -81,7 +81,7 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
       name: reaction.profiles?.display_name || reaction.profiles?.username || 'User',
       username: reaction.profiles?.username || 'user'
     },
-    createdAt: new Date(reaction.created_at)
+    createdAt: reaction.created_at ? new Date(reaction.created_at) : new Date()
   })) || [];
 
   // Find current user's reaction
@@ -99,7 +99,7 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
       username: comment.profiles?.username || 'user',
       avatar: comment.profiles?.avatar_url
     },
-    createdAt: new Date(comment.created_at),
+    createdAt: comment.created_at ? new Date(comment.created_at) : new Date(),
     parentId: comment.parent_comment_id,
     reactions: [],
     replies: []
@@ -120,7 +120,7 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
         percentage: totalVotes > 0 ? Math.round((option.votes || 0) / totalVotes * 100) : 0
       })),
       totalVotes,
-      expiresAt: dbPost.poll_data.expires_at ? new Date(dbPost.poll_data.expires_at) : undefined,
+      expiresAt: dbPost.poll_data.expires_at && !isNaN(new Date(dbPost.poll_data.expires_at).getTime()) ? new Date(dbPost.poll_data.expires_at) : undefined,
       allowMultiple: dbPost.poll_data.multiple_choice || false,
       userVote: undefined // TODO: Get user's vote from database
     };
@@ -134,8 +134,8 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
       id: `${dbPost.id}-event`,
       title: dbPost.event_data.title,
       description: dbPost.event_data.description,
-      startDate: new Date(dbPost.event_data.start_date),
-      endDate: dbPost.event_data.end_date ? new Date(dbPost.event_data.end_date) : undefined,
+      startDate: dbPost.event_data.start_date && !isNaN(new Date(dbPost.event_data.start_date).getTime()) ? new Date(dbPost.event_data.start_date) : new Date(),
+      endDate: dbPost.event_data.end_date && !isNaN(new Date(dbPost.event_data.end_date).getTime()) ? new Date(dbPost.event_data.end_date) : undefined,
       location: dbPost.event_data.location,
       isVirtual: dbPost.event_data.is_virtual || false,
       attendees: dbPost.event_data.attendees || 0,
@@ -168,8 +168,8 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
     sharesCount: dbPost.shares_count || 0,
     saves: 0,
     views: 0,
-    createdAt: new Date(dbPost.created_at),
-    updatedAt: dbPost.updated_at ? new Date(dbPost.updated_at) : undefined,
+    createdAt: dbPost.created_at && !isNaN(new Date(dbPost.created_at).getTime()) ? new Date(dbPost.created_at) : new Date(),
+    updatedAt: dbPost.updated_at && !isNaN(new Date(dbPost.updated_at).getTime()) ? new Date(dbPost.updated_at) : undefined,
     edited: false,
     isPinned: dbPost.is_pinned || false,
     visibility: dbPost.visibility || 'public',
