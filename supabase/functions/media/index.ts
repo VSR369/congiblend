@@ -102,13 +102,15 @@ serve(async (req) => {
   }
 
   try {
+    console.log(`${req.method} request to ${req.url}`);
+    
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/').filter(p => p);
-    const action = pathParts[pathParts.length - 1];
-
+    
     // Get authorization token
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('Missing or invalid authorization header');
       return new Response(
         JSON.stringify({ error: 'Authorization header required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -121,6 +123,7 @@ serve(async (req) => {
     const { data: sessionData, error: sessionError } = await supabase.auth.getUser(token);
     
     if (sessionError || !sessionData.user) {
+      console.error('Authentication failed:', sessionError);
       return new Response(
         JSON.stringify({ error: 'Invalid token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -128,53 +131,65 @@ serve(async (req) => {
     }
 
     const userId = sessionData.user.id;
+    console.log('Authenticated user:', userId);
 
-    // UPLOAD ENDPOINT - Handle POST requests to root path or upload path
-    if (req.method === 'POST' && (action === 'upload' || pathParts.includes('upload') || pathParts.length === 0 || action === 'media')) {
-      const formData = await req.formData();
-      const file = formData.get('file') as File;
-      const mediaTypeOverride = formData.get('type') as string;
-
-      if (!file) {
-        return new Response(
-          JSON.stringify({ error: 'No file provided' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      const mediaType = getMediaType(file.type);
+    // UPLOAD ENDPOINT - Handle all POST requests as uploads
+    if (req.method === 'POST') {
+      console.log('Processing file upload');
       
-      if (mediaType === 'invalid') {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Invalid file type. Only images, videos, and audio files are allowed.' 
-          }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Validate file size based on type
-      const maxSize = mediaType === 'video' ? MAX_VIDEO_SIZE : 
-                     mediaType === 'audio' ? MAX_AUDIO_SIZE : MAX_IMAGE_SIZE;
-      if (file.size > maxSize) {
-        const maxSizeMB = maxSize / (1024 * 1024);
-        return new Response(
-          JSON.stringify({ error: `File too large. Maximum size is ${maxSizeMB}MB.` }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Generate unique filename
-      const timestamp = Date.now();
-      const randomString = Math.random().toString(36).substring(2, 15);
-      const fileExtension = file.name.split('.').pop()?.toLowerCase() || 
-                           (mediaType === 'video' ? 'mp4' : 
-                            mediaType === 'audio' ? 'mp3' : 'jpg');
-      const fileName = `${userId}/${timestamp}-${randomString}.${fileExtension}`;
-
       try {
+        const formData = await req.formData();
+        const file = formData.get('file') as File;
+
+        if (!file) {
+          console.error('No file in form data');
+          return new Response(
+            JSON.stringify({ error: 'No file provided' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        console.log('File details:', {
+          name: file.name,
+          type: file.type,
+          size: file.size
+        });
+
+        const mediaType = getMediaType(file.type);
+        
+        if (mediaType === 'invalid') {
+          console.error('Invalid file type:', file.type);
+          return new Response(
+            JSON.stringify({ 
+              error: `Invalid file type: ${file.type}. Only images, videos, and audio files are allowed.` 
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Validate file size based on type
+        const maxSize = mediaType === 'video' ? MAX_VIDEO_SIZE : 
+                       mediaType === 'audio' ? MAX_AUDIO_SIZE : MAX_IMAGE_SIZE;
+        if (file.size > maxSize) {
+          const maxSizeMB = maxSize / (1024 * 1024);
+          console.error('File too large:', file.size, 'max:', maxSize);
+          return new Response(
+            JSON.stringify({ error: `File too large. Maximum size is ${maxSizeMB}MB.` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Generate unique filename
+        const timestamp = Date.now();
+        const randomString = Math.random().toString(36).substring(2, 15);
+        const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const fileName = `${userId}/${timestamp}-${randomString}.${fileExtension}`;
+
+        console.log('Generated filename:', fileName);
+
         // Convert File to ArrayBuffer for upload
         const fileBuffer = await file.arrayBuffer();
+        console.log('File buffer size:', fileBuffer.byteLength);
         
         // Upload main file to Supabase Storage
         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -186,74 +201,26 @@ serve(async (req) => {
           });
 
         if (uploadError) {
-          console.error('Upload error:', uploadError);
+          console.error('Storage upload error:', uploadError);
           return new Response(
-            JSON.stringify({ error: 'Failed to upload file' }),
+            JSON.stringify({ 
+              error: 'Failed to upload file to storage',
+              details: uploadError.message 
+            }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
+
+        console.log('Upload successful:', uploadData);
 
         // Get public URL for main file
         const { data: publicUrlData } = supabase.storage
           .from('post-media')
           .getPublicUrl(fileName);
 
-        let thumbnailUrl = null;
-        let duration = null;
-        
-        // For videos, generate thumbnail and create processing record
-        if (mediaType === 'video') {
-          try {
-            thumbnailUrl = await generateVideoThumbnail(userId, fileName);
-          } catch (error) {
-            console.error('Thumbnail generation failed:', error);
-            // Continue without thumbnail
-          }
+        console.log('Public URL:', publicUrlData.publicUrl);
 
-          // Create processing record
-          await supabase.from('media_processing').insert({
-            user_id: userId,
-            original_filename: file.name,
-            media_type: mediaType,
-            storage_path: fileName,
-            video_url: publicUrlData.publicUrl,
-            thumbnail_url: thumbnailUrl,
-            processing_status: 'completed', // For demo, mark as completed
-            processing_progress: 100,
-            metadata: {
-              size: file.size,
-              duration: null, // Would be extracted from video in production
-              resolution: null
-            }
-          });
-        }
-
-        // For audio files, simulate duration extraction
-        if (mediaType === 'audio') {
-          // In production, you would extract actual duration from audio file
-          // For demo, generate a random duration between 30 seconds and 10 minutes
-          duration = Math.floor(Math.random() * (600 - 30) + 30);
-
-          // Create processing record for audio
-          await supabase.from('media_processing').insert({
-            user_id: userId,
-            original_filename: file.name,
-            media_type: mediaType,
-            storage_path: fileName,
-            video_url: null, // Not applicable for audio
-            thumbnail_url: null, // Not applicable for audio
-            processing_status: 'completed',
-            processing_progress: 100,
-            metadata: {
-              size: file.size,
-              duration: duration,
-              bitrate: null, // Would be extracted in production
-              format: fileExtension
-            }
-          });
-        }
-
-        // Build response based on media type
+        // Simple response for all media types
         const response = {
           success: true,
           url: publicUrlData.publicUrl,
@@ -263,13 +230,32 @@ serve(async (req) => {
           media_type: mediaType
         };
 
+        // For videos, try to create processing record (optional, don't fail if it errors)
         if (mediaType === 'video') {
-          response.video_url = publicUrlData.publicUrl;
-          response.thumbnail_url = thumbnailUrl;
-        } else if (mediaType === 'audio') {
-          response.duration = duration;
+          try {
+            await supabase.from('media_processing').insert({
+              user_id: userId,
+              original_filename: file.name,
+              media_type: mediaType,
+              storage_path: fileName,
+              video_url: publicUrlData.publicUrl,
+              thumbnail_url: null,
+              processing_status: 'completed',
+              processing_progress: 100,
+              metadata: {
+                size: file.size,
+                duration: null,
+                resolution: null
+              }
+            });
+            console.log('Video processing record created');
+          } catch (dbError) {
+            console.error('Failed to create processing record (non-critical):', dbError);
+            // Don't fail the upload for this
+          }
         }
 
+        console.log('Returning success response');
         return new Response(
           JSON.stringify(response),
           { 
@@ -281,7 +267,10 @@ serve(async (req) => {
       } catch (error) {
         console.error('File processing error:', error);
         return new Response(
-          JSON.stringify({ error: 'Failed to process file' }),
+          JSON.stringify({ 
+            error: 'Failed to process file',
+            details: error.message 
+          }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
