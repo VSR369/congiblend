@@ -33,7 +33,7 @@ const SimplePostCard = memo<SimplePostCardProps>(({ post, className }) => {
         
         {/* Media display with larger height for full image visibility */}
         {post.media && post.media.length > 0 && (
-          <div className="mt-3 h-48 overflow-hidden rounded-lg">
+          <div className="mt-3 max-h-56 rounded-lg">
             <LazyMedia
               media={post.media}
               postId={post.id}

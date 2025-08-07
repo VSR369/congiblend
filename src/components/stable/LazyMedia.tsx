@@ -130,7 +130,8 @@ const LazyMedia = memo<LazyMediaProps>(({
                 <img
                   src={item.url}
                   alt={item.alt}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  className={cn("w-full h-full transition-transform duration-300 group-hover:scale-105", 
+                    className?.includes('object-contain') ? 'object-contain' : 'object-cover')}
                   loading="lazy"
                   onLoadStart={() => handleLoadStart(item.id)}
                   onLoad={() => handleLoadEnd(item.id)}
@@ -144,7 +145,8 @@ const LazyMedia = memo<LazyMediaProps>(({
                   <video
                     src={item.url}
                     poster={item.thumbnail}
-                    className="w-full h-full object-cover"
+                    className={cn("w-full h-full", 
+                      className?.includes('object-contain') ? 'object-contain' : 'object-cover')}
                     muted={isMuted}
                     loop
                     playsInline
