@@ -7,6 +7,8 @@ import { Textarea } from "./textarea";
 import { Badge } from "./badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 import { Progress } from "./progress";
+import { PostTypeSelector } from "./post-type-selector";
+import { MediaUploadArea } from "./media-upload-area";
 import { useFeedStore } from "@/stores/feedStore";
 import { postSchema } from "@/schemas/post";
 import { supabase } from "@/integrations/supabase/client";
@@ -143,58 +145,32 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
       }
 
       const postData: CreatePostData = {
-        type: activeTab,
         content: content.trim(),
-        hashtags,
-        mentions,
+        post_type: activeTab,
         visibility: "public",
-        media: selectedFiles,
-        mediaUrls: mediaUrls, // Include uploaded media URLs
+        media_urls: mediaUrls, // Include uploaded media URLs
       };
 
       // Add poll data if it's a poll post
       if (activeTab === 'poll' && pollOptions.some(opt => opt.trim())) {
-        postData.poll = {
-          question: content.trim(),
+        postData.poll_data = {
           options: pollOptions
             .filter(opt => opt.trim())
-            .map(text => ({ id: '', text: text.trim(), votes: 0, percentage: 0 })),
-          allowMultiple: false
+            .map(text => ({ text: text.trim(), votes: 0 })),
+          multiple_choice: false
         };
       }
 
       // Add event data if it's an event post
       if (activeTab === 'event') {
-        postData.event = {
+        postData.event_data = {
           title: eventData.title,
           description: content.trim(),
-          startDate: new Date(eventData.start_date),
+          start_date: eventData.start_date,
           location: eventData.location,
-          maxAttendees: eventData.max_attendees ? parseInt(eventData.max_attendees) : undefined
+          max_attendees: eventData.max_attendees ? parseInt(eventData.max_attendees) : undefined
         };
       }
-
-      // Add job data if it's a job post
-      if (activeTab === 'job') {
-        postData.job = {
-          title: jobData.title,
-          company: jobData.company,
-          location: jobData.location,
-          type: 'full-time',
-          description: content.trim(),
-          requirements: [],
-          salary: jobData.salary
-        };
-      }
-
-      // Validate data before submitting
-      const validatedData = postSchema.parse({
-        content: postData.content,
-        visibility: postData.visibility,
-        type: postData.type,
-        hashtags: postData.hashtags,
-        mentions: postData.mentions,
-      });
 
       await createPost(postData);
       

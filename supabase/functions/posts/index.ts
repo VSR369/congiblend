@@ -126,8 +126,6 @@ serve(async (req) => {
           content: postData.content.trim(),
           post_type: postData.post_type || 'text',
           visibility: postData.visibility || 'public',
-          images: postData.images || null,
-          videos: postData.videos || null,
           media_urls: postData.media_urls || null,
           thumbnail_url: postData.thumbnail_url || null,
           poll_data: postData.poll_data || null,

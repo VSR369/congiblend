@@ -147,14 +147,22 @@ export interface FeedSettings {
 }
 
 export interface CreatePostData {
-  type: PostType;
   content: string;
-  media?: File[];
-  mediaUrls?: string[];
-  poll?: Omit<Poll, 'id' | 'totalVotes' | 'userVote'>;
-  event?: Omit<Event, 'id' | 'attendees' | 'userRSVP'>;
-  job?: Omit<Job, 'id' | 'applications' | 'userApplied'>;
-  visibility: Post['visibility'];
-  hashtags: string[];
-  mentions: string[];
+  post_type?: PostType;
+  visibility?: 'public' | 'connections' | 'private';
+  media_urls?: string[];
+  poll_data?: {
+    options: Array<{ text: string; votes: number }>;
+    multiple_choice: boolean;
+    expires_at?: string;
+  };
+  event_data?: {
+    title: string;
+    description?: string;
+    start_date: string;
+    end_date?: string;
+    location?: string;
+    max_attendees?: number;
+  };
+  metadata?: any;
 }

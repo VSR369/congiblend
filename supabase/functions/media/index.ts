@@ -129,8 +129,8 @@ serve(async (req) => {
 
     const userId = sessionData.user.id;
 
-    // UPLOAD ENDPOINT
-    if (req.method === 'POST' && (action === 'upload' || pathParts.includes('upload'))) {
+    // UPLOAD ENDPOINT - Handle POST requests to root path or upload path
+    if (req.method === 'POST' && (action === 'upload' || pathParts.includes('upload') || pathParts.length === 0 || action === 'media')) {
       const formData = await req.formData();
       const file = formData.get('file') as File;
       const mediaTypeOverride = formData.get('type') as string;

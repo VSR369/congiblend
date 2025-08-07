@@ -617,70 +617,21 @@ export const useFeedStore = create<FeedState>((set, get) => {
         let mediaUrls: string[] = [];
         let thumbnailUrl: string | undefined;
         
-        // Use provided media URLs if available, otherwise upload files
-        if (data.mediaUrls && data.mediaUrls.length > 0) {
-          console.log('Using provided media URLs:', data.mediaUrls.length);
-          mediaUrls = data.mediaUrls;
-        } else if (data.media && data.media.length > 0) {
-          console.log('Uploading media files:', data.media.length);
-          
-          for (const file of data.media) {
-            const fileExt = file.name.split('.').pop()?.toLowerCase();
-            const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-            
-            console.log('Uploading file:', fileName, 'type:', file.type);
-            
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('post-media')
-              .upload(fileName, file, {
-                cacheControl: '3600',
-                upsert: false
-              });
-
-            if (uploadError) {
-              console.error('Upload error:', uploadError);
-              throw uploadError;
-            }
-
-            const { data: { publicUrl } } = supabase.storage
-              .from('post-media')
-              .getPublicUrl(uploadData.path);
-
-            mediaUrls.push(publicUrl);
-            console.log('File uploaded successfully:', publicUrl);
-            
-            // For video files, we might want to generate a thumbnail later
-            if (['mp4', 'webm', 'mov', 'avi'].includes(fileExt || '')) {
-              // Could set a placeholder thumbnail here
-              thumbnailUrl = publicUrl; // Use first video as thumbnail placeholder
-            }
-          }
+        // Media URLs are already uploaded via the media edge function
+        if (data.media_urls && data.media_urls.length > 0) {
+          console.log('Using provided media URLs:', data.media_urls.length);
+          mediaUrls = data.media_urls;
         }
 
         const postPayload = {
           content: data.content,
-          post_type: data.type,
+          post_type: data.post_type || 'text',
           visibility: data.visibility || 'public',
           media_urls: mediaUrls,
           thumbnail_url: thumbnailUrl,
-          poll_data: data.poll ? {
-            options: data.poll.options.map(opt => ({ text: opt.text, votes: 0 })),
-            multiple_choice: data.poll.allowMultiple || false,
-            expires_at: data.poll.expiresAt?.toISOString()
-          } : undefined,
-          event_data: data.event ? {
-            title: data.event.title,
-            description: data.event.description,
-            start_date: data.event.startDate.toISOString(),
-            end_date: data.event.endDate?.toISOString(),
-            location: data.event.location,
-            is_virtual: data.event.isVirtual,
-            max_attendees: data.event.maxAttendees
-          } : undefined,
-          metadata: {
-            hashtags: data.hashtags || [],
-            mentions: data.mentions || []
-          }
+          poll_data: data.poll_data,
+          event_data: data.event_data,
+          metadata: data.metadata || {}
         };
 
         console.log('Sending post payload:', postPayload);
