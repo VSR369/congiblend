@@ -2,6 +2,8 @@ import * as React from "react"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "./button"
+import { ModalPortal } from "./modal-portal"
+import { ModalErrorBoundary } from "./modal-error-boundary"
 
 export interface ModalProps {
   open: boolean
@@ -44,52 +46,59 @@ export const Modal = ({
     if (open) {
       document.addEventListener("keydown", handleEscape)
       document.body.style.overflow = "hidden"
+      document.body.classList.add("modal-open")
     }
 
     return () => {
       document.removeEventListener("keydown", handleEscape)
       document.body.style.overflow = "unset"
+      document.body.classList.remove("modal-open")
     }
   }, [open, closeOnEscape, onClose])
 
-  return (
-    open && (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-        {/* Backdrop */}
-        <div
-          className={cn(
-            "absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in",
-            overlayClassName
-          )}
-          onClick={closeOnOverlayClick ? onClose : undefined}
-          style={{ contain: 'none' }}
-        />
+  if (!open) return null
 
-        {/* Modal Content */}
-        <div
-          className={cn(
-            "relative w-full bg-background rounded-lg shadow-lg border animate-scale-in z-[10000]",
-            sizeClasses[size],
-            className
-          )}
-          onClick={(e) => e.stopPropagation()}
-          style={{ contain: 'none' }}
+  return (
+    <ModalPortal>
+      <ModalErrorBoundary onReset={onClose}>
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          style={{ pointerEvents: 'auto' }}
         >
-          {showCloseButton && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="absolute right-4 top-4 z-10"
-              onClick={onClose}
-              aria-label="Close modal"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-          {children}
+          {/* Backdrop */}
+          <div
+            className={cn(
+              "absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in",
+              overlayClassName
+            )}
+            onClick={closeOnOverlayClick ? onClose : undefined}
+          />
+
+          {/* Modal Content */}
+          <div
+            className={cn(
+              "relative w-full bg-background rounded-lg shadow-lg border animate-scale-in z-[10000]",
+              sizeClasses[size],
+              className
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {showCloseButton && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="absolute right-4 top-4 z-10"
+                onClick={onClose}
+                aria-label="Close modal"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+            {children}
+          </div>
         </div>
-      </div>
-    )
+      </ModalErrorBoundary>
+    </ModalPortal>
   )
 }
 

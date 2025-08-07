@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { AdaptivePostCard, AdaptivePostCardSkeleton } from '@/components/stable/AdaptivePostCard';
 import { useVirtualScroll } from '@/hooks/useVirtualScroll';
 import { useAdaptivePostHeight } from '@/hooks/useAdaptivePostHeight';
@@ -6,6 +6,7 @@ import { useFeedStore } from '@/stores/feedStore';
 import { Button } from '@/components/ui/button';
 import { PostCreationModal } from '@/components/ui/post-creation-modal';
 import { AdvancedFilterSystem } from '@/components/ui/advanced-filter-system';
+import { ModalErrorBoundary } from '@/components/ui/modal-error-boundary';
 import { Plus, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +18,33 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
   const { posts, loading, loadPosts, hasMore, filters } = useFeedStore();
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+
+  // Modal state management with error recovery
+  const handleOpenModal = useCallback(() => {
+    try {
+      setModalError(null);
+      setShowCreateModal(true);
+    } catch (error) {
+      console.error('Error opening modal:', error);
+      setModalError('Failed to open post creation modal');
+    }
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    try {
+      setShowCreateModal(false);
+      setModalError(null);
+    } catch (error) {
+      console.error('Error closing modal:', error);
+      setModalError(null); // Clear error anyway
+    }
+  }, []);
+
+  const handleModalReset = useCallback(() => {
+    setShowCreateModal(false);
+    setModalError(null);
+  }, []);
 
   // Smart size estimation based on post content
   const estimatePostSize = useMemo(() => (index: number) => {
@@ -121,13 +149,28 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
       {/* Create Post Button */}
       <div className="bg-card border rounded-lg p-4 animate-fade-in">
         <Button
-          onClick={() => setShowCreateModal(true)}
+          onClick={handleOpenModal}
           className="w-full justify-start text-muted-foreground"
           variant="ghost"
+          disabled={showCreateModal}
         >
           <Plus className="h-5 w-5 mr-2" />
           What would you like to share today?
         </Button>
+        
+        {modalError && (
+          <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded-md">
+            <p className="text-sm text-destructive">{modalError}</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setModalError(null)}
+              className="mt-1 h-6 px-2 text-xs"
+            >
+              Dismiss
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -176,10 +219,12 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
         </div>
         
         {/* Post Creation Modal */}
-        <PostCreationModal
-          open={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-        />
+        <ModalErrorBoundary onReset={handleModalReset}>
+          <PostCreationModal
+            open={showCreateModal}
+            onClose={handleCloseModal}
+          />
+        </ModalErrorBoundary>
       </div>
     );
   }
@@ -191,9 +236,12 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
       
       <div
         ref={parentRef}
-        className="h-screen overflow-auto"
+        className={cn(
+          "h-screen overflow-auto",
+          showCreateModal ? "virtual-scroll-modal-open" : ""
+        )}
         style={{
-          contain: 'layout style',
+          contain: showCreateModal ? 'none' : 'layout style',
         }}
       >
         <div
@@ -251,10 +299,12 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
       )}
       
       {/* Post Creation Modal */}
-      <PostCreationModal
-        open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-      />
+      <ModalErrorBoundary onReset={handleModalReset}>
+        <PostCreationModal
+          open={showCreateModal}
+          onClose={handleCloseModal}
+        />
+      </ModalErrorBoundary>
     </div>
   );
 };
