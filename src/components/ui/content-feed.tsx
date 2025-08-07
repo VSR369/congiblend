@@ -149,11 +149,11 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
           </div>
         ) : (
           // Regular scrolling for smaller lists
-          <div className="space-y-8">
+          <div className="flex flex-col gap-8">
             {visibleItems.map(({ item: post, index }) => (
               <div
                 key={post.id}
-                className="animate-fade-in"
+                className="animate-fade-in post-card-stable"
                 style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
               >
                 <StablePostCard post={post} className="w-full" />

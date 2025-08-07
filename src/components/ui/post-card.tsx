@@ -22,6 +22,11 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
   const [showComments, setShowComments] = React.useState(false);
   const { toggleSave, sharePost, addComment, votePoll } = useFeedStore();
 
+  // Auto-expand comments when user adds a comment
+  const expandComments = React.useCallback(() => {
+    setShowComments(true);
+  }, []);
+
   // PHASE 3: Memoized event handlers to prevent re-renders
   const handleCommentToggle = React.useCallback(() => {
     setShowComments(prev => !prev);
@@ -35,6 +40,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
   const handleCommentSubmit = React.useCallback(async (content: string) => {
     try {
       await addComment(post.id, content);
+      expandComments(); // Auto-expand comments after adding
       toast({
         title: "Comment added",
         description: "Your comment has been posted successfully.",
@@ -47,7 +53,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
       });
       throw error;
     }
-  }, [post.id, addComment]);
+  }, [post.id, addComment, expandComments]);
 
   // PHASE 3: Memoized share handler
   const handleShare = React.useCallback(async () => {
@@ -463,48 +469,56 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
         </div>
       </div>
 
-      {/* PHASE 1: Simplified Comments Section without conflicting animations */}
-      {showComments && (
-        <div className="border-t pt-4 space-y-4 stable-animation">
-          {post.comments.slice(0, 3).map((comment) => (
-            <div key={comment.id} className="flex space-x-3">
-              <div className="h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-                {comment.author.avatar ? (
-                  <img src={comment.author.avatar} alt={comment.author.name} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-xs font-medium">{comment.author.name.charAt(0)}</span>
-                )}
-              </div>
-              <div className="flex-1 space-y-1">
-                <div className="bg-muted rounded-lg p-3">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <span className="font-medium text-sm">{comment.author.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatRelativeTime(comment.createdAt)}
+      {/* Always visible comment input */}
+      <div className="border-t pt-3">
+        <CommentInput
+          onSubmit={handleCommentSubmit}
+          placeholder="Write a comment..."
+        />
+      </div>
+
+      {/* Collapsible Comments */}
+      {showComments && post.comments.length > 0 && (
+        <div className="space-y-4 border-t pt-3 animate-accordion-down">
+          <div className="space-y-3">
+            {post.comments.slice(0, 5).map(comment => (
+              <div key={comment.id} className="flex space-x-3">
+                <div className="h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
+                  {comment.author.avatar ? (
+                    <img 
+                      src={comment.author.avatar} 
+                      alt={comment.author.name} 
+                      className="w-full h-full object-cover" 
+                    />
+                  ) : (
+                    <span className="text-xs font-medium">
+                      {comment.author.name.charAt(0).toUpperCase()}
                     </span>
-                  </div>
-                  <p className="text-sm">{comment.content}</p>
+                  )}
                 </div>
-                <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                  <button className="hover:underline">Like</button>
-                  <button className="hover:underline">Reply</button>
+                <div className="flex-1 space-y-1">
+                  <div className="bg-muted rounded-lg px-3 py-2">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <span className="font-medium text-sm">{comment.author.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatRelativeTime(comment.createdAt)}
+                      </span>
+                    </div>
+                    <p className="text-sm">{comment.content}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-          
-          {post.comments.length > 3 && (
-            <button className="text-sm text-muted-foreground hover:underline">
-              View all {post.comments.length} comments
-            </button>
-          )}
-          
-          {/* Comment Input */}
-          <div className="pt-3 border-t">
-            <CommentInput 
-              onSubmit={handleCommentSubmit}
-              placeholder="Write a comment..."
-            />
+            ))}
+            
+            {post.comments.length > 5 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-sm text-muted-foreground"
+              >
+                View all {post.comments.length} comments
+              </Button>
+            )}
           </div>
         </div>
       )}

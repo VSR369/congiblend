@@ -300,7 +300,9 @@
 
   /* PHASE 3: Feed and List Containers */
   .stable-list {
-    contain: layout style;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
     transform: translateZ(0);
   }
 
@@ -448,17 +450,18 @@
   }
 
   .post-card-stable {
-    overflow: hidden;
-    min-height: 200px;
-    margin-bottom: 1rem;
+    display: block;
+    margin-bottom: 2rem;
     transform: translateZ(0);
     will-change: auto;
+    clear: both;
   }
 
   .optimized-container {
-    contain: layout style;
+    display: block;
     transform: translate3d(0, 0, 0);
     will-change: auto;
+    clear: both;
   }
 
   /* Performance optimizations */
