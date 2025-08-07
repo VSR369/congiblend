@@ -31,13 +31,13 @@ const SimplePostCard = memo<SimplePostCardProps>(({ post, className }) => {
           hashtags={post.hashtags}
         />
         
-        {/* Media display with fixed height constraint */}
+        {/* Media display with larger height for full image visibility */}
         {post.media && post.media.length > 0 && (
-          <div className="mt-3 h-32 overflow-hidden">
+          <div className="mt-3 h-48 overflow-hidden rounded-lg">
             <LazyMedia
               media={post.media}
               postId={post.id}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain"
             />
           </div>
         )}
