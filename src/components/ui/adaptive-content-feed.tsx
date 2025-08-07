@@ -193,7 +193,7 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
         ref={parentRef}
         className="h-screen overflow-auto"
         style={{
-          contain: 'strict',
+          contain: 'layout style',
         }}
       >
         <div

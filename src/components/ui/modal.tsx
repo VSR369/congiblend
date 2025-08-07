@@ -54,24 +54,26 @@ export const Modal = ({
 
   return (
     open && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
         {/* Backdrop */}
         <div
           className={cn(
-            "absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in",
+            "absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in",
             overlayClassName
           )}
           onClick={closeOnOverlayClick ? onClose : undefined}
+          style={{ contain: 'none' }}
         />
 
         {/* Modal Content */}
         <div
           className={cn(
-            "relative w-full bg-background rounded-lg shadow-lg border animate-scale-in",
+            "relative w-full bg-background rounded-lg shadow-lg border animate-scale-in z-[10000]",
             sizeClasses[size],
             className
           )}
           onClick={(e) => e.stopPropagation()}
+          style={{ contain: 'none' }}
         >
           {showCloseButton && (
             <Button
