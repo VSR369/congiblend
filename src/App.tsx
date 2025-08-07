@@ -51,11 +51,11 @@ const AppContent = () => {
         </Suspense>
       </BrowserRouter>
       
-      {/* Debug Tools - Only in development */}
-      {process.env.NODE_ENV === 'development' && (
+      {/* Debug Tools - Only in development - DISABLED to prevent infinite loops */}
+      {process.env.NODE_ENV === 'development' && false && (
         <>
-          <DebugOverlay enabled={true} />
-          <PerformanceMetrics enabled={true} position="bottom-left" compact={false} />
+          <DebugOverlay enabled={false} />
+          <PerformanceMetrics enabled={false} position="bottom-left" compact={false} />
         </>
       )}
     </TooltipProvider>

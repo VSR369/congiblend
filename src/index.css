@@ -197,6 +197,20 @@
     contain: layout style;
   }
 
+  /* PHASE 2: CSS-only performance optimizations */
+  .post-card-simple {
+    contain: layout style paint;
+    height: 384px; /* 24rem = 384px - fixed height */
+    will-change: auto;
+    transform: translateZ(0); /* Force hardware acceleration */
+  }
+
+  /* Eliminate layout shift with fixed skeleton dimensions */
+  .post-card-simple,
+  .post-card-simple * {
+    box-sizing: border-box;
+  }
+
   /* Performance optimizations for smooth scrolling */
   .stable-list {
     will-change: scroll-position;

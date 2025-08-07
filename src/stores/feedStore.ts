@@ -252,7 +252,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           .from('posts')
           .select(`
             *,
-            profiles!posts_user_id_fkey (
+            profiles (
               id,
               username,
               display_name,

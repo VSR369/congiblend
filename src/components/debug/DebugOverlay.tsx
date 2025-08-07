@@ -171,10 +171,12 @@ const DebugOverlay: React.FC<{ enabled?: boolean }> = ({ enabled = false }) => {
     return () => observer.disconnect();
   }, [enabled]);
 
-  // Component Render Count Tracking
+  // Component Render Count Tracking - FIXED: Remove infinite loop
+  const renderCountRef = useRef(0);
   useEffect(() => {
-    setStats(prev => ({ ...prev, renderCount: prev.renderCount + 1 }));
-  });
+    renderCountRef.current += 1;
+    setStats(prev => ({ ...prev, renderCount: renderCountRef.current }));
+  }, [enabled]); // Only update when enabled changes
 
   if (!enabled) return null;
 
