@@ -89,7 +89,7 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
         </div>
 
         {/* LinkedIn-Style Feed - Clean List */}
-        <div className="flex flex-col gap-6">
+        <div className="linkedin-feed">
           {posts.length === 0 && loading ? (
             <FeedSkeleton count={3} />
           ) : (

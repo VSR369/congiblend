@@ -290,7 +290,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
 
   return (
     <PostErrorBoundary>
-      <article className={cn("bg-card border rounded-lg linkedin-post-card", className)}>
+      <article className="linkedin-post-card">
         {/* Post Header */}
         <div className="flex items-start justify-between p-4">
           <div className="flex items-start space-x-3">
