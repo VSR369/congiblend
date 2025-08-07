@@ -3,7 +3,7 @@ import { useRef, useMemo } from 'react';
 
 interface VirtualScrollOptions<T> {
   items: T[];
-  estimateSize?: () => number;
+  estimateSize?: (index: number) => number;
   overscan?: number;
   enabled?: boolean;
   threshold?: number;
@@ -11,7 +11,7 @@ interface VirtualScrollOptions<T> {
 
 export function useVirtualScroll<T>({
   items,
-  estimateSize = () => 200,
+  estimateSize = () => 350,
   overscan = 5,
   enabled = true,
   threshold = 20
