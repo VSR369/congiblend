@@ -4,6 +4,9 @@ import { useVirtualScroll } from '@/hooks/useVirtualScroll';
 import { useAdaptivePostHeight } from '@/hooks/useAdaptivePostHeight';
 import { useFeedStore } from '@/stores/feedStore';
 import { Button } from '@/components/ui/button';
+import { PostCreationModal } from '@/components/ui/post-creation-modal';
+import { AdvancedFilterSystem } from '@/components/ui/advanced-filter-system';
+import { Plus, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AdaptiveContentFeedProps {
@@ -11,8 +14,9 @@ interface AdaptiveContentFeedProps {
 }
 
 export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ className }) => {
-  const { posts, loading, loadPosts } = useFeedStore();
+  const { posts, loading, loadPosts, hasMore, filters } = useFeedStore();
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Smart size estimation based on post content
   const estimatePostSize = useMemo(() => (index: number) => {
@@ -87,12 +91,56 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
     });
   };
 
+  // Header content
+  const renderFeedHeader = () => (
+    <div className="space-y-6">
+      {/* Feed Header */}
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold">
+            {filters.userFilter === 'all' ? 'Community Feed' :
+             filters.userFilter === 'my_posts' ? 'My Posts' :
+             filters.userFilter === 'others' ? 'Others\' Posts' : 'Filtered Feed'}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {filters.userFilter === 'all' ? 'Stay updated with your professional community' :
+             filters.userFilter === 'my_posts' ? 'Your posts and updates' :
+             'Content from your network'}
+          </p>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <AdvancedFilterSystem />
+          <Button variant="outline" size="sm">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Trending
+          </Button>
+        </div>
+      </div>
+
+      {/* Create Post Button */}
+      <div className="bg-card border rounded-lg p-4 animate-fade-in">
+        <Button
+          onClick={() => setShowCreateModal(true)}
+          className="w-full justify-start text-muted-foreground"
+          variant="ghost"
+        >
+          <Plus className="h-5 w-5 mr-2" />
+          What would you like to share today?
+        </Button>
+      </div>
+    </div>
+  );
+
   if (loading && posts.length === 0) {
     return (
-      <div className={cn("space-y-4", className)}>
-        {Array.from({ length: 3 }).map((_, index) => (
-          <AdaptivePostCardSkeleton key={index} estimatedHeight={350} />
-        ))}
+      <div className={cn("max-w-2xl mx-auto space-y-6", className)}>
+        {renderFeedHeader()}
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <AdaptivePostCardSkeleton key={index} estimatedHeight={350} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -100,24 +148,47 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
   if (!shouldVirtualize) {
     // Render all posts without virtualization for small lists
     return (
-      <div className={cn("space-y-4", className)}>
-        {posts.map((post, index) => (
-          <AdaptivePostCard 
-            key={post.id} 
-            post={post} 
-            index={index}
-          />
-        ))}
-        {loading && (
-          <AdaptivePostCardSkeleton estimatedHeight={350} />
-        )}
+      <div className={cn("max-w-2xl mx-auto space-y-6", className)}>
+        {renderFeedHeader()}
+        <div className="space-y-4">
+          {posts.map((post, index) => (
+            <AdaptivePostCard 
+              key={post.id} 
+              post={post} 
+              index={index}
+            />
+          ))}
+          {loading && (
+            <AdaptivePostCardSkeleton estimatedHeight={350} />
+          )}
+          
+          {/* End of Feed */}
+          {!hasMore && posts.length > 0 && (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">
+                You&apos;re all caught up! 🎉
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Check back later for more updates from your network.
+              </p>
+            </div>
+          )}
+        </div>
+        
+        {/* Post Creation Modal */}
+        <PostCreationModal
+          open={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+        />
       </div>
     );
   }
 
   // Virtual scrolling for large lists
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn("max-w-2xl mx-auto space-y-6", className)}>
+      {renderFeedHeader()}
+      
       <div
         ref={parentRef}
         className="h-screen overflow-auto"
@@ -159,6 +230,18 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
             );
           })}
         </div>
+        
+        {/* End of Feed */}
+        {!hasMore && posts.length > 0 && (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">
+              You&apos;re all caught up! 🎉
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Check back later for more updates from your network.
+            </p>
+          </div>
+        )}
       </div>
       
       {loading && (
@@ -166,6 +249,12 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
           <AdaptivePostCardSkeleton estimatedHeight={350} />
         </div>
       )}
+      
+      {/* Post Creation Modal */}
+      <PostCreationModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+      />
     </div>
   );
 };
