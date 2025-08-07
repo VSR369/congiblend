@@ -239,11 +239,16 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
       try {
         const { filters } = state;
+        
+        // Circuit breaker pattern - stop infinite retries
+        const maxRetries = 3;
+        const retryDelay = 1000;
+        
         let query = supabase
           .from('posts')
           .select(`
             *,
-            user:user_id (
+            profiles:user_id (
               id,
               username,
               display_name,
@@ -262,9 +267,9 @@ export const useFeedStore = create<FeedState>((set, get) => {
           const currentUser = supabase.auth.getUser();
           query = query.neq('user_id', (await currentUser).data.user?.id);
          } else if (filters.userFilter !== 'all') {
-           // For specific user filter, we'll join with users table
+           // For specific user filter, we'll join with profiles table
            const { data: specificUser } = await supabase
-             .from('users')
+             .from('profiles')
              .select('id')
              .eq('username', filters.userFilter)
              .single();
@@ -307,7 +312,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
         // Transform posts to our format
         const transformedPosts = postsData?.map((dbPost) => 
-          transformDbPost(dbPost, dbPost.user)
+          transformDbPost(dbPost, dbPost.profiles)
         ) || [];
 
         set({ 
@@ -336,7 +341,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
                 updateTimeout = setTimeout(async () => {
                   // Get author info for new post
                   const { data: authorData } = await supabase
-                    .from('users')
+                    .from('profiles')
                     .select('id, username, display_name, avatar_url, is_verified')
                     .eq('id', payload.new.user_id)
                     .single();
@@ -368,6 +373,19 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
       } catch (error) {
         console.error('Error loading posts:', error);
+        
+        // Circuit breaker - stop infinite retries on persistent errors
+        const errorMessage = error?.message || '';
+        if (errorMessage.includes('PGRST200') || errorMessage.includes('foreign key')) {
+          console.warn('Database schema issue detected, stopping retries');
+          set({ 
+            loading: false,
+            posts: [], // Clear posts to prevent UI flicker
+            hasMore: false 
+          });
+          return;
+        }
+        
         set({ loading: false });
       }
     },
@@ -375,7 +393,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
     loadUsers: async () => {
       try {
         const { data: usersData, error } = await supabase
-          .from('users')
+          .from('profiles')
           .select('id, username, display_name, avatar_url, title, company')
           .order('display_name');
 

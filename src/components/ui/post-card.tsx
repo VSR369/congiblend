@@ -306,9 +306,7 @@ export const PostCard = ({ post, className }: PostCardProps) => {
 
   return (
     <PostErrorBoundary>
-      <motion.article
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <article
         className={cn("bg-card border rounded-lg p-6 space-y-4", className)}
       >
       {/* Post Header */}
@@ -509,7 +507,7 @@ export const PostCard = ({ post, className }: PostCardProps) => {
           </motion.div>
         )}
       </AnimatePresence>
-      </motion.article>
+      </article>
     </PostErrorBoundary>
   );
 };

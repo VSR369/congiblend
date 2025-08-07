@@ -1,12 +1,9 @@
 import * as React from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useInView } from "react-intersection-observer";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Plus, TrendingUp } from "lucide-react";
-import { PostCard } from "./post-card";
-
-// Memoized PostCard to prevent unnecessary re-renders
-const MemoizedPostCard = React.memo(PostCard);
+import { StablePostCard } from "./stable-post-card";
 import { PostCreationModal } from "./post-creation-modal";
 import { LoadingSkeleton } from "./loading-skeleton";
 import { Button } from "./button";
@@ -23,10 +20,12 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
   const { posts, loading, hasMore, loadPosts, filters } = useFeedStore();
   const parentRef = React.useRef<HTMLDivElement>(null);
 
-  // Intersection observer for infinite scroll
+  // Throttled intersection observer for infinite scroll to reduce jank
   const { ref: loadMoreRef, inView } = useInView({
     threshold: 0.1,
     rootMargin: "100px",
+    triggerOnce: false,
+    delay: 100, // Throttle intersection observer
   });
 
   // Load initial posts
@@ -115,21 +114,30 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
             ))}
           </div>
         ) : (
-          // Simple feed layout with proper spacing - reduced animations
-          <div className="space-y-8 grid grid-cols-1 gap-8">
-            {posts.map((post) => (
-              <div
-                key={post.id}
-                className="relative animate-fade-in"
-                style={{ 
-                  animationDelay: '0ms',
-                  minHeight: '200px' // Prevent layout shifts
-                }}
-              >
-                <MemoizedPostCard post={post} className="w-full" />
-              </div>
-            ))}
-          </div>
+          // Coordinated list with AnimatePresence for smooth updates
+          <AnimatePresence mode="popLayout">
+            <div className="space-y-8">
+              {posts.map((post, index) => (
+                <motion.div
+                  key={post.id}
+                  layoutId={`post-${post.id}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ 
+                    duration: 0.2,
+                    delay: Math.min(index * 0.05, 0.3), // Stagger with max delay
+                    layout: { duration: 0.2 }
+                  }}
+                  style={{ 
+                    minHeight: '200px' // Prevent layout shifts
+                  }}
+                >
+                  <StablePostCard post={post} className="w-full" />
+                </motion.div>
+              ))}
+            </div>
+          </AnimatePresence>
         )}
 
         {/* Load More Trigger */}
