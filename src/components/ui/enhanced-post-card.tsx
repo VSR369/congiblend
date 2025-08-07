@@ -62,19 +62,11 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
         description: "Post has been reposted to your network.",
       });
     } catch (error: any) {
-      if (error.message?.includes("own post")) {
-        toast({
-          title: "Cannot repost",
-          description: "You cannot repost your own posts.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Repost failed",
-          description: "Failed to repost. Please try again.",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Repost failed",
+        description: "Failed to repost. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setRepostLoading(false);
     }
@@ -94,19 +86,11 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
         description: "Your quote repost has been shared to your network.",
       });
     } catch (error: any) {
-      if (error.message?.includes("own post")) {
-        toast({
-          title: "Cannot repost",
-          description: "You cannot repost your own posts.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Quote repost failed",
-          description: "Failed to share your quote repost. Please try again.",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Quote repost failed",
+        description: "Failed to share your quote repost. Please try again.",
+        variant: "destructive"
+      });
       throw error; // Re-throw to let modal handle the error
     }
   }, [post.id, sharePost]);

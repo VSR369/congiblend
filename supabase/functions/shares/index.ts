@@ -113,13 +113,6 @@ serve(async (req) => {
         );
       }
 
-      // Prevent users from sharing their own posts
-      if (targetPost.user_id === userId) {
-        return new Response(
-          JSON.stringify({ error: 'You cannot share your own posts' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
 
       // Check if user already shared this post with the same share type
       const { data: existingShare, error: shareCheckError } = await authSupabase
