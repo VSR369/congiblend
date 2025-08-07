@@ -42,16 +42,18 @@ interface FeedState {
 
 // Helper function to transform database post to our Post type
 const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post => {
-  console.log('Transforming post:', dbPost.id, 'type:', dbPost.post_type, 'media_urls:', dbPost.media_urls);
+  console.log('🔄 Transforming post:', dbPost.id, 'type:', dbPost.post_type, 'media_urls:', dbPost.media_urls);
+  console.log('🔍 Raw post data:', JSON.stringify(dbPost, null, 2));
   
   // Handle media_urls array and transform to proper media format
   let media = [];
-  if (dbPost.media_urls && Array.isArray(dbPost.media_urls)) {
+  if (dbPost.media_urls && Array.isArray(dbPost.media_urls) && dbPost.media_urls.length > 0) {
+    console.log('📷 Processing media URLs:', dbPost.media_urls);
     media = dbPost.media_urls.map((url: string, index: number) => {
       // Try to get MIME type from metadata if available
       const mimeType = dbPost.metadata?.media?.[index]?.mimeType;
       const mediaType = determineMediaType(url, mimeType);
-      console.log('Media item:', { url, type: mediaType, mimeType });
+      console.log('📷 Media item:', { url, type: mediaType, mimeType });
       
       return {
         id: `${dbPost.id}-${index}`,
@@ -63,8 +65,14 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
         size: dbPost.metadata?.media?.[index]?.size
       };
     });
-  } else if (dbPost.images && Array.isArray(dbPost.images)) {
-    // Fallback for legacy images field
+    console.log('✅ Final media array:', media);
+  } else {
+    console.log('❌ No media_urls found or empty array');
+  }
+  
+  // Legacy fallback for images field
+  if (media.length === 0 && dbPost.images && Array.isArray(dbPost.images)) {
+    console.log('🔄 Using legacy images field:', dbPost.images);
     media = dbPost.images.map((url: string, index: number) => ({
       id: `${dbPost.id}-${index}`,
       type: 'image' as const,
