@@ -16,6 +16,9 @@ interface FeedState {
   feedSettings: FeedSettings;
   filters: FeedFilters;
   users: User[];
+  pendingUpdates: number;
+  queuedPosts: Post[];
+  isScrolling: boolean;
   
   // Actions
   loadPosts: (reset?: boolean) => Promise<void>;
@@ -23,6 +26,7 @@ interface FeedState {
   createPost: (data: CreatePostData) => Promise<void>;
   updatePost: (postId: string, updates: Partial<Post>) => void;
   deletePost: (postId: string) => void;
+  loadPendingUpdates: () => void;
   
   // Engagement actions
   toggleReaction: (postId: string, reaction: ReactionType | null) => Promise<void>;
@@ -217,6 +221,9 @@ export const useFeedStore = create<FeedState>((set, get) => {
     loading: false,
     hasMore: true,
     users: [],
+    pendingUpdates: 0,
+    queuedPosts: [],
+    isScrolling: false,
     feedSettings: {
       showRecentFirst: true,
       contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event', 'job'],
@@ -338,7 +345,8 @@ export const useFeedStore = create<FeedState>((set, get) => {
                 if (authorData) {
                   const newPost = transformDbPost(payload.new, authorData);
                   set(state => ({
-                    posts: [newPost, ...state.posts]
+                    queuedPosts: [...state.queuedPosts, newPost],
+                    pendingUpdates: state.pendingUpdates + 1
                   }));
                 }
               }
@@ -363,6 +371,14 @@ export const useFeedStore = create<FeedState>((set, get) => {
         console.error('Error loading posts:', error);
         set({ loading: false });
       }
+    },
+
+    loadPendingUpdates: () => {
+      set(state => ({
+        posts: [...state.queuedPosts, ...state.posts],
+        queuedPosts: [],
+        pendingUpdates: 0
+      }));
     },
 
     loadUsers: async () => {

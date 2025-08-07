@@ -1,8 +1,6 @@
 import * as React from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { useInView } from "react-intersection-observer";
-import { motion } from "framer-motion";
-import { Plus, TrendingUp } from "lucide-react";
+import { Plus, TrendingUp, ArrowUp } from "lucide-react";
 import { PostCard } from "./post-card";
 import { PostCreationModal } from "./post-creation-modal";
 import { LoadingSkeleton } from "./loading-skeleton";
@@ -17,14 +15,33 @@ interface ContentFeedProps {
 
 export const ContentFeed = ({ className }: ContentFeedProps) => {
   const [showCreateModal, setShowCreateModal] = React.useState(false);
-  const { posts, loading, hasMore, loadPosts, filters } = useFeedStore();
+  const [isScrolling, setIsScrolling] = React.useState(false);
+  const { posts, loading, hasMore, loadPosts, filters, pendingUpdates, loadPendingUpdates } = useFeedStore();
   const parentRef = React.useRef<HTMLDivElement>(null);
+  const scrollTimeoutRef = React.useRef<NodeJS.Timeout>();
 
   // Intersection observer for infinite scroll
   const { ref: loadMoreRef, inView } = useInView({
     threshold: 0.1,
     rootMargin: "100px",
   });
+
+  // Track scroll state for smart real-time updates
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolling(true);
+      clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = setTimeout(() => {
+        setIsScrolling(false);
+      }, 500);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeoutRef.current);
+    };
+  }, []);
 
   // Load initial posts
   React.useEffect(() => {
@@ -40,8 +57,13 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
     }
   }, [inView, hasMore, loading, loadPosts]);
 
-  // Simple scrolling without virtualization to prevent overlap issues
-  const shouldUseVirtualization = posts.length > 50;
+  // Handle new posts notification
+  const handleShowNewPosts = React.useCallback(() => {
+    if (typeof loadPendingUpdates === 'function') {
+      loadPendingUpdates();
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [loadPendingUpdates]);
 
   return (
     <div className={cn("max-w-2xl mx-auto space-y-6", className)}>
@@ -69,12 +91,22 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
         </div>
       </div>
 
+      {/* New Posts Notification */}
+      {pendingUpdates > 0 && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-slide-in">
+          <Button
+            onClick={handleShowNewPosts}
+            className="shadow-elegant hover-lift transition-all duration-300"
+            variant="default"
+          >
+            <ArrowUp className="h-4 w-4 mr-2" />
+            {pendingUpdates} new post{pendingUpdates !== 1 ? 's' : ''} available
+          </Button>
+        </div>
+      )}
+
       {/* Create Post Button */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-card border rounded-lg p-4"
-      >
+      <div className="bg-card border rounded-lg p-4 animate-fade-in">
         <Button
           onClick={() => setShowCreateModal(true)}
           className="w-full justify-start text-muted-foreground"
@@ -83,15 +115,15 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
           <Plus className="h-5 w-5 mr-2" />
           What would you like to share today?
         </Button>
-      </motion.div>
+      </div>
 
       {/* Feed Content */}
-      <div ref={parentRef} className="space-y-8">
+      <div ref={parentRef} className="feed-container">
         {posts.length === 0 && loading ? (
-          // Initial loading skeleton
-          <div className="space-y-8">
+          // Initial loading skeleton with exact dimensions
+          <div className="feed-grid">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-card border rounded-lg p-6 space-y-4">
+              <div key={i} className="post-skeleton">
                 <div className="flex items-start space-x-3">
                   <LoadingSkeleton className="h-10 w-10 rounded-full" />
                   <div className="space-y-2 flex-1">
@@ -101,7 +133,9 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
                 </div>
                 <LoadingSkeleton className="h-4 w-full" />
                 <LoadingSkeleton className="h-4 w-3/4" />
-                <LoadingSkeleton className="h-48 w-full rounded-lg" />
+                <div className="media-container">
+                  <LoadingSkeleton className="h-full w-full rounded-lg" />
+                </div>
                 <div className="flex items-center space-x-4">
                   <LoadingSkeleton className="h-8 w-16" />
                   <LoadingSkeleton className="h-8 w-20" />
@@ -111,18 +145,15 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
             ))}
           </div>
         ) : (
-          // Simple feed layout with proper spacing
-          <div className="space-y-8">
-            {posts.map((post, index) => (
-              <motion.div
+          // Stable feed grid with optimized performance
+          <div className="feed-grid">
+            {posts.map((post) => (
+              <div
                 key={post.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="relative"
+                className="post-item animate-fade-in"
               >
                 <PostCard post={post} className="w-full" />
-              </motion.div>
+              </div>
             ))}
           </div>
         )}
