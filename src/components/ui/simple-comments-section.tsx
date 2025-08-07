@@ -1,6 +1,7 @@
 import * as React from "react";
 import { ChevronDown, ChevronUp, TrendingUp, Clock } from "lucide-react";
 import { CommentInput } from "./comment-input";
+import { LikeButton } from "./like-button";
 import { Button } from "./button";
 import { Avatar } from "./avatar";
 import { formatRelativeTime } from "@/utils/formatters";
@@ -12,13 +13,17 @@ interface SimpleCommentsSectionProps {
   postId: string;
   comments: Comment[];
   commentsCount: number;
+  showCommentInput?: boolean;
+  onToggleCommentInput?: () => void;
   className?: string;
 }
 
 export const SimpleCommentsSection = React.memo(({ 
   postId, 
   comments, 
-  commentsCount, 
+  commentsCount,
+  showCommentInput = false,
+  onToggleCommentInput,
   className 
 }: SimpleCommentsSectionProps) => {
   const [showComments, setShowComments] = React.useState(false);
@@ -73,12 +78,14 @@ export const SimpleCommentsSection = React.memo(({
         </div>
       )}
 
-      {/* Enhanced comment input */}
-      <CommentInput
-        onSubmit={handleAddComment}
-        placeholder="Add a comment..."
-        className="px-4"
-      />
+      {/* Enhanced comment input - only show when Comment button clicked */}
+      {showCommentInput && (
+        <CommentInput
+          onSubmit={handleAddComment}
+          placeholder="Add a comment..."
+          className="px-4"
+        />
+      )}
 
       {/* Comments toggle */}
       {commentsCount > 0 && !showComments && (
@@ -148,7 +155,7 @@ const CommentItem = React.memo(({
 
   return (
     <div className="space-y-3">
-      {/* Main comment */}
+      {/* Main comment - LinkedIn style with name above */}
       <div className="flex space-x-3">
         <Avatar className="h-8 w-8">
           {comment.author.avatar ? (
@@ -159,24 +166,37 @@ const CommentItem = React.memo(({
         </Avatar>
         
         <div className="flex-1 space-y-1">
+          {/* Author name outside the bubble */}
+          <div className="flex items-center space-x-2">
+            <span className="font-medium text-sm">{comment.author.name}</span>
+            <span className="text-xs text-muted-foreground">
+              {formatRelativeTime(comment.createdAt)}
+            </span>
+          </div>
+          
+          {/* Comment content in bubble */}
           <div className="bg-muted rounded-lg p-3">
-            <div className="flex items-center space-x-2 mb-1">
-              <span className="font-medium text-sm">{comment.author.name}</span>
-              <span className="text-xs text-muted-foreground">
-                {formatRelativeTime(comment.createdAt)}
-              </span>
-            </div>
             <p className="text-sm">{comment.content}</p>
           </div>
           
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onReply(comment.id)}
-            className="text-xs text-muted-foreground hover:text-foreground h-6 px-2"
-          >
-            Reply
-          </Button>
+          {/* Like and Reply actions */}
+          <div className="flex items-center space-x-4">
+            <LikeButton
+              targetId={comment.id}
+              targetType="comment"
+              currentReaction={undefined}
+              reactions={comment.reactions || []}
+              className="text-xs"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onReply(comment.id)}
+              className="text-xs text-muted-foreground hover:text-foreground h-6 px-2"
+            >
+              Reply
+            </Button>
+          </div>
         </div>
       </div>
 

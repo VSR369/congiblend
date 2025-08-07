@@ -76,53 +76,45 @@ export const CommentInput = ({
             rows={1}
           />
           
-          <div className="flex items-center justify-between p-2 border-t">
-            <div className="flex items-center space-x-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-              >
-                <Image className="h-4 w-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-              >
-                <Smile className="h-4 w-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-              >
-                <Paperclip className="h-4 w-4" />
-              </Button>
+            <div className="flex items-center justify-between p-2 border-t">
+              <div className="flex items-center space-x-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                >
+                  <Image className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                >
+                  <Smile className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={!content.trim() || isSubmitting || disabled}
+                  className="h-7 px-3"
+                >
+                  Post
+                </Button>
+              </div>
             </div>
-            
-            <div className="flex items-center space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="text-xs h-7 px-3"
-              >
-                AI Reply
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={!content.trim() || isSubmitting || disabled}
-                className="h-7 px-3"
-              >
-                Post
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
     </form>

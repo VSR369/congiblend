@@ -20,6 +20,7 @@ interface PostCardProps {
 
 export const PostCard = React.memo(({ post, className }: PostCardProps) => {
   const { toggleSave, sharePost, votePoll } = useFeedStore();
+  const [showCommentInput, setShowCommentInput] = React.useState(false);
 
   const handleSaveToggle = React.useCallback(() => {
     toggleSave(post.id);
@@ -400,6 +401,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
 
             <Button 
               variant="ghost" 
+              onClick={() => setShowCommentInput(!showCommentInput)}
               className="linkedin-action-btn text-muted-foreground hover:bg-muted h-12 px-4 rounded-none flex flex-col items-center"
             >
               <MessageCircle className="h-5 w-5 mb-1" />
@@ -441,7 +443,9 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
         <SimpleCommentsSection
           postId={post.id}
           comments={post.comments}
-          commentsCount={post.comments.length}
+          commentsCount={post.commentsCount}
+          showCommentInput={showCommentInput}
+          onToggleCommentInput={() => setShowCommentInput(!showCommentInput)}
         />
       </article>
     </PostErrorBoundary>
