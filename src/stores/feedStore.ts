@@ -1114,12 +1114,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
-        // Check if user is trying to share their own post
-        const state = get();
-        const post = state.posts.find(p => p.id === postId);
-        if (post?.author.id === user.id) {
-          throw new Error('Cannot share your own post');
-        }
 
         // Validate quote repost content
         if (shareType === 'quote_repost' && (!quoteContent || !quoteContent.trim())) {
@@ -1137,9 +1131,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
         });
 
         if (error) {
-          if (error.message?.includes('own post')) {
-            throw new Error('Cannot share your own post');
-          }
           throw error;
         }
 
