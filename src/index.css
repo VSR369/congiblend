@@ -197,9 +197,8 @@
     contain: layout style;
   }
 
-  /* PHASE 2: CSS-only performance optimizations */
+  /* PHASE 2: CSS-only performance optimizations - no containment */
   .post-card-simple {
-    contain: layout style paint;
     height: 384px; /* 24rem = 384px - fixed height */
     will-change: auto;
     transform: translateZ(0); /* Force hardware acceleration */
@@ -218,11 +217,11 @@
   }
 
   .optimized-container {
-    contain: layout style paint;
+    /* No containment to prevent overlapping */
   }
 
   .post-card-stable {
-    contain: layout style;
+    /* No containment to prevent overlapping */
     transform: translateZ(0);
   }
 
@@ -462,6 +461,7 @@
     transform: translate3d(0, 0, 0);
     will-change: auto;
     clear: both;
+    /* No CSS containment to allow content expansion */
   }
 
   /* Performance optimizations */
@@ -470,9 +470,9 @@
     will-change: opacity;
   }
 
-  /* Error boundary styling */
+  /* Error boundary styling - minimal containment */
   .error-boundary {
-    contain: layout style paint;
+    /* Remove containment that causes overlapping */
   }
 
   /* Utility classes */

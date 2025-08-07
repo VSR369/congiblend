@@ -9,9 +9,9 @@ interface StablePostCardProps {
 
 // PHASE 5: Enhanced memoized PostCard with deep comparison and performance optimization
 export const StablePostCard = React.memo(({ post, className }: StablePostCardProps) => {
-  // PHASE 5: Stable className with CSS containment
+  // Stable className without containment conflicts
   const memoizedClassName = React.useMemo(() => 
-    `post-card-stable optimized-container will-change-transform ${className || ''}`.trim(), 
+    `optimized-container ${className || ''}`.trim(), 
     [className]
   );
 

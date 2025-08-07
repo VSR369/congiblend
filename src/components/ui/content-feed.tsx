@@ -7,7 +7,6 @@ import { Button } from "./button";
 import { AdvancedFilterSystem } from "./advanced-filter-system";
 import { FeedErrorBoundary } from "./feed-error-boundary";
 import { useFeedStore } from "@/stores/feedStore";
-import { useVirtualScroll } from "@/hooks/useVirtualScroll";
 import { useAdvancedIntersectionObserver } from "@/hooks/useAdvancedIntersectionObserver";
 import { cn } from "@/lib/utils";
 
@@ -19,21 +18,9 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
   const [showCreateModal, setShowCreateModal] = React.useState(false);
   const { posts, loading, hasMore, loadPosts, filters } = useFeedStore();
 
-  // Virtual scrolling for performance
-  const { 
-    parentRef, 
-    virtualizer, 
-    visibleItems, 
-    shouldVirtualize,
-    totalSize 
-  } = useVirtualScroll({
-    items: posts,
-    estimateSize: () => 300,
-    overscan: 3,
-    threshold: 50
-  });
+  // Simple list rendering - no virtual scrolling complexity
 
-  // Advanced intersection observer for load more
+  // Simple intersection observer for load more
   const [loadMoreRef, { isIntersecting }] = useAdvancedIntersectionObserver({
     threshold: 0.1,
     rootMargin: "200px",
@@ -101,65 +88,20 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
         </Button>
       </div>
 
-      {/* Optimized Feed Content with Virtual Scrolling */}
-      <div 
-        ref={parentRef} 
-        className="stable-list"
-        style={{
-          height: shouldVirtualize ? '600px' : 'auto',
-          overflow: shouldVirtualize ? 'auto' : 'visible'
-        }}
-      >
+      {/* Simple Feed Content - No Virtual Scrolling */}
+      <div className="space-y-6">
         {posts.length === 0 && loading ? (
           <FeedSkeleton count={3} />
-        ) : shouldVirtualize ? (
-          // Virtual scrolling for large lists
-          <div
-            style={{
-              height: totalSize,
-              width: '100%',
-              position: 'relative',
-            }}
-          >
-            {visibleItems.map((item) => {
-              // Type guard for virtualized items
-              if ('virtualItem' in item) {
-                const { item: post, index, virtualItem } = item as any;
-                return (
-                  <div
-                    key={post.id}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      transform: `translateY(${virtualItem.start}px)`,
-                    }}
-                    ref={virtualizer!.measureElement}
-                    data-index={index}
-                  >
-                    <div className="pb-8">
-                      <StablePostCard post={post} className="w-full" />
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            })}
-          </div>
         ) : (
-          // Regular scrolling for smaller lists
-          <div className="flex flex-col gap-8">
-            {visibleItems.map(({ item: post, index }) => (
-              <div
-                key={post.id}
-                className="animate-fade-in post-card-stable"
-                style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
-              >
-                <StablePostCard post={post} className="w-full" />
-              </div>
-            ))}
-          </div>
+          posts.map((post, index) => (
+            <div
+              key={post.id}
+              className="animate-fade-in"
+              style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
+            >
+              <StablePostCard post={post} className="w-full" />
+            </div>
+          ))
         )}
 
         {/* Load More Trigger */}

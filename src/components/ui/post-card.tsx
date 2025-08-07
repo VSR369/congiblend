@@ -3,7 +3,7 @@ import { MoreHorizontal, MessageCircle, Share2, Bookmark, Flag, Heart } from "lu
 import { formatRelativeTime } from "@/utils/formatters";
 import { LikeButton } from "./like-button";
 import { PostErrorBoundary } from "./post-error-boundary";
-import { CommentInput } from "./comment-input";
+import { SimpleCommentsSection } from "./simple-comments-section";
 import { Button } from "./button";
 import { Avatar } from "./avatar";
 import { Badge } from "./badge";
@@ -19,41 +19,11 @@ interface PostCardProps {
 }
 
 export const PostCard = React.memo(({ post, className }: PostCardProps) => {
-  const [showComments, setShowComments] = React.useState(false);
-  const { toggleSave, sharePost, addComment, votePoll } = useFeedStore();
-
-  // Auto-expand comments when user adds a comment
-  const expandComments = React.useCallback(() => {
-    setShowComments(true);
-  }, []);
-
-  // PHASE 3: Memoized event handlers to prevent re-renders
-  const handleCommentToggle = React.useCallback(() => {
-    setShowComments(prev => !prev);
-  }, []);
+  const { toggleSave, sharePost, votePoll } = useFeedStore();
 
   const handleSaveToggle = React.useCallback(() => {
     toggleSave(post.id);
   }, [post.id, toggleSave]);
-
-  // PHASE 3: Memoized comment handler
-  const handleCommentSubmit = React.useCallback(async (content: string) => {
-    try {
-      await addComment(post.id, content);
-      expandComments(); // Auto-expand comments after adding
-      toast({
-        title: "Comment added",
-        description: "Your comment has been posted successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Comment failed",
-        description: "Failed to add comment. Please try again.",
-        variant: "destructive"
-      });
-      throw error;
-    }
-  }, [post.id, addComment, expandComments]);
 
   // PHASE 3: Memoized share handler
   const handleShare = React.useCallback(async () => {
@@ -409,12 +379,9 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
             )}
             
             {post.comments.length > 0 && (
-              <button 
-                onClick={handleCommentToggle}
-                className="hover:underline"
-              >
+              <span>
                 {post.comments.length} comment{post.comments.length !== 1 ? 's' : ''}
-              </button>
+              </span>
             )}
           </div>
 
@@ -437,9 +404,9 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
 
           <Button 
             variant="ghost" 
-            size="sm" 
-            onClick={handleCommentToggle}
-            className="text-muted-foreground hover:text-foreground"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground cursor-default"
+            disabled
           >
             <MessageCircle className="h-5 w-5 mr-1" />
             Comment
@@ -469,59 +436,13 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
         </div>
       </div>
 
-      {/* Always visible comment input */}
-      <div className="border-t pt-3">
-        <CommentInput
-          onSubmit={handleCommentSubmit}
-          placeholder="Write a comment..."
-        />
-      </div>
-
-      {/* Collapsible Comments */}
-      {showComments && post.comments.length > 0 && (
-        <div className="space-y-4 border-t pt-3 animate-accordion-down">
-          <div className="space-y-3">
-            {post.comments.slice(0, 5).map(comment => (
-              <div key={comment.id} className="flex space-x-3">
-                <div className="h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
-                  {comment.author.avatar ? (
-                    <img 
-                      src={comment.author.avatar} 
-                      alt={comment.author.name} 
-                      className="w-full h-full object-cover" 
-                    />
-                  ) : (
-                    <span className="text-xs font-medium">
-                      {comment.author.name.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <div className="flex-1 space-y-1">
-                  <div className="bg-muted rounded-lg px-3 py-2">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className="font-medium text-sm">{comment.author.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatRelativeTime(comment.createdAt)}
-                      </span>
-                    </div>
-                    <p className="text-sm">{comment.content}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-            
-            {post.comments.length > 5 && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-sm text-muted-foreground"
-              >
-                View all {post.comments.length} comments
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Simple Comments Section */}
+      <SimpleCommentsSection
+        postId={post.id}
+        comments={post.comments}
+        commentsCount={post.comments.length}
+        className="mt-4"
+      />
       </article>
     </PostErrorBoundary>
   );

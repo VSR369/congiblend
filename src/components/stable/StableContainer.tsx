@@ -76,9 +76,8 @@ const StableContainer = memo(React.forwardRef<HTMLDivElement, StableContainerPro
         // Base stable container styles
         'stable-container',
         'relative',
-        'overflow-hidden',
-        // CSS containment for performance
-        'contain-layout contain-style',
+        // Remove overflow:hidden to allow comments expansion
+        // Remove CSS containment that causes overlapping
         // Prevent layout shifts
         'will-change-auto',
         className
