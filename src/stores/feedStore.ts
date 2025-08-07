@@ -102,7 +102,16 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
     },
     createdAt: comment.created_at ? new Date(comment.created_at) : new Date(),
     parentId: comment.parent_comment_id,
-    reactions: [],
+    reactions: comment.reactions?.map((reaction: any) => ({
+      id: reaction.id,
+      type: reaction.reaction_type,
+      user: {
+        id: reaction.user_id,
+        name: reaction.profiles?.display_name || reaction.profiles?.username || 'User',
+        username: reaction.profiles?.username || 'user'
+      },
+      createdAt: reaction.created_at ? new Date(reaction.created_at) : new Date()
+    })) || [],
     reactionsCount: comment.reactions_count || 0,
     replies: []
   })) || [];
@@ -374,7 +383,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
                 .eq('target_type', 'post')
                 .eq('target_id', dbPost.id);
 
-              // Load comments for this post
+              // Load comments for this post with reactions
               const { data: comments } = await supabase
                 .from('comments')
                 .select(`
@@ -383,6 +392,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
                   user_id,
                   parent_comment_id,
                   created_at,
+                  reactions_count,
                   profiles (
                     id,
                     username,
@@ -393,11 +403,38 @@ export const useFeedStore = create<FeedState>((set, get) => {
                 .eq('post_id', dbPost.id)
                 .order('created_at', { ascending: true });
 
+              // Load reactions for each comment
+              const commentReactions = await Promise.all(
+                (comments || []).map(async (comment) => {
+                  const { data: reactions } = await supabase
+                    .from('reactions')
+                    .select(`
+                      id,
+                      reaction_type,
+                      user_id,
+                      created_at,
+                      profiles (
+                        id,
+                        username,
+                        display_name,
+                        avatar_url
+                      )
+                    `)
+                    .eq('target_type', 'comment')
+                    .eq('target_id', comment.id);
+
+                  return {
+                    ...comment,
+                    reactions: reactions || []
+                  };
+                })
+              );
+
               // Add reactions and comments to the post data
               const postWithData = {
                 ...dbPost,
                 reactions: reactions || [],
-                comments: comments || []
+                comments: commentReactions || []
               };
 
               return transformDbPost(postWithData, dbPost.profiles, user?.id);
