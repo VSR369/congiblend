@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { PostHeader } from '@/components/ui/post-header';
 import { PostContent } from '@/components/ui/post-content';
 import { PostActions } from '@/components/ui/post-actions';
+import { LazyMedia } from '@/components/stable/LazyMedia';
 import type { Post } from '@/types/feed';
 
 interface SimplePostCardProps {
@@ -30,14 +31,14 @@ const SimplePostCard = memo<SimplePostCardProps>(({ post, className }) => {
           hashtags={post.hashtags}
         />
         
-        {/* Simple media display */}
+        {/* Media display with fixed height constraint */}
         {post.media && post.media.length > 0 && (
-          <div className="mt-3">
-            <div className="w-full h-32 bg-muted rounded-md flex items-center justify-center">
-              <span className="text-sm text-muted-foreground">
-                {post.media.length} media item{post.media.length > 1 ? 's' : ''}
-              </span>
-            </div>
+          <div className="mt-3 h-32 overflow-hidden">
+            <LazyMedia
+              media={post.media}
+              postId={post.id}
+              className="h-full w-full object-cover"
+            />
           </div>
         )}
       </div>
