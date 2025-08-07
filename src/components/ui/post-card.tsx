@@ -8,6 +8,8 @@ import { Button } from "./button";
 import { Avatar } from "./avatar";
 import { Badge } from "./badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./dropdown-menu";
+import { RepostDropdown } from "./repost-dropdown";
+import { QuoteRepostModal } from "./quote-repost-modal";
 import { useFeedStore } from "@/stores/feedStore";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -21,33 +23,69 @@ interface PostCardProps {
 export const PostCard = React.memo(({ post, className }: PostCardProps) => {
   const { toggleSave, sharePost, votePoll } = useFeedStore();
   const [showCommentInput, setShowCommentInput] = React.useState(false);
+  const [showQuoteModal, setShowQuoteModal] = React.useState(false);
+  const [repostLoading, setRepostLoading] = React.useState(false);
 
   const handleSaveToggle = React.useCallback(() => {
     toggleSave(post.id);
   }, [post.id, toggleSave]);
 
-  // PHASE 3: Memoized share handler
-  const handleShare = React.useCallback(async () => {
+  // Simple repost handler
+  const handleSimpleRepost = React.useCallback(async () => {
+    setRepostLoading(true);
     try {
-      await sharePost(post.id);
+      await sharePost(post.id, 'share');
       toast({
-        title: "Post shared",
-        description: "Post has been shared successfully.",
+        title: "Reposted",
+        description: "Post has been reposted to your network.",
       });
     } catch (error: any) {
       if (error.message?.includes("own post")) {
         toast({
-          title: "Cannot share",
-          description: "You cannot share your own posts. Try copying the link instead.",
+          title: "Cannot repost",
+          description: "You cannot repost your own posts.",
           variant: "destructive"
         });
       } else {
         toast({
-          title: "Share failed",
-          description: "Failed to share post. Please try again.",
+          title: "Repost failed",
+          description: "Failed to repost. Please try again.",
           variant: "destructive"
         });
       }
+    } finally {
+      setRepostLoading(false);
+    }
+  }, [post.id, sharePost]);
+
+  // Quote repost handler
+  const handleQuoteRepost = React.useCallback(() => {
+    setShowQuoteModal(true);
+  }, []);
+
+  // Quote repost submission
+  const handleQuoteRepostSubmit = React.useCallback(async (quoteContent: string) => {
+    try {
+      await sharePost(post.id, 'quote_repost', quoteContent);
+      toast({
+        title: "Reposted with your thoughts",
+        description: "Your quote repost has been shared to your network.",
+      });
+    } catch (error: any) {
+      if (error.message?.includes("own post")) {
+        toast({
+          title: "Cannot repost",
+          description: "You cannot repost your own posts.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Quote repost failed",
+          description: "Failed to share your quote repost. Please try again.",
+          variant: "destructive"
+        });
+      }
+      throw error; // Re-throw to let modal handle the error
     }
   }, [post.id, sharePost]);
 
@@ -415,14 +453,13 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
               <span className="text-xs font-medium">Comment</span>
             </Button>
 
-            <Button 
-              variant="ghost" 
-              onClick={handleShare} 
-              className="linkedin-action-btn text-muted-foreground hover:bg-muted h-12 px-4 rounded-none flex flex-col items-center"
-            >
-              <Share2 className="h-5 w-5 mb-1" />
-              <span className="text-xs font-medium">Repost</span>
-            </Button>
+            <RepostDropdown
+              postId={post.id}
+              sharesCount={post.sharesCount}
+              loading={repostLoading}
+              onSimpleRepost={handleSimpleRepost}
+              onQuoteRepost={handleQuoteRepost}
+            />
 
             <Button 
               variant="ghost" 
@@ -447,12 +484,20 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
         </div>
 
         {/* Comments Section */}
-        <SimpleCommentsSection
-          postId={post.id}
-          comments={post.comments}
-          commentsCount={post.commentsCount}
-          showCommentInput={showCommentInput}
-          onToggleCommentInput={() => setShowCommentInput(!showCommentInput)}
+        {showCommentInput && (
+          <SimpleCommentsSection
+            postId={post.id}
+            comments={post.comments}
+            commentsCount={post.commentsCount}
+          />
+        )}
+
+        {/* Quote Repost Modal */}
+        <QuoteRepostModal
+          isOpen={showQuoteModal}
+          onClose={() => setShowQuoteModal(false)}
+          post={post}
+          onSubmit={handleQuoteRepostSubmit}
         />
       </article>
     </PostErrorBoundary>

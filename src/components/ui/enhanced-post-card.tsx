@@ -5,7 +5,11 @@ import { Badge } from './badge';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { Card, CardContent, CardHeader } from './card';
 import { LazyMedia } from '@/components/stable/LazyMedia';
+import { RepostDropdown } from './repost-dropdown';
+import { QuoteRepostModal } from './quote-repost-modal';
+import { QuotePostCard } from './quote-post-card';
 import { useFeedStore } from '@/stores/feedStore';
+import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { Post } from '@/types/feed';
 
@@ -15,7 +19,9 @@ interface EnhancedPostCardProps {
 }
 
 export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, className }) => {
-  const { toggleReaction, votePoll } = useFeedStore();
+  const { toggleReaction, votePoll, sharePost } = useFeedStore();
+  const [showQuoteModal, setShowQuoteModal] = React.useState(false);
+  const [repostLoading, setRepostLoading] = React.useState(false);
   
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -45,6 +51,65 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
       console.error('Failed to vote:', error);
     }
   };
+
+  // Simple repost handler
+  const handleSimpleRepost = React.useCallback(async () => {
+    setRepostLoading(true);
+    try {
+      await sharePost(post.id, 'share');
+      toast({
+        title: "Reposted",
+        description: "Post has been reposted to your network.",
+      });
+    } catch (error: any) {
+      if (error.message?.includes("own post")) {
+        toast({
+          title: "Cannot repost",
+          description: "You cannot repost your own posts.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Repost failed",
+          description: "Failed to repost. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setRepostLoading(false);
+    }
+  }, [post.id, sharePost]);
+
+  // Quote repost handler
+  const handleQuoteRepost = React.useCallback(() => {
+    setShowQuoteModal(true);
+  }, []);
+
+  // Quote repost submission
+  const handleQuoteRepostSubmit = React.useCallback(async (quoteContent: string) => {
+    try {
+      await sharePost(post.id, 'quote_repost', quoteContent);
+      toast({
+        title: "Reposted with your thoughts",
+        description: "Your quote repost has been shared to your network.",
+      });
+    } catch (error: any) {
+      if (error.message?.includes("own post")) {
+        toast({
+          title: "Cannot repost",
+          description: "You cannot repost your own posts.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Quote repost failed",
+          description: "Failed to share your quote repost. Please try again.",
+          variant: "destructive"
+        });
+      }
+      throw error; // Re-throw to let modal handle the error
+    }
+  }, [post.id, sharePost]);
 
   const renderMedia = () => {
     if (!post.media || post.media.length === 0) return null;
@@ -184,30 +249,44 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
       </CardHeader>
 
       <CardContent className="pt-0">
-        {/* Post Content */}
-        <div className="text-sm leading-relaxed">
-          {post.content}
-        </div>
-
-        {/* Hashtags */}
-        {post.hashtags && post.hashtags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {post.hashtags.map((hashtag) => (
-              <span key={hashtag} className="text-primary text-sm hover:underline cursor-pointer">
-                {hashtag}
-              </span>
-            ))}
+        {/* Quote repost content (if this is a quote repost) */}
+        {post.isQuoteRepost && post.quoteContent && (
+          <div className="text-sm leading-relaxed mb-3">
+            {post.quoteContent}
           </div>
         )}
+        
+        {/* Original post content or quote repost original */}
+        {post.isQuoteRepost && post.originalPost ? (
+          <QuotePostCard originalPost={post.originalPost} />
+        ) : (
+          <>
+            {/* Post Content */}
+            <div className="text-sm leading-relaxed">
+              {post.content}
+            </div>
 
-        {/* Media */}
-        {renderMedia()}
+            {/* Hashtags */}
+            {post.hashtags && post.hashtags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {post.hashtags.map((hashtag) => (
+                  <span key={hashtag} className="text-primary text-sm hover:underline cursor-pointer">
+                    {hashtag}
+                  </span>
+                ))}
+              </div>
+            )}
 
-        {/* Poll */}
-        {renderPoll()}
+            {/* Media */}
+            {renderMedia()}
 
-        {/* Event */}
-        {renderEvent()}
+            {/* Poll */}
+            {renderPoll()}
+
+            {/* Event */}
+            {renderEvent()}
+          </>
+        )}
 
 
         {/* Engagement Bar */}
@@ -231,10 +310,14 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
               <span className="text-xs">{post.commentsCount}</span>
             </Button>
             
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-green-500">
-              <Share2 className="h-4 w-4 mr-1" />
-              <span className="text-xs">{post.shares}</span>
-            </Button>
+            <RepostDropdown
+              postId={post.id}
+              sharesCount={post.sharesCount}
+              loading={repostLoading}
+              onSimpleRepost={handleSimpleRepost}
+              onQuoteRepost={handleQuoteRepost}
+              className="h-8 px-2"
+            />
           </div>
           
           <Button
@@ -248,6 +331,14 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
             <Bookmark className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Quote Repost Modal */}
+        <QuoteRepostModal
+          isOpen={showQuoteModal}
+          onClose={() => setShowQuoteModal(false)}
+          post={post}
+          onSubmit={handleQuoteRepostSubmit}
+        />
       </CardContent>
     </Card>
   );

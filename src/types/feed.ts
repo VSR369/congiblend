@@ -135,6 +135,11 @@ export interface Post {
   isSaved?: boolean;
   userShared?: boolean;
   isOptimistic?: boolean;
+  
+  // Quote repost fields
+  isQuoteRepost?: boolean;
+  quoteContent?: string;
+  originalPost?: Post;
 }
 
 export interface FeedSettings {

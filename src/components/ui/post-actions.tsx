@@ -3,6 +3,10 @@ import { Heart, MessageCircle, Share2, Bookmark } from "lucide-react";
 import { Button } from "./button";
 import { LikeButton } from "./like-button";
 import { CommentsSection } from "./comments-section";
+import { RepostDropdown } from "./repost-dropdown";
+import { QuoteRepostModal } from "./quote-repost-modal";
+import { useFeedStore } from "@/stores/feedStore";
+import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Post } from "@/types/feed";
 
@@ -94,6 +98,8 @@ export const ShareButton = ({
   />
 );
 
+// Legacy ShareButton for backward compatibility - use RepostDropdown for new implementations
+
 export const SaveButton = ({ 
   postId, 
   isSaved = false, 
@@ -123,7 +129,69 @@ export const PostActions = ({
   onSave,
   className 
 }: PostActionsProps) => {
+  const { sharePost } = useFeedStore();
   const [showComments, setShowComments] = React.useState(false);
+  const [showQuoteModal, setShowQuoteModal] = React.useState(false);
+  const [repostLoading, setRepostLoading] = React.useState(false);
+
+  // Simple repost handler
+  const handleSimpleRepost = React.useCallback(async () => {
+    setRepostLoading(true);
+    try {
+      await sharePost(post.id, 'share');
+      toast({
+        title: "Reposted",
+        description: "Post has been reposted to your network.",
+      });
+    } catch (error: any) {
+      if (error.message?.includes("own post")) {
+        toast({
+          title: "Cannot repost",
+          description: "You cannot repost your own posts.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Repost failed",
+          description: "Failed to repost. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setRepostLoading(false);
+    }
+  }, [post.id, sharePost]);
+
+  // Quote repost handler
+  const handleQuoteRepost = React.useCallback(() => {
+    setShowQuoteModal(true);
+  }, []);
+
+  // Quote repost submission
+  const handleQuoteRepostSubmit = React.useCallback(async (quoteContent: string) => {
+    try {
+      await sharePost(post.id, 'quote_repost', quoteContent);
+      toast({
+        title: "Reposted with your thoughts",
+        description: "Your quote repost has been shared to your network.",
+      });
+    } catch (error: any) {
+      if (error.message?.includes("own post")) {
+        toast({
+          title: "Cannot repost",
+          description: "You cannot repost your own posts.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Quote repost failed",
+          description: "Failed to share your quote repost. Please try again.",
+          variant: "destructive"
+        });
+      }
+      throw error; // Re-throw to let modal handle the error
+    }
+  }, [post.id, sharePost]);
 
   return (
     <div className={cn("space-y-3", className)}>
@@ -141,10 +209,12 @@ export const PostActions = ({
             commentsCount={post.commentsCount} 
             onClick={() => setShowComments(!showComments)} 
           />
-          <ShareButton 
-            postId={post.id} 
-            sharesCount={post.sharesCount} 
-            onClick={onShare} 
+          <RepostDropdown
+            postId={post.id}
+            sharesCount={post.sharesCount}
+            loading={repostLoading}
+            onSimpleRepost={handleSimpleRepost}
+            onQuoteRepost={handleQuoteRepost}
           />
         </div>
         
@@ -163,6 +233,14 @@ export const PostActions = ({
           commentsCount={post.commentsCount}
         />
       )}
+
+      {/* Quote Repost Modal */}
+      <QuoteRepostModal
+        isOpen={showQuoteModal}
+        onClose={() => setShowQuoteModal(false)}
+        post={post}
+        onSubmit={handleQuoteRepostSubmit}
+      />
     </div>
   );
 };

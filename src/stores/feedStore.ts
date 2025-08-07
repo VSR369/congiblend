@@ -30,7 +30,7 @@ interface FeedState {
   addComment: (postId: string, content: string, parentId?: string) => void;
   deleteComment: (postId: string, commentId: string) => void;
   toggleSave: (postId: string) => void;
-  sharePost: (postId: string) => void;
+  sharePost: (postId: string, shareType?: 'share' | 'quote_repost', quoteContent?: string) => Promise<void>;
   
   // Poll actions
   votePoll: (postId: string, optionIndex: number) => Promise<any>;
@@ -1109,7 +1109,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
       }));
     },
 
-    sharePost: async (postId: string) => {
+    sharePost: async (postId: string, shareType: 'share' | 'quote_repost' = 'share', quoteContent?: string) => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
@@ -1121,12 +1121,18 @@ export const useFeedStore = create<FeedState>((set, get) => {
           throw new Error('Cannot share your own post');
         }
 
+        // Validate quote repost content
+        if (shareType === 'quote_repost' && (!quoteContent || !quoteContent.trim())) {
+          throw new Error('Quote content is required for quote reposts');
+        }
+
         // Use the shares Edge Function
         const { data, error } = await supabase.functions.invoke('shares', {
           body: {
             target_type: 'post',
             target_id: postId,
-            share_type: 'share'
+            share_type: shareType,
+            quote_content: shareType === 'quote_repost' ? quoteContent?.trim() : undefined
           }
         });
 
@@ -1137,18 +1143,30 @@ export const useFeedStore = create<FeedState>((set, get) => {
           throw error;
         }
 
-        // Update local state optimistically
-        set(state => ({
-          posts: state.posts.map(post => {
-            if (post.id !== postId) return post;
-            
-            return {
-              ...post,
-              userShared: true,
-              shares: post.shares + 1
-            };
-          })
-        }));
+        // For quote reposts, reload posts to show the new quote post
+        if (shareType === 'quote_repost') {
+          // The edge function creates a new post for quote reposts
+          // Reload the feed to show the new quote post
+          setTimeout(() => {
+            get().loadPosts(true);
+          }, 500);
+        }
+
+        // Update local state optimistically for simple reposts
+        if (shareType === 'share') {
+          set(state => ({
+            posts: state.posts.map(post => {
+              if (post.id !== postId) return post;
+              
+              return {
+                ...post,
+                userShared: true,
+                shares: post.shares + 1,
+                sharesCount: post.sharesCount + 1
+              };
+            })
+          }));
+        }
 
         return data;
       } catch (error) {
