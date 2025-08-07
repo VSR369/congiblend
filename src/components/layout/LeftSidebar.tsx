@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { 
   Home, 
   Users, 
@@ -29,13 +28,9 @@ export const LeftSidebar = () => {
   return (
     <div className="w-80 h-screen overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-white to-blue-50/30">
       {/* User Stats Card */}
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
+      <div className="animate-fade-in">
         <UserStatsCard />
-      </motion.div>
+      </div>
 
       {/* PHASE 1: Navigation Menu with CSS animations */}
       <div className="space-y-2 stable-animation">
@@ -62,12 +57,7 @@ export const LeftSidebar = () => {
         ))}
       </div>
       {/* Footer Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.3 }}
-        className="glass-card p-3 rounded-lg border border-white/10"
-      >
+      <div className="glass-card p-3 rounded-lg border border-white/10 animate-fade-in">
         <div className="text-center">
           <p className="text-xs text-muted-foreground mb-2">
             Professional Network
@@ -76,7 +66,7 @@ export const LeftSidebar = () => {
             🎯 Level up your connections
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };

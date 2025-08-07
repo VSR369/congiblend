@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { ContentFeed } from '@/components/ui/content-feed';
 import { AnalyticsDashboard } from '@/components/ui/analytics-dashboard';
 import { EnhancedTabs, EnhancedTabsList, EnhancedTabsTrigger, EnhancedTabsContent } from '@/components/ui/enhanced-tabs';
@@ -27,11 +26,8 @@ const Index = () => {
           {/* Main Content Tabs - Start with Your Feed */}
           <section className="py-8 px-4">
             <div className="container mx-auto max-w-4xl">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-              >
+              <div className="animate-fade-in">
+              
                 <EnhancedTabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                   <div className="flex justify-center mb-8">
                     <div className="glass-card p-2 rounded-2xl">
@@ -56,7 +52,7 @@ const Index = () => {
                     <AnalyticsDashboard />
                   </EnhancedTabsContent>
                 </EnhancedTabs>
-              </motion.div>
+              </div>
             </div>
         </section>
       </div>

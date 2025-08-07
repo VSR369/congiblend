@@ -1,5 +1,4 @@
 import * as React from "react"
-import { motion, AnimatePresence } from "framer-motion"
 import { Upload, X, File, Image, FileText, Download } from "lucide-react"
 import { Button } from "./button"
 import { Progress } from "./loading"

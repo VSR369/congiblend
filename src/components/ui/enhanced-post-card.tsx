@@ -1,5 +1,4 @@
 import * as React from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MessageCircle, Share2, Bookmark, Calendar, MapPin, Users, Clock, FileText, Volume2, MoreHorizontal, Flag, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -139,39 +138,42 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
           switch (mediaItem.type) {
             case 'image':
               return (
-                <div key={mediaItem.id} className="relative rounded-lg overflow-hidden">
-                  <img
-                    src={mediaItem.url}
-                    alt={mediaItem.alt}
-                    className="w-full rounded-lg object-cover max-h-96"
-                    loading="lazy"
-                    onError={(e) => {
-                      console.error('Image failed to load:', mediaItem.url);
-                      // Hide broken images instead of showing placeholder
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                </div>
+                 <div key={mediaItem.id} className="media-container-stable relative rounded-lg overflow-hidden">
+                   <img
+                     src={mediaItem.url}
+                     alt={mediaItem.alt}
+                     width="800"
+                     height="450"
+                     className="w-full h-full rounded-lg object-cover loading-transition content-loaded"
+                     loading="lazy"
+                     onError={(e) => {
+                       console.error('Image failed to load:', mediaItem.url);
+                       e.currentTarget.style.display = 'none';
+                     }}
+                   />
+                 </div>
               );
 
             case 'video':
               return (
-                <div key={mediaItem.id} className="relative rounded-lg overflow-hidden">
-                  <video
-                    controls
-                    preload="metadata"
-                    className="w-full rounded-lg max-h-96"
-                    poster={mediaItem.thumbnail}
-                    onError={(e) => {
-                      console.error('Video failed to load:', mediaItem.url);
-                    }}
-                  >
-                    <source src={mediaItem.url} type="video/mp4" />
-                    <source src={mediaItem.url} type="video/webm" />
-                    <source src={mediaItem.url} type="video/mov" />
-                    Your browser does not support the video tag.
-                  </video>
-                </div>
+                 <div key={mediaItem.id} className="media-container-stable relative rounded-lg overflow-hidden">
+                   <video
+                     controls
+                     preload="metadata"
+                     width="800"
+                     height="450"
+                     className="absolute inset-0 w-full h-full object-cover loading-transition content-loaded"
+                     poster={mediaItem.thumbnail}
+                     onError={(e) => {
+                       console.error('Video failed to load:', mediaItem.url);
+                     }}
+                   >
+                     <source src={mediaItem.url} type="video/mp4" />
+                     <source src={mediaItem.url} type="video/webm" />
+                     <source src={mediaItem.url} type="video/mov" />
+                     Your browser does not support the video tag.
+                   </video>
+                 </div>
               );
 
             case 'audio':
@@ -269,11 +271,9 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                   </span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                  <motion.div
-                    className="h-full bg-primary rounded-full"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.max(option.percentage, 2)}%` }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
+                  <div
+                    className="h-full bg-primary rounded-full smooth-transition"
+                    style={{ width: `${Math.max(option.percentage, 2)}%` }}
                   />
                 </div>
               </button>
@@ -374,11 +374,7 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
 
   return (
     <PostErrorBoundary>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
+      <div className="post-card-stable animate-fade-in">
         <Card className={cn("bg-card border shadow-sm overflow-visible mb-8", className)}>
           <div className="p-6">
             {/* Header */}
@@ -478,13 +474,11 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                   }, {} as Record<string, number>)}
                 />
 
-                {/* Comment Button */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                 {/* Comment Button */}
+                <button
                   onClick={() => setShowComments(!showComments)}
                   className={cn(
-                    "flex items-center space-x-2 px-4 py-2 rounded-full transition-all",
+                    "flex items-center space-x-2 px-4 py-2 rounded-full transition-all smooth-transition hover-scale",
                     "border border-border hover:border-border/80",
                     "text-muted-foreground hover:text-foreground hover:bg-accent/50",
                     "focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -498,16 +492,14 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                       {post.comments.length}
                     </span>
                   )}
-                </motion.button>
+                </button>
 
                 {/* Share Button */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                <button
                   onClick={handleShare}
                   disabled={loadingStates.sharing}
                   className={cn(
-                    "flex items-center space-x-2 px-4 py-2 rounded-full transition-all",
+                    "flex items-center space-x-2 px-4 py-2 rounded-full transition-all smooth-transition hover-scale",
                     "border border-border hover:border-border/80",
                     "text-muted-foreground hover:text-foreground hover:bg-accent/50",
                     "focus:outline-none focus:ring-2 focus:ring-primary/20",
@@ -522,17 +514,15 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                       {post.shares}
                     </span>
                   )}
-                </motion.button>
+                </button>
               </div>
 
               {/* Save Button */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <button
                 onClick={handleSave}
                 disabled={loadingStates.saving}
                 className={cn(
-                  "flex items-center space-x-2 px-4 py-2 rounded-full transition-all",
+                  "flex items-center space-x-2 px-4 py-2 rounded-full transition-all smooth-transition hover-scale",
                   "border border-border hover:border-border/80",
                   "focus:outline-none focus:ring-2 focus:ring-primary/20",
                   post.userSaved 
@@ -546,57 +536,50 @@ export const EnhancedPostCard = ({ post, className }: PostCardProps) => {
                 <span className="text-sm font-medium">
                   {post.userSaved ? 'Saved' : 'Save'}
                 </span>
-              </motion.button>
+              </button>
             </div>
 
             {/* Comments Section */}
-            <AnimatePresence>
-              {showComments && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="mt-4 space-y-4"
-                >
-                  <CommentInput 
-                    onSubmit={handleCommentSubmit}
-                    placeholder="Write a comment..."
-                    disabled={loadingStates.commenting}
-                  />
-                  
-                  <div className="space-y-3">
-                    {post.comments.map((comment) => (
-                      <div key={comment.id} className="flex space-x-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={comment.author.avatar} alt={comment.author.name} />
-                          <AvatarFallback>
-                            {comment.author.name[0].toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 space-y-1">
-                          <div className="bg-muted rounded-lg p-3">
-                            <p className="text-xs font-medium">{comment.author.name}</p>
-                            <p className="text-sm">{comment.content}</p>
-                          </div>
-                          <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                            <span>{formatDistanceToNow(comment.createdAt, { addSuffix: true })}</span>
-                            <Button variant="ghost" size="sm" className="h-auto p-0 text-xs">
-                              Like
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-auto p-0 text-xs">
-                              Reply
-                            </Button>
-                          </div>
+            {showComments && (
+              <div className="comment-section expanded mt-4 space-y-4 border-t pt-4 smooth-transition">
+                <CommentInput 
+                  onSubmit={handleCommentSubmit}
+                  placeholder="Write a comment..."
+                  disabled={loadingStates.commenting}
+                />
+                
+                <div className="space-y-3">
+                  {post.comments.map((comment) => (
+                    <div key={comment.id} className="flex space-x-3 animate-fade-in">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={comment.author.avatar} alt={comment.author.name} />
+                        <AvatarFallback>
+                          {comment.author.name[0].toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 space-y-1">
+                        <div className="bg-muted rounded-lg p-3">
+                          <p className="text-xs font-medium">{comment.author.name}</p>
+                          <p className="text-sm">{comment.content}</p>
+                        </div>
+                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                          <span>{formatDistanceToNow(comment.createdAt, { addSuffix: true })}</span>
+                          <Button variant="ghost" size="sm" className="h-auto p-0 text-xs">
+                            Like
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-auto p-0 text-xs">
+                            Reply
+                          </Button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </Card>
-      </motion.div>
+      </div>
     </PostErrorBoundary>
   );
 };

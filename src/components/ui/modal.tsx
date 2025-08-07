@@ -1,5 +1,4 @@
 import * as React from "react"
-import { motion, AnimatePresence } from "framer-motion"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "./button"
@@ -54,50 +53,41 @@ export const Modal = ({
   }, [open, closeOnEscape, onClose])
 
   return (
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className={cn(
-              "absolute inset-0 bg-black/50 backdrop-blur-sm",
-              overlayClassName
-            )}
-            onClick={closeOnOverlayClick ? onClose : undefined}
-          />
+    open && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {/* Backdrop */}
+        <div
+          className={cn(
+            "absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in",
+            overlayClassName
+          )}
+          onClick={closeOnOverlayClick ? onClose : undefined}
+        />
 
-          {/* Modal Content */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className={cn(
-              "relative w-full bg-background rounded-lg shadow-lg border",
-              sizeClasses[size],
-              className
-            )}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {showCloseButton && (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="absolute right-4 top-4 z-10"
-                onClick={onClose}
-                aria-label="Close modal"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-            {children}
-          </motion.div>
+        {/* Modal Content */}
+        <div
+          className={cn(
+            "relative w-full bg-background rounded-lg shadow-lg border animate-scale-in",
+            sizeClasses[size],
+            className
+          )}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {showCloseButton && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="absolute right-4 top-4 z-10"
+              onClick={onClose}
+              aria-label="Close modal"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+          {children}
         </div>
-      )}
-    </AnimatePresence>
+      </div>
+    )
   )
 }
 

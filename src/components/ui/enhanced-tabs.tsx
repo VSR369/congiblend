@@ -1,6 +1,5 @@
 import * as React from 'react';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 const EnhancedTabs = TabsPrimitive.Root;
@@ -44,12 +43,9 @@ const EnhancedTabsTrigger = React.forwardRef<
     )}
     {...props}
   >
-    <motion.div
-      layout
-      className="flex items-center gap-2"
-    >
+    <div className="flex items-center gap-2">
       {children}
-    </motion.div>
+    </div>
   </TabsPrimitive.Trigger>
 ));
 EnhancedTabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
@@ -66,13 +62,9 @@ const EnhancedTabsContent = React.forwardRef<
     )}
     {...props}
   >
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-    >
+    <div className="animate-fade-in">
       {children}
-    </motion.div>
+    </div>
   </TabsPrimitive.Content>
 ));
 EnhancedTabsContent.displayName = TabsPrimitive.Content.displayName;

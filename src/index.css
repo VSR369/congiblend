@@ -239,6 +239,113 @@
     will-change: transform;
   }
 
+  /* PHASE 1: Shimmer Animation - Critical Fix */
+  @keyframes shimmer {
+    0% { 
+      background-position: -200px 0; 
+    }
+    100% { 
+      background-position: calc(200px + 100%) 0; 
+    }
+  }
+
+  .loading-shimmer {
+    background: linear-gradient(90deg, 
+      hsl(var(--muted)) 25%, 
+      hsl(var(--muted-foreground) / 0.1) 50%, 
+      hsl(var(--muted)) 75%
+    );
+    background-size: 200px 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* PHASE 3: Feed and List Containers */
+  .stable-list {
+    contain: layout style;
+    transform: translateZ(0);
+  }
+
+  .stable-animation {
+    contain: layout;
+    transform: translateZ(0);
+  }
+
+  /* PHASE 4: Skeleton Exact Dimensions */
+  .skeleton-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+  }
+
+  .skeleton-title {
+    height: 16px;
+    width: 128px;
+  }
+
+  .skeleton-subtitle {
+    height: 12px;
+    width: 96px;
+  }
+
+  .skeleton-content {
+    height: 16px;
+  }
+
+  .skeleton-media {
+    aspect-ratio: 16 / 9;
+    width: 100%;
+    min-height: 192px;
+  }
+
+  .skeleton-button {
+    height: 32px;
+    border-radius: 9999px;
+  }
+
+  /* PHASE 5: GPU Acceleration & Performance */
+  .gpu-accelerated {
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+  }
+
+  .smooth-transition {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  /* Loading State Transitions */
+  .loading-transition {
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .content-loaded {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* PHASE 3: Comment Section Transitions */
+  .comment-section {
+    contain: layout style;
+    height: 0;
+    transition: height 0.3s ease;
+  }
+
+  .comment-section.expanded {
+    height: auto;
+    min-height: 100px;
+  }
+
+  /* PHASE 3: Hover Effects with GPU Acceleration */
+  .hover-scale {
+    transition: transform 0.2s ease;
+    will-change: transform;
+  }
+
+  .hover-scale:hover {
+    transform: scale(1.02) translateZ(0);
+  }
+
   .hover-lift:hover {
     transform: translateY(-2px) translateZ(0);
   }
@@ -252,14 +359,6 @@
     box-shadow: var(--shadow-glow);
   }
 
-  .hover-scale {
-    transition: var(--transition-fast);
-    will-change: transform;
-  }
-
-  .hover-scale:hover {
-    transform: scale(1.02) translateZ(0);
-  }
 
   /* Professional button styles */
   .button-elegant {
@@ -300,37 +399,26 @@
     font-feature-settings: "ss01" 1;
   }
 
-  /* PHASE 2: Layout stabilization utilities */
+  /* PHASE 2-5: Advanced Layout Stabilization - Updated */
   .media-container-stable {
-    aspect-ratio: 16/9;
     contain: layout style paint;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    transform: translateZ(0);
     will-change: auto;
   }
 
   .post-card-stable {
     contain: layout style paint;
-    transform: translateZ(0);
+    overflow: hidden;
     min-height: 200px;
+    transform: translateZ(0);
     will-change: auto;
   }
 
   .optimized-container {
     contain: layout style;
-    will-change: auto;
-  }
-
-  /* PHASE 1: Animation stabilization */
-  .stable-animation {
-    contain: layout style;
-    will-change: auto;
-  }
-
-  .stable-list {
-    contain: layout;
-  }
-
-  .stable-list-item {
-    contain: layout style;
+    transform: translate3d(0, 0, 0);
     will-change: auto;
   }
 
