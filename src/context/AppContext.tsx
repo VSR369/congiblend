@@ -75,7 +75,7 @@ const initialState: AppState = {
   },
   filters: {
     userFilter: 'all',
-    contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event', 'job'],
+    contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event'],
     timeRange: 'all'
   },
   theme: 'light'

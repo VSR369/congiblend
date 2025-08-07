@@ -1,5 +1,5 @@
 import * as React from "react";
-import { X, Image, Video, FileText, Calendar, Briefcase, BarChart3, Hash, AtSign, Smile, Music } from "lucide-react";
+import { X, Image, Video, FileText, Calendar, BarChart3, Hash, AtSign, Smile, Music } from "lucide-react";
 import { Modal, ModalHeader, ModalBody, ModalFooter, ModalTitle } from "./modal";
 import { Button } from "./button";
 import { Input } from "./input";
@@ -52,8 +52,7 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
     isPosting,
     selectedFiles,
     pollOptions,
-    eventData,
-    jobData
+    eventData
   } = state;
 
   const postTypes: { type: PostType; label: string; icon: React.ComponentType<any>; description: string }[] = [
@@ -64,7 +63,6 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
     { type: "article", label: "Article", icon: FileText, description: "Write long-form content" },
     { type: "poll", label: "Poll", icon: BarChart3, description: "Ask your network" },
     { type: "event", label: "Event", icon: Calendar, description: "Announce events" },
-    { type: "job", label: "Job", icon: Briefcase, description: "Post job openings" },
   ];
 
   // Get file type restrictions based on active tab
@@ -227,7 +225,7 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
     } finally {
       dispatch({ type: 'SET_IS_POSTING', payload: false });
     }
-  }, [content, selectedFiles, activeTab, pollOptions, eventData, jobData, hashtags, mentions, createPost, onClose, dispatch]);
+  }, [content, selectedFiles, activeTab, pollOptions, eventData, hashtags, mentions, createPost, onClose, dispatch]);
 
   const extractHashtags = React.useCallback((text: string) => {
     const start = performance.now();
@@ -370,40 +368,6 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
           </div>
         );
 
-      case "job":
-        return (
-          <div className="space-y-4">
-            <Textarea
-              placeholder="Describe the job opportunity..."
-              value={content}
-              onChange={(e) => dispatch({ type: 'SET_CONTENT', payload: e.target.value })}
-              className="min-h-24"
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <Input 
-                placeholder="Job title"
-                value={jobData.title}
-                onChange={(e) => dispatch({ type: 'SET_JOB_DATA', payload: { title: e.target.value } })}
-              />
-              <Input 
-                placeholder="Company"
-                value={jobData.company}
-                onChange={(e) => dispatch({ type: 'SET_JOB_DATA', payload: { company: e.target.value } })}
-              />
-              <Input 
-                placeholder="Location"
-                value={jobData.location}
-                onChange={(e) => dispatch({ type: 'SET_JOB_DATA', payload: { location: e.target.value } })}
-              />
-              <Input 
-                placeholder="Salary range"
-                value={jobData.salary}
-                onChange={(e) => dispatch({ type: 'SET_JOB_DATA', payload: { salary: e.target.value } })}
-              />
-            </div>
-          </div>
-        );
-
       case "image":
       case "video":
       case "audio":
@@ -473,7 +437,7 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
       <ModalBody className="space-y-6">
         {/* Post Type Selector */}
         <Tabs value={activeTab} onValueChange={(value) => dispatch({ type: 'SET_ACTIVE_TAB', payload: value as PostType })}>
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
             {postTypes.map((type) => {
               const Icon = type.icon;
               return (
@@ -575,7 +539,6 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
             const textCheck = activeTab === 'text' && !content.trim();
             const eventCheck = activeTab === 'event' && (!eventData.title || !eventData.title.trim() || !eventData.description || !eventData.description.trim() || !eventData.start_date);
             const pollCheck = activeTab === 'poll' && (!content.trim() || !pollOptions.some(opt => opt.trim()));
-            const jobCheck = activeTab === 'job' && (!content.trim() || !jobData.title.trim() || !jobData.company.trim());
             const mediaCheck = ['image', 'video', 'audio'].includes(activeTab) && selectedFiles.length === 0 && !content.trim();
             
             if (activeTab === 'event') {
@@ -595,7 +558,7 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
               });
             }
             
-            return isPostingCheck || characterCheck || textCheck || eventCheck || pollCheck || jobCheck || mediaCheck;
+            return isPostingCheck || characterCheck || textCheck || eventCheck || pollCheck || mediaCheck;
           })()}
           loading={isPosting}
           loadingText="Posting..."

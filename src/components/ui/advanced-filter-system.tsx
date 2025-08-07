@@ -74,7 +74,7 @@ export const AdvancedFilterSystem = React.memo(({ className }: AdvancedFilterSys
     console.log('🧹 Clearing all filters');
     updateFilters({
       userFilter: 'all',
-      contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event', 'job'],
+      contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event'],
       timeRange: 'all'
     });
     setSelectedUser(null);
@@ -84,7 +84,7 @@ export const AdvancedFilterSystem = React.memo(({ className }: AdvancedFilterSys
     const start = performance.now();
     let count = 0;
     if (filters.userFilter !== 'all') count++;
-    if (filters.contentTypes.length < 7) count++;
+    if (filters.contentTypes.length < 6) count++;
     if (filters.timeRange !== 'all') count++;
     const end = performance.now();
     if (end - start > 1) {
@@ -182,11 +182,11 @@ export const AdvancedFilterSystem = React.memo(({ className }: AdvancedFilterSys
             </Badge>
           )}
           
-          {filters.contentTypes.length < 7 && (
+          {filters.contentTypes.length < 6 && (
             <Badge variant="secondary" className="text-xs">
               {filters.contentTypes.length} content types
               <button 
-                onClick={() => updateFilters({ contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event', 'job'] })}
+                onClick={() => updateFilters({ contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event'] })}
                 className="ml-1 hover:bg-muted-foreground/20 rounded-full"
               >
                 <X className="h-3 w-3" />

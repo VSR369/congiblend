@@ -19,12 +19,6 @@ interface PostCreationState {
     is_virtual: boolean;
     is_hybrid: boolean;
   };
-  jobData: {
-    title: string;
-    company: string;
-    location: string;
-    salary: string;
-  };
 }
 
 type PostCreationAction =
@@ -36,7 +30,7 @@ type PostCreationAction =
   | { type: 'SET_SELECTED_FILES'; payload: File[] }
   | { type: 'SET_POLL_OPTIONS'; payload: string[] }
   | { type: 'SET_EVENT_DATA'; payload: Partial<PostCreationState['eventData']> }
-  | { type: 'SET_JOB_DATA'; payload: Partial<PostCreationState['jobData']> }
+  
   | { type: 'RESET_FORM' };
 
 const initialState: PostCreationState = {
@@ -57,12 +51,6 @@ const initialState: PostCreationState = {
     is_virtual: false,
     is_hybrid: false
   },
-  jobData: {
-    title: '',
-    company: '',
-    location: '',
-    salary: ''
-  }
 };
 
 function postCreationReducer(state: PostCreationState, action: PostCreationAction): PostCreationState {
@@ -104,12 +92,6 @@ function postCreationReducer(state: PostCreationState, action: PostCreationActio
         eventData: { ...state.eventData, ...action.payload }
       };
       
-    case 'SET_JOB_DATA':
-      console.log('💼 Job data updated:', Object.keys(action.payload));
-      return { 
-        ...state, 
-        jobData: { ...state.jobData, ...action.payload }
-      };
       
     case 'RESET_FORM':
       console.log('🧹 Resetting post creation form');

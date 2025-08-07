@@ -17,7 +17,6 @@ const contentTypeLabels: Record<PostType, string> = {
   article: "Articles",
   poll: "Polls",
   event: "Events",
-  job: "Jobs",
   document: "Documents",
   link: "Links",
   carousel: "Carousels"

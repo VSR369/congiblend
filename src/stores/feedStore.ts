@@ -289,7 +289,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
     users: [],
     feedSettings: {
       showRecentFirst: true,
-      contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event', 'job'],
+      contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event'],
       showFromConnections: true,
       showFromCompanies: true,
       showTrending: true,
@@ -297,7 +297,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
     },
     filters: {
       userFilter: 'all',
-      contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event', 'job'],
+      contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event'],
       timeRange: 'all'
     },
 

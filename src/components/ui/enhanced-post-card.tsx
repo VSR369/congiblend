@@ -149,33 +149,6 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
     );
   };
 
-  const renderJob = () => {
-    if (!post.job) return null;
-
-    return (
-      <div className="mt-3 p-4 border rounded-lg">
-        <div className="flex items-start space-x-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Briefcase className="h-5 w-5 text-primary" />
-          </div>
-          <div className="flex-1">
-            <h4 className="font-medium">{post.job.title}</h4>
-            <p className="text-sm text-muted-foreground">{post.job.company}</p>
-            <div className="flex items-center space-x-2 mt-2">
-              {post.job.location && (
-                <Badge variant="secondary" className="text-xs">
-                  {post.job.location}
-                </Badge>
-              )}
-              <Badge variant="outline" className="text-xs">
-                {post.job.type}
-              </Badge>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <Card className={cn("w-full", className)}>
@@ -236,8 +209,6 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
         {/* Event */}
         {renderEvent()}
 
-        {/* Job */}
-        {renderJob()}
 
         {/* Engagement Bar */}
         <div className="flex items-center justify-between pt-4 mt-4 border-t">

@@ -17,7 +17,6 @@ const postTypes: { type: PostType; label: string; icon: React.ComponentType<any>
   { type: "audio", label: "Audio", icon: Music, description: "Share audio files" },
   { type: "poll", label: "Poll", icon: BarChart3, description: "Ask your network" },
   { type: "event", label: "Event", icon: Calendar, description: "Announce events" },
-  { type: "job", label: "Job", icon: Briefcase, description: "Post job openings" },
 ];
 
 export const PostTypeSelector: React.FC<PostTypeSelectorProps> = ({
@@ -26,7 +25,7 @@ export const PostTypeSelector: React.FC<PostTypeSelectorProps> = ({
   className
 }) => {
   return (
-    <div className={cn("grid grid-cols-7 gap-2", className)}>
+    <div className={cn("grid grid-cols-6 gap-2", className)}>
       {postTypes.map((type) => {
         const Icon = type.icon;
         const isActive = activeType === type.type;

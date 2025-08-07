@@ -62,18 +62,6 @@ export interface Event {
   userRSVP?: 'going' | 'interested' | 'not_going';
 }
 
-export interface Job {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  type: 'full-time' | 'part-time' | 'contract' | 'internship';
-  salary?: string;
-  description: string;
-  requirements: string[];
-  applications: number;
-  userApplied?: boolean;
-}
 
 export interface LinkPreview {
   url: string;
@@ -83,7 +71,7 @@ export interface LinkPreview {
   domain: string;
 }
 
-export type PostType = 'text' | 'image' | 'video' | 'audio' | 'article' | 'poll' | 'event' | 'job' | 'document' | 'link' | 'carousel';
+export type PostType = 'text' | 'image' | 'video' | 'audio' | 'article' | 'poll' | 'event' | 'document' | 'link' | 'carousel';
 
 export type ReactionType = 'like' | 'love' | 'insightful' | 'support' | 'celebrate' | 'curious';
 
@@ -125,7 +113,7 @@ export interface Post {
     is_virtual?: boolean;
     is_hybrid?: boolean;
   };
-  job?: Job;
+  
   linkPreview?: LinkPreview;
   hashtags: string[];
   mentions: User[];
