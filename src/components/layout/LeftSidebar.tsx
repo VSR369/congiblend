@@ -30,20 +30,25 @@ export const LeftSidebar = () => {
     <div className="w-80 h-screen overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-white to-blue-50/30">
       {/* User Stats Card */}
       <motion.div 
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
       >
         <UserStatsCard />
       </motion.div>
 
-      {/* PHASE 1: Navigation Menu with CSS animations */}
-      <div className="space-y-2 stable-animation">
+      {/* Navigation Menu */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="space-y-2"
+      >
         {navigationItems.map((item, index) => (
-          <div 
+          <motion.div
             key={item.title}
-            className="debounced-enter"
-            style={{ animationDelay: `${100 + index * 50}ms` }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1 }}
           >
             <Link 
               to={item.url}
@@ -58,14 +63,14 @@ export const LeftSidebar = () => {
               <item.icon className="h-5 w-5" />
               <span className="font-medium">{item.title}</span>
             </Link>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
       {/* Footer Card */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.3 }}
+        transition={{ delay: 0.8 }}
         className="glass-card p-3 rounded-lg border border-white/10"
       >
         <div className="text-center">

@@ -502,68 +502,6 @@
   }
 }
 
-/* PHASE 1: Stable Animation System */
-.stable-animation {
-  animation: fade-in 0.3s ease-out;
-  will-change: transform;
-}
-
-.stable-list {
-  contain: layout style paint;
-}
-
-.stable-list-item {
-  min-height: 200px;
-  contain: layout style;
-  will-change: auto;
-}
-
-/* Stable layout system for feed */
-.feed-grid-container {
-  will-change: auto;
-  contain: layout;
-  transform: translateZ(0);
-}
-
-.post-grid-item {
-  will-change: auto;
-  contain: layout style;
-  transform: translateZ(0);
-  position: relative;
-}
-
-.post-card-stable {
-  will-change: auto;
-  contain: layout style;
-  transform: translateZ(0);
-  min-height: 300px;
-  height: auto;
-}
-
-.media-container-stable {
-  will-change: auto;
-  contain: layout;
-  aspect-ratio: 16/9;
-  min-height: 200px;
-}
-
-/* Skeleton loading with exact dimensions */
-.skeleton-avatar,
-.skeleton-name,
-.skeleton-time,
-.skeleton-content,
-.skeleton-media,
-.skeleton-action {
-  background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--muted-foreground) / 0.1) 50%, hsl(var(--muted)) 75%);
-  background-size: 200% 100%;
-  animation: skeleton-loading 1.5s infinite;
-}
-
-@keyframes skeleton-loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
 /* PWA Styles */
 @media (display-mode: standalone) {
   body {

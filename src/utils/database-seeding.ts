@@ -69,11 +69,12 @@ const createTestUsers = async (count: number) => {
           location: ['New York', 'London', 'Tokyo', 'Sydney', 'Berlin'][i % 5],
           is_verified: Math.random() > 0.7,
           custom_user_id: `testuser${i + 1}`,
-          organization_name: `Test Company ${i + 1}`,
-          organization_type: 'Corporation',
-          entity_type: 'Private',
-          country: 'United States',
+          organization_name: 'Test Organization',
           contact_person_name: `Test User ${i + 1}`,
+          organization_type: 'Test Type',
+          entity_type: 'Test Entity',
+          country: 'Test Country',
+          address: 'Test Address'
         });
       }
     } catch (error) {
@@ -291,7 +292,7 @@ export const cleanupTestData = async () => {
       // Delete connections involving test users
       await supabase.from('connections').delete().or(`user1_id.in.(${userIds.join(',')}),user2_id.in.(${userIds.join(',')})`);
       
-      // Delete test user profiles
+      // Delete test users
       await supabase.from('profiles').delete().in('id', userIds);
     }
     

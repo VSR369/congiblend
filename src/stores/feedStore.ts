@@ -239,16 +239,11 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
       try {
         const { filters } = state;
-        
-        // Circuit breaker pattern - stop infinite retries
-        const maxRetries = 3;
-        const retryDelay = 1000;
-        
         let query = supabase
           .from('posts')
           .select(`
             *,
-            profiles:user_id (
+            profiles!posts_user_id_fkey (
               id,
               username,
               display_name,
@@ -321,108 +316,51 @@ export const useFeedStore = create<FeedState>((set, get) => {
           hasMore: transformedPosts.length === 20
         });
 
-        // Set up real-time subscriptions with batching
-        let pendingInserts: any[] = [];
-        let pendingDeletes: string[] = [];
-        let batchTimeout: NodeJS.Timeout | null = null;
+        // Set up real-time subscription for new posts (only once)
+        if (!realtimeChannel) {
+          realtimeChannel = supabase
+            .channel('posts-changes')
+            .on(
+              'postgres_changes',
+              {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'posts'
+              },
+              async (payload) => {
+                // Get author info for new post
+                const { data: authorData } = await supabase
+                  .from('profiles')
+                  .select('id, username, display_name, avatar_url, is_verified')
+                  .eq('id', payload.new.user_id)
+                  .single();
 
-        const processBatch = () => {
-          if (pendingInserts.length > 0 || pendingDeletes.length > 0) {
-            set(state => {
-              let newPosts = [...state.posts];
-              
-              // Process deletes first
-              if (pendingDeletes.length > 0) {
-                newPosts = newPosts.filter(post => !pendingDeletes.includes(post.id));
+                if (authorData) {
+                  const newPost = transformDbPost(payload.new, authorData);
+                  set(state => ({
+                    posts: [newPost, ...state.posts]
+                  }));
+                }
               }
-              
-              // Process inserts (add to end to prevent jumping)
-              if (pendingInserts.length > 0) {
-                const transformedPosts = pendingInserts.map(post => 
-                  transformDbPost(post, { 
-                    id: post.user_id, 
-                    username: 'Unknown', 
-                    display_name: 'Unknown User',
-                    avatar_url: null,
-                    is_verified: false 
-                  })
-                );
-                newPosts = [...newPosts, ...transformedPosts];
+            )
+            .on(
+              'postgres_changes',
+              {
+                event: 'DELETE',
+                schema: 'public',
+                table: 'posts'
+              },
+              (payload) => {
+                set(state => ({
+                  posts: state.posts.filter(post => post.id !== payload.old.id)
+                }));
               }
-              
-              return { posts: newPosts };
-            });
-            
-            pendingInserts = [];
-            pendingDeletes = [];
-          }
-          batchTimeout = null;
-        };
-
-        const scheduleUpdate = () => {
-          if (!batchTimeout) {
-            batchTimeout = setTimeout(processBatch, 500);
-          }
-        };
-
-        const channel = supabase
-          .channel('posts')
-          .on('postgres_changes', { 
-            event: 'INSERT', 
-            schema: 'public', 
-            table: 'posts' 
-          }, (payload) => {
-            console.log('New post queued:', payload);
-            pendingInserts.push(payload.new);
-            scheduleUpdate();
-          })
-          .on('postgres_changes', { 
-            event: 'UPDATE', 
-            schema: 'public', 
-            table: 'posts' 
-          }, (payload) => {
-            console.log('Post updated:', payload);
-            const updatedPost = transformDbPost(payload.new as any, { 
-              id: payload.new.user_id, 
-              username: 'Unknown', 
-              display_name: 'Unknown User',
-              avatar_url: null,
-              is_verified: false 
-            });
-            set(state => ({
-              posts: state.posts.map(post => 
-                post.id === updatedPost.id ? updatedPost : post
-              )
-            }));
-          })
-          .on('postgres_changes', { 
-            event: 'DELETE', 
-            schema: 'public', 
-            table: 'posts' 
-          }, (payload) => {
-            console.log('Post delete queued:', payload);
-            pendingDeletes.push(payload.old.id);
-            scheduleUpdate();
-          })
-          .subscribe();
-
-        realtimeChannel = channel;
+            )
+            .subscribe();
+        }
 
       } catch (error) {
         console.error('Error loading posts:', error);
-        
-        // Circuit breaker - stop infinite retries on persistent errors
-        const errorMessage = error?.message || '';
-        if (errorMessage.includes('PGRST200') || errorMessage.includes('foreign key')) {
-          console.warn('Database schema issue detected, stopping retries');
-          set({ 
-            loading: false,
-            posts: [], // Clear posts to prevent UI flicker
-            hasMore: false 
-          });
-          return;
-        }
-        
         set({ loading: false });
       }
     },
