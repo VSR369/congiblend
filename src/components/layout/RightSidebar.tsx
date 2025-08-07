@@ -56,11 +56,11 @@ export const RightSidebar = () => {
           </Button>
         </div>
         
-        <div className="space-y-3">
+        <div className="space-y-3 stable-list">
           {trendingTopics.map((topic, index) => (
             <div
               key={topic.name}
-              className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors animate-fade-in"
+              className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors debounced-enter"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className="flex items-center space-x-2">
@@ -99,11 +99,11 @@ export const RightSidebar = () => {
           </Button>
         </div>
         
-        <div className="space-y-3">
+        <div className="space-y-3 stable-list">
           {suggestedConnections.map((person, index) => (
             <div
               key={person.name}
-              className="flex items-center justify-between animate-fade-in"
+              className="flex items-center justify-between debounced-enter"
               style={{ animationDelay: `${100 + index * 50}ms` }}
             >
               <div className="flex items-center space-x-3">
@@ -153,11 +153,11 @@ export const RightSidebar = () => {
           </h3>
         </div>
         
-        <div className="space-y-3">
+        <div className="space-y-3 stable-list">
           {recentActivity.map((activity, index) => (
             <div
               key={index}
-              className="flex items-start space-x-3 p-2 rounded-lg hover:bg-white/5 transition-colors animate-fade-in"
+              className="flex items-start space-x-3 p-2 rounded-lg hover:bg-white/5 transition-colors debounced-enter"
               style={{ animationDelay: `${200 + index * 50}ms` }}
             >
               <div className="flex-shrink-0 mt-0.5">

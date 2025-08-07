@@ -321,11 +321,40 @@ export const useFeedStore = create<FeedState>((set, get) => {
           hasMore: transformedPosts.length === 20
         });
 
-        // Set up real-time subscription for new posts (only once)
+        // PHASE 4: Enhanced real-time subscription with batch processing
         if (!realtimeChannel) {
-          // Debounce real-time updates to prevent rapid re-renders
-          let updateTimeout: NodeJS.Timeout;
-          
+          let insertQueue: any[] = [];
+          let deleteQueue: string[] = [];
+          let batchTimeout: NodeJS.Timeout;
+
+          const processBatch = async () => {
+            if (insertQueue.length > 0 || deleteQueue.length > 0) {
+              set((state) => {
+                let newPosts = [...state.posts];
+                
+                // Process deletions first
+                if (deleteQueue.length > 0) {
+                  newPosts = newPosts.filter(post => !deleteQueue.includes(post.id));
+                  deleteQueue = [];
+                }
+                
+                // Process insertions with author data
+                if (insertQueue.length > 0) {
+                  const transformedPosts = insertQueue
+                    .map(item => {
+                      // Use the profiles data from the join if available
+                      return transformDbPost(item.post, item.author);
+                    })
+                    .filter(Boolean);
+                  newPosts = [...transformedPosts, ...newPosts];
+                  insertQueue = [];
+                }
+                
+                return { posts: newPosts };
+              });
+            }
+          };
+
           realtimeChannel = supabase
             .channel('posts-changes')
             .on(
@@ -336,23 +365,21 @@ export const useFeedStore = create<FeedState>((set, get) => {
                 table: 'posts'
               },
               async (payload) => {
-                // Debounce updates to prevent animation jumping
-                clearTimeout(updateTimeout);
-                updateTimeout = setTimeout(async () => {
+                console.log('New post inserted:', payload);
+                if (payload.new) {
                   // Get author info for new post
                   const { data: authorData } = await supabase
                     .from('profiles')
-                    .select('id, username, display_name, avatar_url, is_verified')
+                    .select('id, username, display_name, avatar_url, is_verified, title, company')
                     .eq('id', payload.new.user_id)
                     .single();
 
                   if (authorData) {
-                    const newPost = transformDbPost(payload.new, authorData);
-                    set(state => ({
-                      posts: [newPost, ...state.posts]
-                    }));
+                    insertQueue.push({ post: payload.new, author: authorData });
+                    clearTimeout(batchTimeout);
+                    batchTimeout = setTimeout(processBatch, 500);
                   }
-                }, 300); // 300ms debounce
+                }
               }
             )
             .on(
@@ -363,9 +390,12 @@ export const useFeedStore = create<FeedState>((set, get) => {
                 table: 'posts'
               },
               (payload) => {
-                set(state => ({
-                  posts: state.posts.filter(post => post.id !== payload.old.id)
-                }));
+                console.log('Post deleted:', payload);
+                if (payload.old?.id) {
+                  deleteQueue.push(payload.old.id);
+                  clearTimeout(batchTimeout);
+                  batchTimeout = setTimeout(processBatch, 500);
+                }
               }
             )
             .subscribe();

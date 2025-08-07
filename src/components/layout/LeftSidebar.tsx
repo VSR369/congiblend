@@ -37,15 +37,14 @@ export const LeftSidebar = () => {
         <UserStatsCard />
       </motion.div>
 
-      {/* Navigation Menu */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.3 }}
-        className="space-y-2"
-      >
+      {/* PHASE 1: Navigation Menu with CSS animations */}
+      <div className="space-y-2 stable-animation">
         {navigationItems.map((item, index) => (
-          <div key={item.title}>
+          <div 
+            key={item.title}
+            className="debounced-enter"
+            style={{ animationDelay: `${100 + index * 50}ms` }}
+          >
             <Link 
               to={item.url}
               className={`
@@ -61,7 +60,7 @@ export const LeftSidebar = () => {
             </Link>
           </div>
         ))}
-      </motion.div>
+      </div>
       {/* Footer Card */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}

@@ -502,6 +502,55 @@
   }
 }
 
+/* PHASE 1: Stable Animation System */
+.stable-animation {
+  animation: fade-in 0.3s ease-out;
+  will-change: transform;
+}
+
+.stable-list {
+  contain: layout style paint;
+}
+
+.stable-list-item {
+  min-height: 200px;
+  contain: layout style;
+  will-change: auto;
+}
+
+/* PHASE 2: Layout Stabilization */
+.post-card-stable {
+  min-height: 200px;
+  max-height: none;
+  contain: layout style paint;
+  transition: none;
+}
+
+.media-container-stable {
+  aspect-ratio: 16/9;
+  contain: layout;
+}
+
+/* PHASE 3: Performance Optimizations */
+.optimized-container {
+  contain: layout style paint;
+  will-change: auto;
+}
+
+/* PHASE 4: Debounced animations */
+.debounced-enter {
+  animation: fade-in 0.2s ease-out;
+}
+
+/* PHASE 5: Error boundaries */
+.error-boundary {
+  min-height: 100px;
+  contain: layout;
+}
+    background-position: 100% 50%;
+  }
+}
+
 /* PWA Styles */
 @media (display-mode: standalone) {
   body {

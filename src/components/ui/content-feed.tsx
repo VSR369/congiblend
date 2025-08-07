@@ -35,12 +35,27 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
     }
   }, [posts.length, loadPosts]);
 
-  // Load more posts when user scrolls to bottom
+  // PHASE 4: Debounced load more posts
+  const debouncedLoadMore = React.useCallback(
+    React.useMemo(() => {
+      let timeoutId: NodeJS.Timeout;
+      return () => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          if (hasMore && !loading) {
+            loadPosts();
+          }
+        }, 500);
+      };
+    }, [hasMore, loading, loadPosts]),
+    [hasMore, loading, loadPosts]
+  );
+
   React.useEffect(() => {
-    if (inView && hasMore && !loading) {
-      loadPosts();
+    if (inView) {
+      debouncedLoadMore();
     }
-  }, [inView, hasMore, loading, loadPosts]);
+  }, [inView, debouncedLoadMore]);
 
   // Simple scrolling without virtualization to prevent overlap issues
   const shouldUseVirtualization = posts.length > 50;
@@ -88,13 +103,13 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
         </Button>
       </motion.div>
 
-      {/* Feed Content */}
-      <div ref={parentRef} className="space-y-8">
+      {/* PHASE 1 & 2: Stable Feed Content */}
+      <div ref={parentRef} className="stable-list space-y-8">
         {posts.length === 0 && loading ? (
-          // Initial loading skeleton
+          // PHASE 2: Stable loading skeleton
           <div className="space-y-8">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-card border rounded-lg p-6 space-y-4">
+              <div key={i} className="post-card-stable bg-card border rounded-lg p-6 space-y-4">
                 <div className="flex items-start space-x-3">
                   <LoadingSkeleton className="h-10 w-10 rounded-full" />
                   <div className="space-y-2 flex-1">
@@ -104,7 +119,7 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
                 </div>
                 <LoadingSkeleton className="h-4 w-full" />
                 <LoadingSkeleton className="h-4 w-3/4" />
-                <LoadingSkeleton className="h-48 w-full rounded-lg" />
+                <LoadingSkeleton className="media-container-stable h-48 w-full rounded-lg" />
                 <div className="flex items-center space-x-4">
                   <LoadingSkeleton className="h-8 w-16" />
                   <LoadingSkeleton className="h-8 w-20" />
@@ -114,30 +129,17 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
             ))}
           </div>
         ) : (
-          // Coordinated list with AnimatePresence for smooth updates
-          <AnimatePresence mode="popLayout">
-            <div className="space-y-8">
-              {posts.map((post, index) => (
-                <motion.div
-                  key={post.id}
-                  layoutId={`post-${post.id}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ 
-                    duration: 0.2,
-                    delay: Math.min(index * 0.05, 0.3), // Stagger with max delay
-                    layout: { duration: 0.2 }
-                  }}
-                  style={{ 
-                    minHeight: '200px' // Prevent layout shifts
-                  }}
-                >
-                  <StablePostCard post={post} className="w-full" />
-                </motion.div>
-              ))}
-            </div>
-          </AnimatePresence>
+          // PHASE 1: Remove conflicting animations, use stable container
+          <div className="stable-animation space-y-8">
+            {posts.map((post) => (
+              <div
+                key={`stable-${post.id}`}
+                className="stable-list-item debounced-enter"
+              >
+                <StablePostCard post={post} className="w-full" />
+              </div>
+            ))}
+          </div>
         )}
 
         {/* Load More Trigger */}
