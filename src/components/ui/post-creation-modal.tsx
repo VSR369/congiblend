@@ -108,9 +108,18 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
   }, [selectedFiles, dispatch]);
 
   const handleSubmit = React.useCallback(async () => {
-    if (!content.trim()) return;
+    // For event posts, content is not required but event fields are
+    if (activeTab === 'event') {
+      if (!eventData.title?.trim() || !eventData.description?.trim() || !eventData.start_date) {
+        console.log('❌ Event submission blocked - missing required fields');
+        return;
+      }
+    } else if (activeTab !== 'poll' && !content.trim()) {
+      console.log('❌ Submission blocked - content required');
+      return;
+    }
 
-    console.log('📤 Starting post submission...');
+    console.log('📤 Starting post submission...', { activeTab, eventData });
     dispatch({ type: 'SET_IS_POSTING', payload: true });
     
     try {
@@ -159,7 +168,7 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
       }
 
       const postData: CreatePostData = {
-        content: content.trim(),
+        content: activeTab === 'event' ? (content.trim() || `Event: ${eventData.title}`) : content.trim(),
         post_type: activeTab,
         visibility: "public",
         media_urls: mediaUrls, // Include uploaded media URLs
@@ -559,15 +568,35 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={
-            isPosting || 
-            characterCount > characterLimit || 
-            (activeTab === 'text' && !content.trim()) ||
-            (activeTab === 'event' && (!eventData.title || !eventData.title.trim() || !eventData.description || !eventData.description.trim() || !eventData.start_date)) ||
-            (activeTab === 'poll' && (!content.trim() || !pollOptions.some(opt => opt.trim()))) ||
-            (activeTab === 'job' && (!content.trim() || !jobData.title.trim() || !jobData.company.trim())) ||
-            (['image', 'video', 'audio'].includes(activeTab) && selectedFiles.length === 0 && !content.trim())
-          }
+          disabled={(() => {
+            // Debug logging for button validation
+            const isPostingCheck = isPosting;
+            const characterCheck = characterCount > characterLimit;
+            const textCheck = activeTab === 'text' && !content.trim();
+            const eventCheck = activeTab === 'event' && (!eventData.title || !eventData.title.trim() || !eventData.description || !eventData.description.trim() || !eventData.start_date);
+            const pollCheck = activeTab === 'poll' && (!content.trim() || !pollOptions.some(opt => opt.trim()));
+            const jobCheck = activeTab === 'job' && (!content.trim() || !jobData.title.trim() || !jobData.company.trim());
+            const mediaCheck = ['image', 'video', 'audio'].includes(activeTab) && selectedFiles.length === 0 && !content.trim();
+            
+            if (activeTab === 'event') {
+              console.log('🔍 Event button validation:', {
+                isPosting: isPostingCheck,
+                characterCount,
+                characterLimit,
+                eventData: {
+                  title: eventData.title,
+                  titleTrimmed: eventData.title?.trim(),
+                  description: eventData.description,
+                  descriptionTrimmed: eventData.description?.trim(),
+                  start_date: eventData.start_date
+                },
+                eventCheck,
+                finalDisabled: isPostingCheck || characterCheck || eventCheck
+              });
+            }
+            
+            return isPostingCheck || characterCheck || textCheck || eventCheck || pollCheck || jobCheck || mediaCheck;
+          })()}
           loading={isPosting}
           loadingText="Posting..."
         >
