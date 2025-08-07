@@ -123,15 +123,29 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
           const formData = new FormData();
           formData.append('file', file);
           
-          const { data, error } = await supabase.functions.invoke('media', {
+          // Get the session token for authentication
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.access_token) {
+            throw new Error('Not authenticated');
+          }
+          
+          // Make direct HTTP request to the media function with proper headers
+          const response = await fetch(`https://cmtehutbazgfjoksmkly.supabase.co/functions/v1/media`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+            },
             body: formData,
           });
 
-          if (error) {
-            console.error('Upload error:', error);
-            throw new Error(`Failed to upload ${file.name}: ${error.message}`);
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Upload error:', response.status, errorText);
+            throw new Error(`Failed to upload ${file.name}: ${response.status} ${errorText}`);
           }
 
+          const data = await response.json();
+          
           if (!data?.url) {
             throw new Error(`Failed to get upload URL for ${file.name}`);
           }
