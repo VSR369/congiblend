@@ -6,10 +6,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-)
+// Initialize Supabase clients
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+// Client for authentication
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Service client for storage operations (bypasses RLS)
+const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
 
 // File size limits
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -49,89 +54,46 @@ const getMediaType = (mimeType: string): 'image' | 'video' | 'audio' | 'invalid'
   return 'invalid';
 };
 
-// Helper function to generate thumbnail for video (simplified)
-const generateVideoThumbnail = async (userId: string, videoFileName: string): Promise<string> => {
-  // For this demo, we'll create a placeholder thumbnail
-  // In production, you would use FFmpeg or a video processing service
-  const thumbnailFileName = videoFileName.replace(/\.[^/.]+$/, '-thumbnail.jpg');
-  
-  // Create a simple placeholder thumbnail (1x1 pixel image)
-  const placeholderThumbnail = new Uint8Array([
-    0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01,
-    0x01, 0x01, 0x00, 0x48, 0x00, 0x48, 0x00, 0x00, 0xFF, 0xDB, 0x00, 0x43,
-    0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xC0, 0x00, 0x11,
-    0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01,
-    0x03, 0x11, 0x01, 0xFF, 0xC4, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x08, 0xFF, 0xC4, 0x00, 0x14, 0x10, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-    0xDA, 0x00, 0x0C, 0x03, 0x01, 0x00, 0x02, 0x11, 0x03, 0x11, 0x00, 0x3F,
-    0x00, 0x80, 0xFF, 0xD9
-  ]);
-
-  // Upload thumbnail
-  const { data: thumbnailUpload, error: thumbnailError } = await supabase.storage
-    .from('post-media')
-    .upload(thumbnailFileName, placeholderThumbnail, {
-      contentType: 'image/jpeg',
-      cacheControl: '3600',
-      upsert: false
-    });
-
-  if (thumbnailError) {
-    console.error('Thumbnail upload error:', thumbnailError);
-    throw new Error('Failed to generate thumbnail');
-  }
-
-  const { data: thumbnailUrl } = supabase.storage
-    .from('post-media')
-    .getPublicUrl(thumbnailFileName);
-
-  return thumbnailUrl.publicUrl;
-};
-
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
   try {
     console.log(`${req.method} request to ${req.url}`);
     
-    const url = new URL(req.url);
-    const pathParts = url.pathname.split('/').filter(p => p);
-    
-    // Get authorization token
+    // Handle CORS preflight requests
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { 
+        headers: corsHeaders,
+        status: 200 
+      });
+    }
+
+    // Authenticate user using Bearer token
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.error('Missing or invalid authorization header');
+    if (!authHeader) {
+      console.log('No authorization header provided');
       return new Response(
-        JSON.stringify({ error: 'Authorization header required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Authorization required' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       );
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
-    // Verify the token and get user
-    const { data: sessionData, error: sessionError } = await supabase.auth.getUser(token);
-    
-    if (sessionError || !sessionData.user) {
-      console.error('Authentication failed:', sessionError);
+    if (authError || !user) {
+      console.log('Authentication failed:', authError?.message);
       return new Response(
-        JSON.stringify({ error: 'Invalid token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       );
     }
 
-    const userId = sessionData.user.id;
-    console.log('Authenticated user:', userId);
+    console.log('Authenticated user:', user.id);
 
     // UPLOAD ENDPOINT - Handle all POST requests as uploads
     if (req.method === 'POST') {
@@ -142,7 +104,7 @@ serve(async (req) => {
         const file = formData.get('file') as File;
 
         if (!file) {
-          console.error('No file in form data');
+          console.log('No file in form data');
           return new Response(
             JSON.stringify({ error: 'No file provided' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -158,7 +120,7 @@ serve(async (req) => {
         const mediaType = getMediaType(file.type);
         
         if (mediaType === 'invalid') {
-          console.error('Invalid file type:', file.type);
+          console.log('Invalid file type:', file.type);
           return new Response(
             JSON.stringify({ 
               error: `Invalid file type: ${file.type}. Only images, videos, and audio files are allowed.` 
@@ -172,92 +134,93 @@ serve(async (req) => {
                        mediaType === 'audio' ? MAX_AUDIO_SIZE : MAX_IMAGE_SIZE;
         if (file.size > maxSize) {
           const maxSizeMB = maxSize / (1024 * 1024);
-          console.error('File too large:', file.size, 'max:', maxSize);
+          console.log('File too large:', file.size, 'max:', maxSize);
           return new Response(
             JSON.stringify({ error: `File too large. Maximum size is ${maxSizeMB}MB.` }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
-        // Generate unique filename
+        // Generate unique filename with user folder structure
         const timestamp = Date.now();
         const randomString = Math.random().toString(36).substring(2, 15);
         const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-        const fileName = `${userId}/${timestamp}-${randomString}.${fileExtension}`;
+        const filename = `${user.id}/${timestamp}-${randomString}.${fileExtension}`;
 
-        console.log('Generated filename:', fileName);
+        console.log('Generated filename:', filename);
 
         // Convert File to ArrayBuffer for upload
         const fileBuffer = await file.arrayBuffer();
         console.log('File buffer size:', fileBuffer.byteLength);
-        
-        // Upload main file to Supabase Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
+
+        // Upload to Supabase Storage using service client (bypasses RLS)
+        const { data: uploadData, error: uploadError } = await supabaseService.storage
           .from('post-media')
-          .upload(fileName, fileBuffer, {
+          .upload(filename, fileBuffer, {
             contentType: file.type,
-            cacheControl: '3600',
-            upsert: false
+            upsert: true
           });
 
         if (uploadError) {
-          console.error('Storage upload error:', uploadError);
+          console.log('Storage upload error:', uploadError);
           return new Response(
             JSON.stringify({ 
-              error: 'Failed to upload file to storage',
-              details: uploadError.message 
+              error: 'Failed to upload file', 
+              details: uploadError.message,
+              code: uploadError.statusCode || 'UPLOAD_ERROR'
             }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
           );
         }
 
-        console.log('Upload successful:', uploadData);
-
-        // Get public URL for main file
-        const { data: publicUrlData } = supabase.storage
+        // Generate public URL for the uploaded file
+        const { data: urlData } = supabaseService.storage
           .from('post-media')
-          .getPublicUrl(fileName);
+          .getPublicUrl(filename);
 
-        console.log('Public URL:', publicUrlData.publicUrl);
+        if (!urlData?.publicUrl) {
+          console.log('Failed to generate public URL');
+          return new Response(
+            JSON.stringify({ error: 'Failed to generate file URL' }),
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
 
-        // Simple response for all media types
-        const response = {
-          success: true,
-          url: publicUrlData.publicUrl,
-          filename: fileName,
-          size: file.size,
-          type: file.type,
-          media_type: mediaType
-        };
-
-        // For videos, try to create processing record (optional, don't fail if it errors)
         if (mediaType === 'video') {
-          try {
-            await supabase.from('media_processing').insert({
-              user_id: userId,
+          // For videos, insert into media_processing table for thumbnail generation using service client
+          const { error: dbError } = await supabaseService
+            .from('media_processing')
+            .insert({
+              user_id: user.id,
               original_filename: file.name,
               media_type: mediaType,
-              storage_path: fileName,
-              video_url: publicUrlData.publicUrl,
-              thumbnail_url: null,
-              processing_status: 'completed',
-              processing_progress: 100,
-              metadata: {
-                size: file.size,
-                duration: null,
-                resolution: null
-              }
+              storage_path: filename,
+              video_url: urlData.publicUrl,
+              processing_status: 'pending'
             });
-            console.log('Video processing record created');
-          } catch (dbError) {
-            console.error('Failed to create processing record (non-critical):', dbError);
-            // Don't fail the upload for this
+
+          if (dbError) {
+            console.log('Database insert error:', dbError);
+            // Don't fail the upload, just log the error
           }
         }
 
-        console.log('Returning success response');
+        console.log('Upload successful, returning response');
         return new Response(
-          JSON.stringify(response),
+          JSON.stringify({
+            success: true,
+            url: urlData.publicUrl,
+            filename: filename,
+            size: file.size,
+            type: file.type,
+            media_type: mediaType
+          }),
           { 
             status: 200, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -265,7 +228,7 @@ serve(async (req) => {
         );
 
       } catch (error) {
-        console.error('File processing error:', error);
+        console.log('File processing error:', error);
         return new Response(
           JSON.stringify({ 
             error: 'Failed to process file',
@@ -276,34 +239,41 @@ serve(async (req) => {
       }
     }
 
-    // STATUS ENDPOINT
-    if (req.method === 'GET' && action === 'status' && pathParts.length >= 2) {
-      const mediaId = pathParts[pathParts.length - 1];
+    if (req.method === 'GET') {
+      // Handle status check requests
+      const url = new URL(req.url);
+      const mediaId = url.searchParams.get('id');
       
-      // For post ID, get processing status from media_processing table
-      const { data: processingData, error: processingError } = await supabase
+      if (!mediaId) {
+        return new Response(
+          JSON.stringify({ error: 'Media ID required' }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      const { data, error } = await supabaseService
         .from('media_processing')
         .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
+        .eq('id', mediaId)
+        .eq('user_id', user.id)
         .single();
 
-      if (processingError || !processingData) {
+      if (error) {
+        console.log('Database query error:', error);
         return new Response(
-          JSON.stringify({ error: 'Processing record not found' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'Media not found' }),
+          { 
+            status: 404, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
         );
       }
 
       return new Response(
-        JSON.stringify({
-          processing_status: processingData.processing_status,
-          processing_progress: processingData.processing_progress,
-          video_url: processingData.video_url,
-          thumbnail_url: processingData.thumbnail_url,
-          error: processingData.processing_error
-        }),
+        JSON.stringify(data),
         { 
           status: 200, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -311,39 +281,52 @@ serve(async (req) => {
       );
     }
 
-    // DELETE file
     if (req.method === 'DELETE') {
-      const filename = url.searchParams.get('filename');
-
-      if (!filename) {
+      // Handle file deletion requests
+      const url = new URL(req.url);
+      const filePath = url.searchParams.get('path');
+      
+      if (!filePath) {
         return new Response(
-          JSON.stringify({ error: 'Filename required' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'File path required' }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
         );
       }
 
-      // Verify user owns the file
-      if (!filename.startsWith(`${userId}/`)) {
+      // Check if the file belongs to the authenticated user
+      if (!filePath.startsWith(`${user.id}/`)) {
         return new Response(
-          JSON.stringify({ error: 'Unauthorized' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'Unauthorized file access' }),
+          { 
+            status: 403, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
         );
       }
 
-      const { error: deleteError } = await supabase.storage
+      const { error: deleteError } = await supabaseService.storage
         .from('post-media')
-        .remove([filename]);
+        .remove([filePath]);
 
       if (deleteError) {
-        console.error('Delete error:', deleteError);
+        console.log('Storage delete error:', deleteError);
         return new Response(
-          JSON.stringify({ error: 'Failed to delete file' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ 
+            error: 'Failed to delete file', 
+            details: deleteError.message 
+          }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
         );
       }
 
       return new Response(
-        JSON.stringify({ success: true, message: 'File deleted successfully' }),
+        JSON.stringify({ message: 'File deleted successfully' }),
         { 
           status: 200, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -357,10 +340,13 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Function error:', error);
+    console.log('Function error:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ 
+        error: 'Internal server error', 
+        details: error.message 
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
-})
+});
