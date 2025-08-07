@@ -115,6 +115,16 @@ export interface Post {
   media?: PostMedia[];
   poll?: Poll;
   event?: Event;
+  event_data?: {
+    title: string;
+    description?: string;
+    start_date: string;
+    end_date?: string | null;
+    location?: string | null;
+    max_attendees?: number | null;
+    is_virtual?: boolean;
+    is_hybrid?: boolean;
+  };
   job?: Job;
   linkPreview?: LinkPreview;
   hashtags: string[];

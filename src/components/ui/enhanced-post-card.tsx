@@ -93,33 +93,55 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
   };
 
   const renderEvent = () => {
-    if (!post.event) return null;
+    if (!post.event_data && post.type !== 'event') return null;
+
+    // Handle event data from either event object or event_data field
+    const eventInfo = post.event_data;
+    if (!eventInfo) return null;
+
+    // Convert string dates to Date objects
+    const startDate = new Date(eventInfo.start_date);
+    const endDate = eventInfo.end_date ? new Date(eventInfo.end_date) : null;
 
     return (
-      <div className="mt-3 p-4 border rounded-lg">
+      <div className="mt-3 p-4 border rounded-lg bg-muted/30">
         <div className="flex items-start space-x-3">
           <div className="p-2 bg-primary/10 rounded-lg">
             <Calendar className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
-            <h4 className="font-medium">{post.event.title}</h4>
-            <div className="space-y-1 mt-2 text-sm text-muted-foreground">
-              <div className="flex items-center space-x-1">
-                <Calendar className="h-4 w-4" />
-                <span>{post.event.startDate.toLocaleDateString()}</span>
+            <h4 className="font-medium text-lg">{eventInfo.title}</h4>
+            <p className="text-sm text-muted-foreground mt-1">{eventInfo.description}</p>
+            <div className="space-y-2 mt-3 text-sm">
+              <div className="flex items-center space-x-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                <span>{startDate.toLocaleDateString()} at {startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                {endDate && (
+                  <span className="text-muted-foreground">
+                    - {endDate.toLocaleDateString()} at {endDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </span>
+                )}
               </div>
-              {post.event.location && (
-                <div className="flex items-center space-x-1">
-                  <MapPin className="h-4 w-4" />
-                  <span>{post.event.location}</span>
+              {eventInfo.location && (
+                <div className="flex items-center space-x-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span>{eventInfo.location}</span>
                 </div>
               )}
-              {post.event.attendees > 0 && (
-                <div className="flex items-center space-x-1">
-                  <Users className="h-4 w-4" />
-                  <span>{post.event.attendees} attending</span>
+              {eventInfo.max_attendees && (
+                <div className="flex items-center space-x-2">
+                  <Users className="h-4 w-4 text-primary" />
+                  <span>Max {eventInfo.max_attendees} attendees</span>
                 </div>
               )}
+              <div className="flex gap-2 mt-2">
+                {eventInfo.is_virtual && (
+                  <Badge variant="secondary" className="text-xs">Virtual Event</Badge>
+                )}
+                {eventInfo.is_hybrid && (
+                  <Badge variant="secondary" className="text-xs">Hybrid Event</Badge>
+                )}
+              </div>
             </div>
           </div>
         </div>

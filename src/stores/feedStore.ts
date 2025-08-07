@@ -190,6 +190,7 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
     media,
     poll,
     event,
+    event_data: dbPost.event_data, // Include the raw event_data
     hashtags: extractHashtags(dbPost.content),
     mentions: [],
     reactions,
@@ -736,6 +737,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
             attendees: 0,
             maxAttendees: data.event_data.max_attendees,
           } : undefined,
+          event_data: data.event_data, // Include raw event_data for display
           hashtags: extractHashtags(data.content),
           mentions: [],
           reactions: [],

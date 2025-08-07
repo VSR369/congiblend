@@ -560,9 +560,13 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
         <Button
           onClick={handleSubmit}
           disabled={
-            !content.trim() || 
+            isPosting || 
             characterCount > characterLimit || 
-            isPosting
+            (activeTab === 'text' && !content.trim()) ||
+            (activeTab === 'event' && (!eventData.title.trim() || !eventData.description.trim() || !eventData.start_date)) ||
+            (activeTab === 'poll' && (!content.trim() || !pollOptions.some(opt => opt.trim()))) ||
+            (activeTab === 'job' && (!content.trim() || !jobData.title.trim() || !jobData.company.trim())) ||
+            (['image', 'video', 'audio'].includes(activeTab) && selectedFiles.length === 0 && !content.trim())
           }
           loading={isPosting}
           loadingText="Posting..."
