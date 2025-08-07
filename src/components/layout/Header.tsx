@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, Search, Settings, User, Menu, Sun, Moon, PanelLeft } from 'lucide-react';
 
@@ -23,19 +23,43 @@ interface HeaderProps {
   showMenuButton?: boolean;
 }
 
-export const Header = ({ onMenuToggle, showMenuButton = false }: HeaderProps) => {
-  const [searchQuery, setSearchQuery] = useState('');
+export const Header = React.memo(({ onMenuToggle, showMenuButton = false }: HeaderProps) => {
+  // Performance monitoring
+  const renderCountRef = React.useRef(0);
+  const lastRenderTime = React.useRef(Date.now());
+  
+  React.useEffect(() => {
+    renderCountRef.current++;
+    const now = Date.now();
+    console.log('🎯 Header re-render:', {
+      count: renderCountRef.current,
+      timeSinceLastRender: now - lastRenderTime.current,
+      timestamp: now
+    });
+    lastRenderTime.current = now;
+  });
+
+  const [searchQuery, setSearchQuery] = React.useState('');
   const { theme, toggleTheme } = useThemeStore();
   const { user, isAuthenticated, signOut } = useAuthStore();
   const { unreadCount } = useNotificationStore();
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = React.useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // Handle search logic
-      console.log('Searching for:', searchQuery);
+      console.log('🔍 Header search executed:', searchQuery);
     }
-  };
+  }, [searchQuery]);
+
+  const handleThemeToggle = React.useCallback(() => {
+    console.log('🎨 Theme toggling from:', theme);
+    toggleTheme();
+  }, [theme, toggleTheme]);
+
+  const handleSignOut = React.useCallback(() => {
+    console.log('🚪 User logging out');
+    signOut();
+  }, [signOut]);
 
   return (
     <header className="sticky top-0 z-50 w-full glass border-b border-glass-border animate-slide-down">
@@ -91,7 +115,7 @@ export const Header = ({ onMenuToggle, showMenuButton = false }: HeaderProps) =>
           <Button
             variant="ghost"
             size="sm"
-            onClick={toggleTheme}
+            onClick={handleThemeToggle}
             className="h-12 w-12 rounded-xl hover-glow transition-all duration-300 glass-card border-0"
           >
             {theme === 'light' ? (
@@ -178,7 +202,7 @@ export const Header = ({ onMenuToggle, showMenuButton = false }: HeaderProps) =>
                    </Link>
                  </DropdownMenuItem>
                  <DropdownMenuSeparator />
-                 <DropdownMenuItem onClick={signOut} className="p-3 text-destructive">
+                 <DropdownMenuItem onClick={handleSignOut} className="p-3 text-destructive">
                    Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -197,4 +221,10 @@ export const Header = ({ onMenuToggle, showMenuButton = false }: HeaderProps) =>
       </div>
     </header>
   );
-};
+}, (prevProps, nextProps) => {
+  // Shallow comparison for Header props
+  return prevProps.onMenuToggle === nextProps.onMenuToggle &&
+         prevProps.showMenuButton === nextProps.showMenuButton;
+});
+
+Header.displayName = "Header";

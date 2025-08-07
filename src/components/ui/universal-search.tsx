@@ -1,5 +1,4 @@
 import * as React from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Search, Filter, Mic, X, Clock, Bookmark, TrendingUp, Hash, Users, Building2, Briefcase, FileText } from "lucide-react";
 import { Input } from "./input";
 import { Button } from "./button";
@@ -16,7 +15,22 @@ interface UniversalSearchProps {
   onResultClick?: () => void;
 }
 
-export const UniversalSearch = ({ className, onResultClick }: UniversalSearchProps) => {
+export const UniversalSearch = React.memo(({ className, onResultClick }: UniversalSearchProps) => {
+  // Performance monitoring
+  const renderCountRef = React.useRef(0);
+  const lastRenderTime = React.useRef(Date.now());
+  
+  React.useEffect(() => {
+    renderCountRef.current++;
+    const now = Date.now();
+    console.log('🌍 UniversalSearch re-render:', {
+      count: renderCountRef.current,
+      timeSinceLastRender: now - lastRenderTime.current,
+      timestamp: now
+    });
+    lastRenderTime.current = now;
+  });
+
   const [isOpen, setIsOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
   
@@ -37,48 +51,59 @@ export const UniversalSearch = ({ className, onResultClick }: UniversalSearchPro
 
   React.useEffect(() => {
     if (debouncedInput) {
+      console.log('⏱️ UniversalSearch debounced input:', debouncedInput);
       loadSuggestions(debouncedInput);
     }
   }, [debouncedInput, loadSuggestions]);
 
-  const handleSearch = (searchQuery: string) => {
+  const handleSearch = React.useCallback((searchQuery: string) => {
+    console.log('🌍 UniversalSearch executing search:', searchQuery);
     setQuery(searchQuery);
     setInputValue(searchQuery);
     search(searchQuery);
     setIsOpen(false);
     onResultClick?.();
-  };
+  }, [setQuery, search, onResultClick]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    console.log('⌨️ UniversalSearch input change:', value.slice(0, 20));
     setInputValue(value);
     setIsOpen(value.length > 0 || recentSearches.length > 0);
-  };
+  }, [recentSearches.length]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" && inputValue.trim()) {
       handleSearch(inputValue.trim());
     } else if (e.key === "Escape") {
       setIsOpen(false);
     }
-  };
+  }, [handleSearch, inputValue]);
 
-  const resultTypeIcons = {
+  // Memoized icon mappings
+  const resultTypeIcons = React.useMemo(() => ({
     people: Users,
     posts: FileText,
     companies: Building2,
     jobs: Briefcase,
     all: Search
-  };
+  }), []);
 
-  const getSuggestionIcon = (suggestion: SearchSuggestion) => {
+  const getSuggestionIcon = React.useCallback((suggestion: SearchSuggestion) => {
     switch (suggestion.type) {
       case 'hashtag': return Hash;
       case 'user': return Users;
       case 'company': return Building2;
       default: return Search;
     }
-  };
+  }, []);
+
+  // Memoized clear input handler
+  const handleClearInput = React.useCallback(() => {
+    console.log('🧹 UniversalSearch clearing input');
+    setInputValue("");
+    setIsOpen(false);
+  }, []);
 
   return (
     <div className={cn("relative w-full max-w-2xl", className)}>
@@ -101,15 +126,12 @@ export const UniversalSearch = ({ className, onResultClick }: UniversalSearchPro
                 <Mic className="h-4 w-4" />
               </Button>
               {inputValue && (
-                <Button 
-                  variant="ghost" 
-                  size="icon-sm" 
-                  className="h-8 w-8"
-                  onClick={() => {
-                    setInputValue("");
-                    setIsOpen(false);
-                  }}
-                >
+                  <Button 
+                    variant="ghost" 
+                    size="icon-sm" 
+                    className="h-8 w-8"
+                    onClick={handleClearInput}
+                  >
                   <X className="h-4 w-4" />
                 </Button>
               )}
@@ -165,13 +187,11 @@ export const UniversalSearch = ({ className, onResultClick }: UniversalSearchPro
                   {suggestions.slice(0, 5).map((suggestion, index) => {
                     const Icon = getSuggestionIcon(suggestion);
                     return (
-                      <motion.button
+                      <button
                         key={`${suggestion.type}-${index}`}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
                         onClick={() => handleSearch(suggestion.text)}
-                        className="w-full flex items-center space-x-3 p-2 rounded-md hover:bg-accent text-left"
+                        className="w-full flex items-center space-x-3 p-2 rounded-md hover:bg-accent text-left animate-fade-in"
+                        style={{ animationDelay: `${index * 50}ms` }}
                       >
                         <Icon className="h-4 w-4 text-muted-foreground" />
                         <div className="flex-1 min-w-0">
@@ -180,7 +200,7 @@ export const UniversalSearch = ({ className, onResultClick }: UniversalSearchPro
                             <p className="text-xs text-muted-foreground">{suggestion.category}</p>
                           )}
                         </div>
-                      </motion.button>
+                      </button>
                     );
                   })}
                 </div>
@@ -271,4 +291,10 @@ export const UniversalSearch = ({ className, onResultClick }: UniversalSearchPro
       </Popover>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Shallow comparison for UniversalSearch props
+  return prevProps.className === nextProps.className &&
+         prevProps.onResultClick === nextProps.onResultClick;
+});
+
+UniversalSearch.displayName = "UniversalSearch";

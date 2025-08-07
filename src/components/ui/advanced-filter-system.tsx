@@ -15,7 +15,22 @@ interface AdvancedFilterSystemProps {
   className?: string;
 }
 
-export const AdvancedFilterSystem = ({ className }: AdvancedFilterSystemProps) => {
+export const AdvancedFilterSystem = React.memo(({ className }: AdvancedFilterSystemProps) => {
+  // Performance monitoring
+  const renderCountRef = React.useRef(0);
+  const lastRenderTime = React.useRef(Date.now());
+  
+  React.useEffect(() => {
+    renderCountRef.current++;
+    const now = Date.now();
+    console.log('🔧 AdvancedFilterSystem re-render:', {
+      count: renderCountRef.current,
+      timeSinceLastRender: now - lastRenderTime.current,
+      timestamp: now
+    });
+    lastRenderTime.current = now;
+  });
+
   const { filters, users, updateFilters } = useFeedStore();
   const [isOpen, setIsOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
@@ -30,51 +45,61 @@ export const AdvancedFilterSystem = ({ className }: AdvancedFilterSystemProps) =
     }
   }, [filters.userFilter, users]);
 
-  const handlePostOwnerFilterChange = (filter: 'all' | 'mine' | 'others') => {
+  const handlePostOwnerFilterChange = React.useCallback((filter: 'all' | 'mine' | 'others') => {
+    console.log('👤 Post owner filter changed:', filter);
     updateFilters({ 
       userFilter: filter === 'mine' ? 'my_posts' : filter === 'others' ? 'others' : 'all' 
     });
-  };
+  }, [updateFilters]);
 
-  const handleUserSelect = (user: User | null) => {
+  const handleUserSelect = React.useCallback((user: User | null) => {
+    console.log('👥 User selected:', user?.username || 'none');
     setSelectedUser(user);
     updateFilters({ 
       userFilter: user ? user.username : 'all' 
     });
-  };
+  }, [updateFilters]);
 
-  const handleContentTypesChange = (types: PostType[]) => {
+  const handleContentTypesChange = React.useCallback((types: PostType[]) => {
+    console.log('📝 Content types changed, count:', types.length);
     updateFilters({ contentTypes: types });
-  };
+  }, [updateFilters]);
 
-  const handleTimeRangeChange = (range: 'recent' | 'week' | 'month' | 'all') => {
+  const handleTimeRangeChange = React.useCallback((range: 'recent' | 'week' | 'month' | 'all') => {
+    console.log('⏰ Time range changed:', range);
     updateFilters({ timeRange: range });
-  };
+  }, [updateFilters]);
 
-  const clearAllFilters = () => {
+  const clearAllFilters = React.useCallback(() => {
+    console.log('🧹 Clearing all filters');
     updateFilters({
       userFilter: 'all',
       contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event', 'job'],
       timeRange: 'all'
     });
     setSelectedUser(null);
-  };
+  }, [updateFilters]);
 
-  const getActiveFilterCount = () => {
+  const getActiveFilterCount = React.useCallback(() => {
+    const start = performance.now();
     let count = 0;
     if (filters.userFilter !== 'all') count++;
     if (filters.contentTypes.length < 7) count++;
     if (filters.timeRange !== 'all') count++;
+    const end = performance.now();
+    if (end - start > 1) {
+      console.log('⚡ Filter count calculation took:', end - start, 'ms');
+    }
     return count;
-  };
+  }, [filters]);
 
-  const activeFilterCount = getActiveFilterCount();
+  const activeFilterCount = React.useMemo(() => getActiveFilterCount(), [getActiveFilterCount]);
 
-  const getDisplayFilter = () => {
+  const getDisplayFilter = React.useMemo(() => {
     if (filters.userFilter === 'my_posts') return 'mine';
     if (filters.userFilter === 'others') return 'others';
     return filters.userFilter === 'all' ? 'all' : 'all';
-  };
+  }, [filters.userFilter]);
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
@@ -113,7 +138,7 @@ export const AdvancedFilterSystem = ({ className }: AdvancedFilterSystemProps) =
             <Separator />
 
             <PostOwnerFilter
-              selectedFilter={getDisplayFilter()}
+              selectedFilter={getDisplayFilter}
               selectedUser={selectedUser}
               onFilterChange={handlePostOwnerFilterChange}
               onUserSelect={handleUserSelect}
@@ -187,4 +212,8 @@ export const AdvancedFilterSystem = ({ className }: AdvancedFilterSystemProps) =
       )}
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  return prevProps.className === nextProps.className;
+});
+
+AdvancedFilterSystem.displayName = "AdvancedFilterSystem";

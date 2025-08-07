@@ -1,6 +1,5 @@
 import * as React from "react"
 import { Search, X, Clock, TrendingUp } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
 import { Input } from "./input"
 import { Button } from "./button"
 import { Popover, PopoverContent, PopoverTrigger } from "./popover"
@@ -34,7 +33,7 @@ export interface SearchBoxProps {
   className?: string
 }
 
-export const SearchBox = ({
+export const SearchBox = React.memo(({
   placeholder = "Search...",
   onSearch,
   onResultSelect,
@@ -49,6 +48,23 @@ export const SearchBox = ({
   showPopular = true,
   className,
 }: SearchBoxProps) => {
+  // Performance monitoring
+  const renderCountRef = React.useRef(0);
+  const lastRenderTime = React.useRef(Date.now());
+  
+  React.useEffect(() => {
+    renderCountRef.current++;
+    const now = Date.now();
+    console.log('🔍 SearchBox re-render:', {
+      count: renderCountRef.current,
+      timeSinceLastRender: now - lastRenderTime.current,
+      suggestionsLength: suggestions.length,
+      query: query.slice(0, 20),
+      timestamp: now
+    });
+    lastRenderTime.current = now;
+  });
+
   const [query, setQuery] = React.useState("")
   const [isOpen, setIsOpen] = React.useState(false)
   const [storedRecent, setStoredRecent] = React.useState<string[]>(recentSearches)
@@ -56,50 +72,76 @@ export const SearchBox = ({
 
   React.useEffect(() => {
     if (debouncedQuery.trim() && onSearch) {
+      console.log('🎯 SearchBox debounced search triggered:', debouncedQuery);
       onSearch(debouncedQuery.trim())
     }
   }, [debouncedQuery, onSearch])
 
-  const addToRecent = (searchQuery: string) => {
+  // Memoized functions for stable references
+  const addToRecent = React.useCallback((searchQuery: string) => {
+    console.log('📝 Adding to recent searches:', searchQuery);
     const updated = [searchQuery, ...storedRecent.filter(s => s !== searchQuery)].slice(0, 5)
     setStoredRecent(updated)
     // In a real app, you'd persist this to localStorage or a database
-  }
+  }, [storedRecent])
 
-  const removeFromRecent = (searchQuery: string) => {
+  const removeFromRecent = React.useCallback((searchQuery: string) => {
+    console.log('🗑️ Removing from recent searches:', searchQuery);
     setStoredRecent(prev => prev.filter(s => s !== searchQuery))
-  }
+  }, [])
 
-  const handleSearch = (searchQuery: string) => {
+  const handleSearch = React.useCallback((searchQuery: string) => {
+    console.log('🔍 Search executed:', searchQuery);
     if (searchQuery.trim()) {
       addToRecent(searchQuery.trim())
       onSearch?.(searchQuery.trim())
       setIsOpen(false)
     }
-  }
+  }, [addToRecent, onSearch])
 
-  const handleResultClick = (result: SearchResult) => {
+  const handleResultClick = React.useCallback((result: SearchResult) => {
+    console.log('📋 Search result clicked:', result.title);
     setQuery(result.title)
     addToRecent(result.title)
     onResultSelect?.(result)
     setIsOpen(false)
-  }
+  }, [addToRecent, onResultSelect])
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault()
       handleSearch(query)
     } else if (e.key === "Escape") {
       setIsOpen(false)
     }
-  }
+  }, [handleSearch, query])
 
-  const filteredSuggestions = suggestions.slice(0, maxResults)
-  const categories = showCategories 
-    ? [...new Set(filteredSuggestions.map(s => s.category).filter(Boolean))]
-    : []
+  // Memoized expensive calculations
+  const filteredSuggestions = React.useMemo(() => {
+    const start = performance.now();
+    const result = suggestions.slice(0, maxResults);
+    const end = performance.now();
+    if (end - start > 1) {
+      console.log('⚡ SearchBox suggestions filter took:', end - start, 'ms');
+    }
+    return result;
+  }, [suggestions, maxResults]);
 
-  const hasContent = Boolean(query.trim()) || showRecent || showPopular
+  const categories = React.useMemo(() => {
+    if (!showCategories) return [];
+    const start = performance.now();
+    const result = [...new Set(filteredSuggestions.map(s => s.category).filter(Boolean))];
+    const end = performance.now();
+    if (end - start > 1) {
+      console.log('⚡ SearchBox categories computation took:', end - start, 'ms');
+    }
+    return result;
+  }, [showCategories, filteredSuggestions]);
+
+  const hasContent = React.useMemo(() => 
+    Boolean(query.trim()) || showRecent || showPopular,
+    [query, showRecent, showPopular]
+  );
 
   return (
     <div className={cn("relative w-full max-w-2xl", className)}>
@@ -140,33 +182,29 @@ export const SearchBox = ({
                 <div className="text-xs font-medium text-muted-foreground px-2 py-1 mb-2">
                   Search Results
                 </div>
-                <AnimatePresence>
-                  {filteredSuggestions.map((result, index) => (
-                    <motion.div
-                      key={result.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="flex items-center space-x-3 px-2 py-2 rounded-md hover:bg-accent cursor-pointer group"
-                      onClick={() => handleResultClick(result)}
-                    >
-                      <Search className="h-4 w-4 text-muted-foreground" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{result.title}</p>
-                        {result.description && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {result.description}
-                          </p>
-                        )}
-                      </div>
-                      {result.category && (
-                        <Badge variant="secondary" className="text-xs">
-                          {result.category}
-                        </Badge>
+                {filteredSuggestions.map((result, index) => (
+                  <div
+                    key={result.id}
+                    className="flex items-center space-x-3 px-2 py-2 rounded-md hover:bg-accent cursor-pointer group animate-fade-in"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                    onClick={() => handleResultClick(result)}
+                  >
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{result.title}</p>
+                      {result.description && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {result.description}
+                        </p>
                       )}
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                    </div>
+                    {result.category && (
+                      <Badge variant="secondary" className="text-xs">
+                        {result.category}
+                      </Badge>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 
@@ -275,4 +313,22 @@ export const SearchBox = ({
       </Popover>
     </div>
   )
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison function for React.memo
+  const keysToCompare: (keyof SearchBoxProps)[] = [
+    'suggestions', 'loading', 'placeholder', 'maxResults'
+  ];
+  
+  return keysToCompare.every(key => {
+    if (key === 'suggestions') {
+      // Deep comparison for suggestions array
+      return prevProps.suggestions?.length === nextProps.suggestions?.length &&
+             prevProps.suggestions?.every((item, index) => 
+               item.id === nextProps.suggestions?.[index]?.id
+             );
+    }
+    return prevProps[key] === nextProps[key];
+  });
+});
+
+SearchBox.displayName = "SearchBox";

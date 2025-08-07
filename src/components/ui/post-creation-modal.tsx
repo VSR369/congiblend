@@ -1,5 +1,4 @@
 import * as React from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { X, Image, Video, FileText, Calendar, Briefcase, BarChart3, Hash, AtSign, Smile, Music } from "lucide-react";
 import { Modal, ModalHeader, ModalBody, ModalFooter, ModalTitle } from "./modal";
 import { Button } from "./button";
@@ -13,6 +12,7 @@ import { postSchema } from "@/schemas/post";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { usePostCreationReducer } from "@/hooks/usePostCreationReducer";
 import type { PostType, CreatePostData } from "@/types/feed";
 
 interface PostCreationModalProps {
@@ -20,29 +20,39 @@ interface PostCreationModalProps {
   onClose: () => void;
 }
 
-// Simplified post creation modal with direct file upload
-export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => {
-  const [activeTab, setActiveTab] = React.useState<PostType>("text");
-  const [content, setContent] = React.useState("");
-  const [hashtags, setHashtags] = React.useState<string[]>([]);
-  const [mentions, setMentions] = React.useState<string[]>([]);
-  const [isPosting, setIsPosting] = React.useState(false);
-  const [selectedFiles, setSelectedFiles] = React.useState<File[]>([]);
-  const [pollOptions, setPollOptions] = React.useState<string[]>(['', '']);
-  const [eventData, setEventData] = React.useState({
-    title: '',
-    location: '',
-    start_date: '',
-    max_attendees: ''
-  });
-  const [jobData, setJobData] = React.useState({
-    title: '',
-    company: '',
-    location: '',
-    salary: ''
+// Optimized post creation modal with useReducer state management
+export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModalProps) => {
+  // Performance monitoring
+  const renderCountRef = React.useRef(0);
+  const lastRenderTime = React.useRef(Date.now());
+  
+  React.useEffect(() => {
+    renderCountRef.current++;
+    const now = Date.now();
+    console.log('📝 PostCreationModal re-render:', {
+      count: renderCountRef.current,
+      timeSinceLastRender: now - lastRenderTime.current,
+      open,
+      timestamp: now
+    });
+    lastRenderTime.current = now;
   });
 
+  const { state, dispatch } = usePostCreationReducer();
   const { createPost } = useFeedStore();
+  
+  // Destructure state for cleaner access
+  const {
+    activeTab,
+    content,
+    hashtags,
+    mentions,
+    isPosting,
+    selectedFiles,
+    pollOptions,
+    eventData,
+    jobData
+  } = state;
 
   const postTypes: { type: PostType; label: string; icon: React.ComponentType<any>; description: string }[] = [
     { type: "text", label: "Text", icon: FileText, description: "Share your thoughts" },
@@ -84,18 +94,22 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
   };
 
   const handleFileSelection = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('📁 Files selected:', event.target.files?.length);
     const files = Array.from(event.target.files || []);
-    setSelectedFiles(files);
-  }, []);
+    dispatch({ type: 'SET_SELECTED_FILES', payload: files });
+  }, [dispatch]);
 
   const handleFileRemoval = React.useCallback((index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-  }, []);
+    console.log('🗑️ Removing file at index:', index);
+    const newFiles = selectedFiles.filter((_, i) => i !== index);
+    dispatch({ type: 'SET_SELECTED_FILES', payload: newFiles });
+  }, [selectedFiles, dispatch]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = React.useCallback(async () => {
     if (!content.trim()) return;
 
-    setIsPosting(true);
+    console.log('📤 Starting post submission...');
+    dispatch({ type: 'SET_IS_POSTING', payload: true });
     
     try {
       // Upload files directly to storage if any are selected
@@ -182,15 +196,8 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
 
       await createPost(postData);
       
-      // Reset form
-      setContent("");
-      setHashtags([]);
-      setMentions([]);
-      setSelectedFiles([]);
-      setPollOptions(['', '']);
-      setEventData({ title: '', location: '', start_date: '', max_attendees: '' });
-      setJobData({ title: '', company: '', location: '', salary: '' });
-      setActiveTab("text");
+      // Reset form using reducer
+      dispatch({ type: 'RESET_FORM' });
       onClose();
       
       toast.success("Post created successfully!");
@@ -203,33 +210,47 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
         toast.error("Failed to create post. Please try again.");
       }
     } finally {
-      setIsPosting(false);
+      dispatch({ type: 'SET_IS_POSTING', payload: false });
     }
-  };
+  }, [content, selectedFiles, activeTab, pollOptions, eventData, jobData, hashtags, mentions, createPost, onClose, dispatch]);
 
-  const extractHashtags = (text: string) => {
+  const extractHashtags = React.useCallback((text: string) => {
+    const start = performance.now();
     const hashtagRegex = /#[\w]+/g;
     const matches = text.match(hashtagRegex) || [];
-    return [...new Set(matches)];
-  };
+    const result = [...new Set(matches)];
+    const end = performance.now();
+    if (end - start > 1) {
+      console.log('⚡ Hashtag extraction took:', end - start, 'ms');
+    }
+    return result;
+  }, []);
 
-  const extractMentions = (text: string) => {
+  const extractMentions = React.useCallback((text: string) => {
+    const start = performance.now();
     const mentionRegex = /@[\w]+/g;
     const matches = text.match(mentionRegex) || [];
-    return [...new Set(matches.map(m => m.substring(1)))];
-  };
+    const result = [...new Set(matches.map(m => m.substring(1)))];
+    const end = performance.now();
+    if (end - start > 1) {
+      console.log('⚡ Mention extraction took:', end - start, 'ms');
+    }
+    return result;
+  }, []);
 
   React.useEffect(() => {
-    setHashtags(extractHashtags(content));
-    setMentions(extractMentions(content));
-  }, [content]);
+    const hashtags = extractHashtags(content);
+    const mentions = extractMentions(content);
+    dispatch({ type: 'SET_HASHTAGS', payload: hashtags });
+    dispatch({ type: 'SET_MENTIONS', payload: mentions });
+  }, [content, extractHashtags, extractMentions, dispatch]);
 
   // Clear files when switching post types
   React.useEffect(() => {
     if (!['image', 'video', 'audio'].includes(activeTab)) {
-      setSelectedFiles([]);
+      dispatch({ type: 'SET_SELECTED_FILES', payload: [] });
     }
-  }, [activeTab]);
+  }, [activeTab, dispatch]);
 
   const characterLimit = 3000;
   const characterCount = content.length;
@@ -243,7 +264,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
             <Textarea
               placeholder="Ask a question..."
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => dispatch({ type: 'SET_CONTENT', payload: e.target.value })}
               className="min-h-24"
             />
             <div className="space-y-2">
@@ -255,7 +276,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
                   onChange={(e) => {
                     const newOptions = [...pollOptions];
                     newOptions[i] = e.target.value;
-                    setPollOptions(newOptions);
+                    dispatch({ type: 'SET_POLL_OPTIONS', payload: newOptions });
                   }}
                   placeholder={`Option ${i + 1}`}
                   className="w-full"
@@ -265,7 +286,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
                 variant="outline" 
                 size="sm" 
                 className="w-full"
-                onClick={() => setPollOptions([...pollOptions, ''])}
+                onClick={() => dispatch({ type: 'SET_POLL_OPTIONS', payload: [...pollOptions, ''] })}
               >
                 Add Option
               </Button>
@@ -279,30 +300,30 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
             <Textarea
               placeholder="Tell people about your event..."
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => dispatch({ type: 'SET_CONTENT', payload: e.target.value })}
               className="min-h-24"
             />
             <div className="grid grid-cols-2 gap-4">
               <Input 
                 placeholder="Event title"
                 value={eventData.title}
-                onChange={(e) => setEventData({...eventData, title: e.target.value})}
+                onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { title: e.target.value } })}
               />
               <Input 
                 placeholder="Location"
                 value={eventData.location}
-                onChange={(e) => setEventData({...eventData, location: e.target.value})}
+                onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { location: e.target.value } })}
               />
               <Input 
                 type="datetime-local"
                 value={eventData.start_date}
-                onChange={(e) => setEventData({...eventData, start_date: e.target.value})}
+                onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { start_date: e.target.value } })}
               />
               <Input 
                 type="number" 
                 placeholder="Max attendees"
                 value={eventData.max_attendees}
-                onChange={(e) => setEventData({...eventData, max_attendees: e.target.value})}
+                onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { max_attendees: e.target.value } })}
               />
             </div>
           </div>
@@ -314,29 +335,29 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
             <Textarea
               placeholder="Describe the job opportunity..."
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => dispatch({ type: 'SET_CONTENT', payload: e.target.value })}
               className="min-h-24"
             />
             <div className="grid grid-cols-2 gap-4">
               <Input 
                 placeholder="Job title"
                 value={jobData.title}
-                onChange={(e) => setJobData({...jobData, title: e.target.value})}
+                onChange={(e) => dispatch({ type: 'SET_JOB_DATA', payload: { title: e.target.value } })}
               />
               <Input 
                 placeholder="Company"
                 value={jobData.company}
-                onChange={(e) => setJobData({...jobData, company: e.target.value})}
+                onChange={(e) => dispatch({ type: 'SET_JOB_DATA', payload: { company: e.target.value } })}
               />
               <Input 
                 placeholder="Location"
                 value={jobData.location}
-                onChange={(e) => setJobData({...jobData, location: e.target.value})}
+                onChange={(e) => dispatch({ type: 'SET_JOB_DATA', payload: { location: e.target.value } })}
               />
               <Input 
                 placeholder="Salary range"
                 value={jobData.salary}
-                onChange={(e) => setJobData({...jobData, salary: e.target.value})}
+                onChange={(e) => dispatch({ type: 'SET_JOB_DATA', payload: { salary: e.target.value } })}
               />
             </div>
           </div>
@@ -354,7 +375,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
                 "this audio"
               }?`}
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => dispatch({ type: 'SET_CONTENT', payload: e.target.value })}
               className="min-h-24"
             />
             <div className="space-y-4">
@@ -395,7 +416,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
           <Textarea
             placeholder="What would you like to share?"
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => dispatch({ type: 'SET_CONTENT', payload: e.target.value })}
             className="min-h-32 resize-none"
           />
         );
@@ -410,7 +431,7 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
 
       <ModalBody className="space-y-6">
         {/* Post Type Selector */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as PostType)}>
+        <Tabs value={activeTab} onValueChange={(value) => dispatch({ type: 'SET_ACTIVE_TAB', payload: value as PostType })}>
           <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
             {postTypes.map((type) => {
               const Icon = type.icon;
@@ -519,6 +540,10 @@ export const PostCreationModal = ({ open, onClose }: PostCreationModalProps) => 
           Post
         </Button>
       </ModalFooter>
-    </Modal>
-  );
-};
+      </Modal>
+    );
+  }, (prevProps, nextProps) => {
+    return prevProps.open === nextProps.open;
+  });
+
+PostCreationModal.displayName = "PostCreationModal";
