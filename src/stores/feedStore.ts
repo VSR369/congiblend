@@ -345,19 +345,35 @@ export const useFeedStore = create<FeedState>((set, get) => {
           query = query.in('post_type', filters.contentTypes);
         }
 
-        // Apply time range filter
-        if (filters.timeRange === 'recent') {
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          query = query.gte('created_at', yesterday.toISOString());
-        } else if (filters.timeRange === 'week') {
-          const weekAgo = new Date();
-          weekAgo.setDate(weekAgo.getDate() - 7);
-          query = query.gte('created_at', weekAgo.toISOString());
-        } else if (filters.timeRange === 'month') {
-          const monthAgo = new Date();
-          monthAgo.setMonth(monthAgo.getMonth() - 1);
-          query = query.gte('created_at', monthAgo.toISOString());
+        // Apply time range filter - skip for "All Posts" unless explicitly set
+        const shouldApplyTimeFilter = filters.timeRange !== 'all' && 
+                                    !(filters.userFilter === 'all' && filters.timeRange === 'recent');
+        
+        console.log('⏰ Time filter check:', {
+          timeRange: filters.timeRange,
+          userFilter: filters.userFilter,
+          shouldApplyTimeFilter
+        });
+
+        if (shouldApplyTimeFilter) {
+          if (filters.timeRange === 'recent') {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            query = query.gte('created_at', yesterday.toISOString());
+            console.log('✅ Applied recent time filter from:', yesterday.toISOString());
+          } else if (filters.timeRange === 'week') {
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            query = query.gte('created_at', weekAgo.toISOString());
+            console.log('✅ Applied week time filter from:', weekAgo.toISOString());
+          } else if (filters.timeRange === 'month') {
+            const monthAgo = new Date();
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            query = query.gte('created_at', monthAgo.toISOString());
+            console.log('✅ Applied month time filter from:', monthAgo.toISOString());
+          }
+        } else {
+          console.log('✅ Skipped time filter - showing posts from all time periods');
         }
 
         // Only show public posts unless it's user's own posts
