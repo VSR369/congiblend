@@ -121,8 +121,6 @@ export interface Post {
   comments: Comment[];
   commentsCount: number;
   likes: number;
-  shares: number;
-  sharesCount: number;
   saves: number;
   views: number;
   createdAt: Date;
@@ -133,13 +131,7 @@ export interface Post {
   userReaction?: ReactionType;
   userSaved?: boolean;
   isSaved?: boolean;
-  userShared?: boolean;
   isOptimistic?: boolean;
-  
-  // Quote repost fields
-  isQuoteRepost?: boolean;
-  quoteContent?: string;
-  originalPost?: Post;
 }
 
 export interface FeedSettings {

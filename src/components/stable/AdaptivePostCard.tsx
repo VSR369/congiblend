@@ -68,7 +68,6 @@ const AdaptivePostCard = memo<AdaptivePostCardProps>(({ post, className, index }
       <div className="flex-shrink-0 border-t border-border/20">
         <PostActions
           post={post}
-          onShare={() => {}}
           onSave={() => {}}
         />
       </div>

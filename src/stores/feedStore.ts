@@ -30,7 +30,7 @@ interface FeedState {
   addComment: (postId: string, content: string, parentId?: string) => void;
   deleteComment: (postId: string, commentId: string) => void;
   toggleSave: (postId: string) => void;
-  sharePost: (postId: string, shareType?: 'share' | 'quote_repost', quoteContent?: string) => Promise<void>;
+  
   
   // Poll actions
   votePoll: (postId: string, optionIndex: number) => Promise<any>;
@@ -197,8 +197,6 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
     comments,
     commentsCount: dbPost.comments_count || 0,
     likes: dbPost.likes_count || 0,
-    shares: dbPost.shares_count || 0,
-    sharesCount: dbPost.shares_count || 0,
     saves: 0,
     views: 0,
     createdAt: dbPost.created_at && !isNaN(new Date(dbPost.created_at).getTime()) ? new Date(dbPost.created_at) : new Date(),
@@ -209,7 +207,6 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
     userReaction,
     userSaved: dbPost.user_saved || false,
     isSaved: dbPost.user_saved || false,
-    userShared: dbPost.user_shared || false,
   };
 };
 
@@ -744,8 +741,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
           comments: [],
           commentsCount: 0,
           likes: 0,
-          shares: 0,
-          sharesCount: 0,
           saves: 0,
           views: 0,
           createdAt: new Date(),
@@ -754,7 +749,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
           visibility: data.visibility || 'public',
           userSaved: false,
           isSaved: false,
-          userShared: false,
         };
 
         // Add optimistic post immediately
@@ -1109,62 +1103,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
       }));
     },
 
-    sharePost: async (postId: string, shareType: 'share' | 'quote_repost' = 'share', quoteContent?: string) => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('User not authenticated');
-
-
-        // Validate quote repost content
-        if (shareType === 'quote_repost' && (!quoteContent || !quoteContent.trim())) {
-          throw new Error('Quote content is required for quote reposts');
-        }
-
-        // Use the shares Edge Function
-        const { data, error } = await supabase.functions.invoke('shares', {
-          body: {
-            target_type: 'post',
-            target_id: postId,
-            share_type: shareType,
-            quote_content: shareType === 'quote_repost' ? quoteContent?.trim() : undefined
-          }
-        });
-
-        if (error) {
-          throw error;
-        }
-
-        // For quote reposts, reload posts to show the new quote post
-        if (shareType === 'quote_repost') {
-          // The edge function creates a new post for quote reposts
-          // Reload the feed to show the new quote post
-          setTimeout(() => {
-            get().loadPosts(true);
-          }, 500);
-        }
-
-        // Update local state optimistically for simple reposts
-        if (shareType === 'share') {
-          set(state => ({
-            posts: state.posts.map(post => {
-              if (post.id !== postId) return post;
-              
-              return {
-                ...post,
-                userShared: true,
-                shares: post.shares + 1,
-                sharesCount: post.sharesCount + 1
-              };
-            })
-          }));
-        }
-
-        return data;
-      } catch (error) {
-        console.error('Error sharing post:', error);
-        throw error;
-      }
-    },
 
     updateFeedSettings: (settings: Partial<FeedSettings>) => {
       set(state => ({

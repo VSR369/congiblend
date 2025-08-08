@@ -33,8 +33,7 @@ export const StablePostCard = React.memo(({ post, className }: StablePostCardPro
   
   const countsStable = 
     post1.reactions.length === post2.reactions.length &&
-    post1.comments.length === post2.comments.length &&
-    post1.shares === post2.shares;
+    post1.comments.length === post2.comments.length;
   
   const mediaStable = 
     (!post1.media && !post2.media) ||

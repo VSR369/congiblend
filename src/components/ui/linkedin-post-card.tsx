@@ -18,27 +18,12 @@ interface LinkedInPostCardProps {
 }
 
 export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCardProps) => {
-  const { toggleSave, sharePost, votePoll } = useFeedStore();
+  const { toggleSave, votePoll } = useFeedStore();
 
   const handleSaveToggle = React.useCallback(() => {
     toggleSave(post.id);
   }, [post.id, toggleSave]);
 
-  const handleShare = React.useCallback(async () => {
-    try {
-      await sharePost(post.id);
-      toast({
-        title: "Post shared",
-        description: "Post has been shared successfully.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Share failed",
-        description: "Failed to share post. Please try again.",
-        variant: "destructive"
-      });
-    }
-  }, [post.id, sharePost]);
 
   const handlePollVote = React.useCallback(async (optionIndex: number) => {
     try {
@@ -259,9 +244,6 @@ export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCar
               )}
             </div>
 
-            <div className="flex items-center space-x-4">
-              {post.shares > 0 && <span>{post.shares} shares</span>}
-            </div>
           </div>
         )}
 
@@ -278,11 +260,6 @@ export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCar
             <Button variant="ghost" size="sm" className="text-muted-foreground">
               <MessageCircle className="h-4 w-4 mr-1" />
               Comment
-            </Button>
-
-            <Button variant="ghost" size="sm" onClick={handleShare} className="text-muted-foreground">
-              <Share2 className="h-4 w-4 mr-1" />
-              Share
             </Button>
 
             <Button 
