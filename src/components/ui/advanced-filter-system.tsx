@@ -16,20 +16,6 @@ interface AdvancedFilterSystemProps {
 }
 
 export const AdvancedFilterSystem = React.memo(({ className }: AdvancedFilterSystemProps) => {
-  // Performance monitoring
-  const renderCountRef = React.useRef(0);
-  const lastRenderTime = React.useRef(Date.now());
-  
-  React.useEffect(() => {
-    renderCountRef.current++;
-    const now = Date.now();
-    console.log('🔧 AdvancedFilterSystem re-render:', {
-      count: renderCountRef.current,
-      timeSinceLastRender: now - lastRenderTime.current,
-      timestamp: now
-    });
-    lastRenderTime.current = now;
-  });
 
   const { filters, users, updateFilters } = useFeedStore();
   const [isOpen, setIsOpen] = React.useState(false);

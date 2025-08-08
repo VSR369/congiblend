@@ -4,7 +4,7 @@ import { Button } from './button';
 import { Badge } from './badge';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { Card, CardContent, CardHeader } from './card';
-import { LazyMedia } from '@/components/stable/LazyMedia';
+// Media rendering removed for simplicity
 import { useFeedStore } from '@/stores/feedStore';
 import { cn } from '@/lib/utils';
 import type { Post } from '@/types/feed';
@@ -52,11 +52,33 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
 
     return (
       <div className="mt-3">
-        <LazyMedia 
-          media={post.media} 
-          postId={post.id} 
-          className="w-full"
-        />
+        <div className="grid grid-cols-1 gap-2">
+          {post.media.map((media, index) => (
+            <div key={media.id} className="rounded-lg overflow-hidden bg-muted">
+              {media.type === 'image' && (
+                <img 
+                  src={media.url} 
+                  alt={media.alt} 
+                  className="w-full h-auto object-cover"
+                />
+              )}
+              {media.type === 'video' && (
+                <video 
+                  src={media.url} 
+                  controls 
+                  className="w-full h-auto"
+                />
+              )}
+              {media.type === 'audio' && (
+                <audio 
+                  src={media.url} 
+                  controls 
+                  className="w-full"
+                />
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     );
   };

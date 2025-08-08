@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { AdaptivePostCard, AdaptivePostCardSkeleton } from '@/components/stable/AdaptivePostCard';
+import { PostCard } from "./post-card";
+import { FeedSkeleton } from "./post-card-skeleton";
 import { useVirtualScroll } from '@/hooks/useVirtualScroll';
 import { useAdaptivePostHeight } from '@/hooks/useAdaptivePostHeight';
 import { useFeedStore } from '@/stores/feedStore';
@@ -181,7 +182,7 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
         {renderFeedHeader()}
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, index) => (
-            <AdaptivePostCardSkeleton key={index} estimatedHeight={350} />
+            <FeedSkeleton key={index} count={1} />
           ))}
         </div>
       </div>
@@ -195,14 +196,13 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
         {renderFeedHeader()}
         <div className="space-y-4">
           {posts.map((post, index) => (
-            <AdaptivePostCard 
+            <PostCard 
               key={post.id} 
-              post={post} 
-              index={index}
+              post={post}
             />
           ))}
           {loading && (
-            <AdaptivePostCardSkeleton estimatedHeight={350} />
+            <FeedSkeleton count={1} />
           )}
           
           {/* End of Feed */}
@@ -269,9 +269,8 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
                 }}
               >
                 <div className="px-4 pb-4">
-                  <AdaptivePostCard 
-                    post={post} 
-                    index={index}
+                  <PostCard 
+                    post={post}
                   />
                 </div>
               </div>
@@ -294,7 +293,7 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
       
       {loading && (
         <div className="px-4 pb-4">
-          <AdaptivePostCardSkeleton estimatedHeight={350} />
+          <FeedSkeleton count={1} />
         </div>
       )}
       

@@ -9,8 +9,7 @@ import { FeedErrorBoundary } from "@/components/boundaries/FeedErrorBoundary";
 import { useThemeStore } from "@/stores/themeStore";
 import { useAuthStore } from "@/stores/authStore";
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
-import DebugOverlay from "@/components/debug/DebugOverlay";
-import PerformanceMetrics from "@/components/debug/PerformanceMetrics";
+// Debug components removed for production
 
 // Lazy load pages for better performance
 const MainLayout = lazy(() => import("@/components/layout/MainLayout").then(m => ({ default: m.MainLayout })));
@@ -51,13 +50,7 @@ const AppContent = () => {
         </Suspense>
       </BrowserRouter>
       
-      {/* Debug Tools - Only in development - DISABLED to prevent infinite loops */}
-      {process.env.NODE_ENV === 'development' && false && (
-        <>
-          <DebugOverlay enabled={false} />
-          <PerformanceMetrics enabled={false} position="bottom-left" compact={false} />
-        </>
-      )}
+      {/* Debug components removed for stable performance */}
     </TooltipProvider>
   );
 };

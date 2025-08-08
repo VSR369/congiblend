@@ -24,21 +24,6 @@ interface PostCreationModalProps {
 
 // Optimized post creation modal with useReducer state management
 export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModalProps) => {
-  // Performance monitoring
-  const renderCountRef = React.useRef(0);
-  const lastRenderTime = React.useRef(Date.now());
-  
-  React.useEffect(() => {
-    renderCountRef.current++;
-    const now = Date.now();
-    console.log('📝 PostCreationModal re-render:', {
-      count: renderCountRef.current,
-      timeSinceLastRender: now - lastRenderTime.current,
-      open,
-      timestamp: now
-    });
-    lastRenderTime.current = now;
-  });
 
   const { state, dispatch } = usePostCreationReducer();
   const { createPost } = useFeedStore();

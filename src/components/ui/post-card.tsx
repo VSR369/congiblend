@@ -71,12 +71,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
           <div className="space-y-3">
             <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
             {post.media && post.media.length > 0 && (
-                <div className={cn(
-                "grid gap-2 rounded-lg overflow-hidden",
-                post.media.length === 1 ? "grid-cols-1" : 
-                post.media.length === 2 ? "grid-cols-2" :
-                "grid-cols-2"
-              )}>
+              <div className="grid grid-cols-1 gap-2 rounded-lg overflow-hidden">
                 {post.media.slice(0, 4).map((media, index) => (
                   <div 
                     key={media.id}

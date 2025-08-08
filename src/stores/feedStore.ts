@@ -111,31 +111,7 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
     ? reactions.find(r => r.user.id === currentUserId)?.type
     : undefined;
 
-  // Transform comments from database
-  const comments = dbPost.comments?.map((comment: any) => ({
-    id: comment.id,
-    content: comment.content,
-    author: {
-      id: comment.user_id,
-      name: comment.profiles?.display_name || comment.profiles?.username || 'User',
-      username: comment.profiles?.username || 'user',
-      avatar: comment.profiles?.avatar_url
-    },
-    createdAt: comment.created_at ? new Date(comment.created_at) : new Date(),
-    parentId: comment.parent_comment_id,
-    reactions: comment.reactions?.map((reaction: any) => ({
-      id: reaction.id,
-      type: reaction.reaction_type,
-      user: {
-        id: reaction.user_id,
-        name: reaction.profiles?.display_name || reaction.profiles?.username || 'User',
-        username: reaction.profiles?.username || 'user'
-      },
-      createdAt: reaction.created_at ? new Date(reaction.created_at) : new Date()
-    })) || [],
-    reactionsCount: comment.reactions_count || 0,
-    replies: []
-  })) || [];
+  // Comments functionality removed - no comments
 
   // Transform poll_data to poll object
   let poll = undefined;
@@ -194,7 +170,7 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
     hashtags: extractHashtags(dbPost.content),
     mentions: [],
     reactions,
-    comments,
+    comments: [],
     commentsCount: dbPost.comments_count || 0,
     likes: dbPost.likes_count || 0,
     saves: 0,
@@ -323,7 +299,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
             poll_data,
             event_data,
             reactions_count,
-            comments_count,
             shares_count,
             created_at,
             updated_at,
@@ -336,22 +311,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
               is_verified,
               title,
               company
-            ),
-            comments (
-              id,
-              content,
-              created_at,
-              updated_at,
-              parent_id,
-              reactions_count,
-              user_id,
-              profiles!comments_user_id_fkey (
-                id,
-                username,
-                display_name,
-                avatar_url,
-                is_verified
-              )
             )
           `);
 
@@ -431,66 +390,17 @@ export const useFeedStore = create<FeedState>((set, get) => {
                 .eq('target_type', 'post')
                 .eq('target_id', dbPost.id);
 
-              // Load comments for this post with reactions
-              const { data: comments } = await supabase
-                .from('comments')
-                .select(`
-                  id,
-                  content,
-                  user_id,
-                  parent_comment_id,
-                  created_at,
-                  reactions_count,
-                  profiles (
-                    id,
-                    username,
-                    display_name,
-                    avatar_url
-                  )
-                `)
-                .eq('post_id', dbPost.id)
-                .eq('is_active', true)
-                .order('created_at', { ascending: true });
-
-              // Load reactions for each comment
-              const commentReactions = await Promise.all(
-                (comments || []).map(async (comment) => {
-                  const { data: reactions } = await supabase
-                    .from('reactions')
-                    .select(`
-                      id,
-                      reaction_type,
-                      user_id,
-                      created_at,
-                      profiles (
-                        id,
-                        username,
-                        display_name,
-                        avatar_url
-                      )
-                    `)
-                    .eq('target_type', 'comment')
-                    .eq('target_id', comment.id);
-
-                  return {
-                    ...comment,
-                    reactions: reactions || []
-                  };
-                })
-              );
-
-              // Add reactions and comments to the post data
+              // Add reactions to the post data (no comments)
               const postWithData = {
                 ...dbPost,
-                reactions: reactions || [],
-                comments: commentReactions || []
+                reactions: reactions || []
               };
 
               return transformDbPost(postWithData, dbPost.profiles, user?.id);
             } catch (error) {
               console.error('Error loading post data:', error);
               // Return post without reactions/comments if there's an error
-              return transformDbPost({ ...dbPost, reactions: [], comments: [] }, dbPost.profiles, user?.id);
+              return transformDbPost({ ...dbPost, reactions: [] }, dbPost.profiles, user?.id);
             }
           })
         );

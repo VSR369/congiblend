@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { SimplePostCard, SimplePostCardSkeleton } from '@/components/stable/SimplePostCard';
+import { PostCard } from "./post-card";
+import { FeedSkeleton } from "./post-card-skeleton";
 import { useFeedStore } from '@/stores/feedStore';
 
 interface SimpleContentFeedProps {
@@ -39,11 +40,11 @@ export const SimpleContentFeed: React.FC<SimpleContentFeedProps> = ({ className 
         {loading && page === 0 ? (
           // Show skeletons only on initial load
           Array.from({ length: postsPerPage }).map((_, i) => (
-            <SimplePostCardSkeleton key={`skeleton-${i}`} />
+            <FeedSkeleton key={`skeleton-${i}`} count={1} />
           ))
         ) : visiblePosts.length > 0 ? (
           visiblePosts.map((post) => (
-            <SimplePostCard
+            <PostCard
               key={post.id}
               post={post}
               className="transition-opacity duration-200"
