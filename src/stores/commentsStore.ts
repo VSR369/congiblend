@@ -93,6 +93,26 @@ export const useCommentsStore = create<CommentsStore>((set, get) => ({
     const uid = user.user?.id;
     if (!uid) throw new Error("Not authenticated");
 
+    // Fetch current user's profile for optimistic comment
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id, username, display_name, avatar_url, is_verified")
+      .eq("id", uid)
+      .single();
+
+    const userProfile = profile ? {
+      id: profile.id,
+      username: profile.username,
+      display_name: profile.display_name,
+      avatar_url: profile.avatar_url,
+      verified: profile.is_verified,
+      name: profile.display_name || profile.username || "User",
+    } : {
+      id: uid,
+      username: user.user?.email?.split('@')[0] || "User",
+      name: user.user?.email?.split('@')[0] || "User",
+    };
+
     const insert = { post_id: postId, user_id: uid, content, parent_id: parentId || null };
     // optimistic
     const tempId = `temp_${Date.now()}`;
@@ -110,7 +130,7 @@ export const useCommentsStore = create<CommentsStore>((set, get) => ({
       replies_count: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      author: undefined,
+      author: userProfile,
     };
     const flat = [...current.flat, optimistic];
     const threaded = buildThread(flat);
