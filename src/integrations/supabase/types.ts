@@ -14,64 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      comments: {
-        Row: {
-          content: string
-          created_at: string | null
-          id: string
-          is_active: boolean | null
-          parent_comment_id: string | null
-          post_id: string
-          reactions_count: number | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          content: string
-          created_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          parent_comment_id?: string | null
-          post_id: string
-          reactions_count?: number | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          content?: string
-          created_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          parent_comment_id?: string | null
-          post_id?: string
-          reactions_count?: number | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "comments_parent_comment_id_fkey"
-            columns: ["parent_comment_id"]
-            isOneToOne: false
-            referencedRelation: "comments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "comments_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_comments_user_id"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       companies: {
         Row: {
           cover_url: string | null
