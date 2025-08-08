@@ -400,13 +400,13 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
         </div>
 
         {/* Comments Section */}
-        {showCommentInput && (
-          <SimpleCommentsSection
-            postId={post.id}
-            comments={post.comments}
-            commentsCount={post.commentsCount}
-          />
-        )}
+        <SimpleCommentsSection
+          postId={post.id}
+          comments={post.comments}
+          commentsCount={post.commentsCount}
+          showCommentInput={showCommentInput}
+          onToggleCommentInput={() => setShowCommentInput(!showCommentInput)}
+        />
 
       </article>
     </PostErrorBoundary>

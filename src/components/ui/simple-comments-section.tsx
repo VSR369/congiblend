@@ -62,66 +62,78 @@ export const SimpleCommentsSection = React.memo(({
     [comments]
   );
 
-  return (
-    <div className={cn("space-y-4 border-t pt-4", className)}>
-      {/* LinkedIn-style comment sorting */}
-      {showComments && commentsCount > 0 && (
-        <div className="px-4 pb-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground p-0 h-auto font-normal"
-          >
-            <TrendingUp className="h-4 w-4 mr-1" />
-            Most relevant
-            <ChevronDown className="h-4 w-4 ml-1" />
-          </Button>
-        </div>
-      )}
+  // Only render if we have comments or comment input is shown
+  if (!showCommentInput && commentsCount === 0) {
+    return null;
+  }
 
+  return (
+    <div className={cn("space-y-4", className)}>
       {/* Enhanced comment input - only show when Comment button clicked */}
       {showCommentInput && (
-        <CommentInput
-          onSubmit={handleAddComment}
-          placeholder="Add a comment..."
-          className="px-4"
-        />
-      )}
-
-      {/* Comments toggle */}
-      {commentsCount > 0 && !showComments && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowComments(true)}
-          className="w-full justify-start text-muted-foreground hover:text-foreground px-4"
-        >
-          <span>
-            View {commentsCount} comment{commentsCount !== 1 ? 's' : ''}
-          </span>
-        </Button>
-      )}
-
-      {/* Comments list */}
-      {showComments && topLevelComments.length > 0 && (
-        <div className="space-y-4 animate-fade-in px-4">
-          {topLevelComments.map((comment) => (
-            <CommentItem
-              key={comment.id}
-              comment={comment}
-              allComments={comments}
-              onReply={(commentId) => setReplyingTo(commentId)}
-              replyingTo={replyingTo}
-              onAddReply={handleAddReply}
-              postId={postId}
-            />
-          ))}
+        <div className="border-t pt-4">
+          <CommentInput
+            onSubmit={handleAddComment}
+            placeholder="Add a comment..."
+            className="px-4"
+          />
         </div>
       )}
 
-      {showComments && topLevelComments.length === 0 && (
-        <div className="text-center py-4">
-          <p className="text-muted-foreground text-sm">No comments yet. Be the first to comment!</p>
+      {/* Comments section */}
+      {commentsCount > 0 && (
+        <div className={cn("border-t pt-4", !showCommentInput && "")}>
+          {/* LinkedIn-style comment sorting */}
+          {showComments && commentsCount > 0 && (
+            <div className="px-4 pb-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground p-0 h-auto font-normal"
+              >
+                <TrendingUp className="h-4 w-4 mr-1" />
+                Most relevant
+                <ChevronDown className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
+
+          {/* Comments toggle */}
+          {!showComments && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowComments(true)}
+              className="w-full justify-start text-muted-foreground hover:text-foreground px-4"
+            >
+              <span>
+                View {commentsCount} comment{commentsCount !== 1 ? 's' : ''}
+              </span>
+            </Button>
+          )}
+
+          {/* Comments list */}
+          {showComments && (
+            <div className="space-y-4 animate-fade-in px-4">
+              {topLevelComments.length > 0 ? (
+                topLevelComments.map((comment) => (
+                  <CommentItem
+                    key={comment.id}
+                    comment={comment}
+                    allComments={comments}
+                    onReply={(commentId) => setReplyingTo(commentId)}
+                    replyingTo={replyingTo}
+                    onAddReply={handleAddReply}
+                    postId={postId}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground text-sm">No comments yet. Be the first to comment!</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

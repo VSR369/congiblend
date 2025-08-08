@@ -433,6 +433,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
                   )
                 `)
                 .eq('post_id', dbPost.id)
+                .eq('is_active', true)
                 .order('created_at', { ascending: true });
 
               // Load reactions for each comment
