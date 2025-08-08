@@ -31,7 +31,7 @@ const suggestedConnections = [
 
 const recentActivity = [
   { type: 'like', user: 'Alex Smith', action: 'liked your post', time: '2m ago' },
-  { type: 'comment', user: 'Emma Davis', action: 'commented on your post', time: '5m ago' },
+  { type: 'like', user: 'Emma Davis', action: 'liked your post', time: '5m ago' },
   { type: 'follow', user: 'David Brown', action: 'started following you', time: '1h ago' },
 ];
 
@@ -148,7 +148,7 @@ export const RightSidebar = () => {
             >
               <div className="flex-shrink-0 mt-0.5">
                 {activity.type === 'like' && <Heart className="h-3 w-3 text-red-400" />}
-                {activity.type === 'comment' && <MessageSquare className="h-3 w-3 text-blue-400" />}
+                {activity.type === 'follow' && <Users className="h-3 w-3 text-green-400" />}
                 {activity.type === 'follow' && <Users className="h-3 w-3 text-green-400" />}
               </div>
               <div className="min-w-0 flex-1">

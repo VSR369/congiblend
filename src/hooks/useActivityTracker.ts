@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useActivityTracker = () => {
-  const trackActivity = async (activityType: 'post' | 'comment' | 'reaction' | 'login' | 'view') => {
+  const trackActivity = async (activityType: 'post' | 'reaction' | 'login' | 'view') => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;

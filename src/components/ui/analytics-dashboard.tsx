@@ -368,7 +368,7 @@ export const AnalyticsDashboard = () => {
                         </div>
                         <p className="font-medium truncate mt-1">{content.title}</p>
                         <p className="text-sm text-muted-foreground">
-                          {content.likes} likes • {content.comments} comments • {content.shares} shares
+                          {content.likes} likes • {content.shares} shares
                         </p>
                       </div>
                       <div className="text-right">

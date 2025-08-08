@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { PostCard } from "./post-card";
-import { FeedSkeleton } from "./post-card-skeleton";
+import { FeedSkeleton } from "./loading-skeleton";
 import { useVirtualScroll } from '@/hooks/useVirtualScroll';
 import { useAdaptivePostHeight } from '@/hooks/useAdaptivePostHeight';
 import { useFeedStore } from '@/stores/feedStore';
@@ -182,7 +182,7 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
         {renderFeedHeader()}
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, index) => (
-            <FeedSkeleton key={index} count={1} />
+            <FeedSkeleton key={index} />
           ))}
         </div>
       </div>
@@ -202,7 +202,7 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
             />
           ))}
           {loading && (
-            <FeedSkeleton count={1} />
+            <FeedSkeleton />
           )}
           
           {/* End of Feed */}
@@ -293,7 +293,7 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
       
       {loading && (
         <div className="px-4 pb-4">
-          <FeedSkeleton count={1} />
+          <FeedSkeleton />
         </div>
       )}
       

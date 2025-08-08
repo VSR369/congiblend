@@ -26,7 +26,7 @@ export interface ContentAnalytics {
   type: 'text' | 'image' | 'video' | 'article' | 'poll';
   publishedAt: string;
   likes: number;
-  comments: number;
+  // comments: number; - removed, comments functionality not implemented
   shares: number;
   views: number;
   engagement: number;

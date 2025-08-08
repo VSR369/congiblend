@@ -91,3 +91,34 @@ export const TableSkeleton = ({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
     ))}
   </div>
 );
+
+// Feed skeleton for post loading
+export const FeedSkeleton = () => (
+  <div className="space-y-6">
+    {Array.from({ length: 3 }).map((_, index) => (
+      <div key={index} className="bg-card border border-border rounded-lg p-6 space-y-4">
+        {/* Header */}
+        <div className="flex items-center space-x-3">
+          <LoadingSkeleton variant="avatar" />
+          <div className="space-y-1">
+            <LoadingSkeleton className="h-4 w-32" />
+            <LoadingSkeleton className="h-3 w-20" />
+          </div>
+        </div>
+        
+        {/* Content */}
+        <div className="space-y-2">
+          <LoadingSkeleton className="h-4 w-full" />
+          <LoadingSkeleton className="h-4 w-3/4" />
+        </div>
+        
+        {/* Actions */}
+        <div className="flex items-center space-x-4 pt-2">
+          <LoadingSkeleton variant="button" className="w-16" />
+          <LoadingSkeleton variant="button" className="w-16" />
+          <LoadingSkeleton variant="button" className="w-16" />
+        </div>
+      </div>
+    ))}
+  </div>
+);

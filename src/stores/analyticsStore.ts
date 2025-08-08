@@ -74,7 +74,7 @@ const generateContentAnalytics = (): ContentAnalytics[] => [
     type: 'article',
     publishedAt: '2024-01-15',
     likes: 234,
-    comments: 45,
+    // comments: 45, - removed
     shares: 67,
     views: 1234,
     engagement: 5.2,
@@ -89,8 +89,8 @@ const generateContentAnalytics = (): ContentAnalytics[] => [
     title: 'Team Building Activities',
     type: 'image',
     publishedAt: '2024-01-14',
-    likes: 89,
-    comments: 12,
+      likes: 89,
+    // comments: 12, - removed
     shares: 23,
     views: 567,
     engagement: 3.1,
@@ -106,7 +106,7 @@ const generateContentAnalytics = (): ContentAnalytics[] => [
     type: 'text',
     publishedAt: '2024-01-13',
     likes: 45,
-    comments: 8,
+    // comments: 8, - removed
     shares: 12,
     views: 234,
     engagement: 2.3,

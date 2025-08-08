@@ -2,7 +2,7 @@ import * as React from "react";
 import { Plus, TrendingUp } from "lucide-react";
 import { PostCard } from "./post-card";
 import { PostCreationModal } from "./post-creation-modal";
-import { FeedSkeleton } from "./post-card-skeleton";
+import { FeedSkeleton } from "./loading-skeleton";
 import { Button } from "./button";
 import { AdvancedFilterSystem } from "./advanced-filter-system";
 import { FeedErrorBoundary } from "./feed-error-boundary";
@@ -91,7 +91,7 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
         {/* LinkedIn-Style Feed - Clean List */}
         <div className="linkedin-feed">
           {posts.length === 0 && loading ? (
-            <FeedSkeleton count={3} />
+            <FeedSkeleton />
           ) : (
             posts.map((post) => (
               <PostCard key={post.id} post={post} />
@@ -101,7 +101,7 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
           {/* Load More Trigger */}
           {hasMore && (
             <div ref={loadMoreRef as any} className="flex justify-center py-8">
-              {loading && <FeedSkeleton count={1} />}
+              {loading && <FeedSkeleton />}
             </div>
           )}
 

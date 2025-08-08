@@ -98,71 +98,6 @@ export type Database = {
         }
         Relationships: []
       }
-      conversation_participants: {
-        Row: {
-          conversation_id: string
-          id: string
-          joined_at: string | null
-          left_at: string | null
-          role: string | null
-          user_id: string
-        }
-        Insert: {
-          conversation_id: string
-          id?: string
-          joined_at?: string | null
-          left_at?: string | null
-          role?: string | null
-          user_id: string
-        }
-        Update: {
-          conversation_id?: string
-          id?: string
-          joined_at?: string | null
-          left_at?: string | null
-          role?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conversation_participants_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      conversations: {
-        Row: {
-          created_at: string | null
-          created_by: string
-          id: string
-          is_group: boolean | null
-          last_message_at: string | null
-          title: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by: string
-          id?: string
-          is_group?: boolean | null
-          last_message_at?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string
-          id?: string
-          is_group?: boolean | null
-          last_message_at?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       engagement_activations: {
         Row: {
           activation_status: string | null
@@ -331,101 +266,6 @@ export type Database = {
             referencedRelation: "master_engagement_models"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "engagement_model_fee_mapping_fee_component_id_fkey"
-            columns: ["fee_component_id"]
-            isOneToOne: false
-            referencedRelation: "master_fee_components"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      event_rsvps: {
-        Row: {
-          created_at: string
-          id: string
-          post_id: string
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          post_id: string
-          status: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          post_id?: string
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "event_rsvps_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      experiences: {
-        Row: {
-          company_id: string | null
-          company_name: string
-          created_at: string | null
-          description: string | null
-          end_date: string | null
-          id: string
-          is_current: boolean | null
-          location: string | null
-          start_date: string
-          title: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          company_id?: string | null
-          company_name: string
-          created_at?: string | null
-          description?: string | null
-          end_date?: string | null
-          id?: string
-          is_current?: boolean | null
-          location?: string | null
-          start_date: string
-          title: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          company_id?: string | null
-          company_name?: string
-          created_at?: string | null
-          description?: string | null
-          end_date?: string | null
-          id?: string
-          is_current?: boolean | null
-          location?: string | null
-          start_date?: string
-          title?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "experiences_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
         ]
       }
       follows: {
@@ -452,45 +292,6 @@ export type Database = {
           id?: string
           status?: string | null
           updated_at?: string | null
-        }
-        Relationships: []
-      }
-      master_advance_payment_types: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          is_active: boolean
-          is_user_created: boolean | null
-          name: string
-          percentage_of_platform_fee: number
-          updated_at: string
-          version: number | null
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          is_user_created?: boolean | null
-          name: string
-          percentage_of_platform_fee: number
-          updated_at?: string
-          version?: number | null
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          is_user_created?: boolean | null
-          name?: string
-          percentage_of_platform_fee?: number
-          updated_at?: string
-          version?: number | null
         }
         Relationships: []
       }
@@ -530,39 +331,6 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_user_created?: boolean | null
-          name?: string
-          updated_at?: string
-          version?: number | null
-        }
-        Relationships: []
-      }
-      master_billing_frequencies: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          is_active: boolean
-          months: number | null
-          name: string
-          updated_at: string
-          version: number | null
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          months?: number | null
-          name: string
-          updated_at?: string
-          version?: number | null
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          months?: number | null
           name?: string
           updated_at?: string
           version?: number | null
@@ -651,15 +419,7 @@ export type Database = {
           updated_at?: string
           version?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "fk_categories_domain_group"
-            columns: ["domain_group_id"]
-            isOneToOne: false
-            referencedRelation: "master_domain_groups"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       master_challenge_complexity: {
         Row: {
@@ -755,13 +515,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "master_challenge_overage_fees_country_id_fkey"
-            columns: ["country_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["country_id"]
-          },
-          {
             foreignKeyName: "master_challenge_overage_fees_currency_id_fkey"
             columns: ["currency_id"]
             isOneToOne: false
@@ -776,42 +529,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      master_communication_types: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          id: string
-          is_user_created: boolean | null
-          link: string
-          name: string
-          updated_at: string | null
-          version: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_user_created?: boolean | null
-          link: string
-          name: string
-          updated_at?: string | null
-          version?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_user_created?: boolean | null
-          link?: string
-          name?: string
-          updated_at?: string | null
-          version?: number | null
-        }
-        Relationships: []
       }
       master_competency_capabilities: {
         Row: {
@@ -931,67 +648,11 @@ export type Database = {
             referencedColumns: ["name"]
           },
           {
-            foreignKeyName: "fk_currencies_country"
-            columns: ["country"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["country_name"]
-          },
-          {
-            foreignKeyName: "fk_currencies_country"
-            columns: ["country"]
-            isOneToOne: false
-            referencedRelation: "pricing_configurations_detailed"
-            referencedColumns: ["country_name"]
-          },
-          {
-            foreignKeyName: "fk_currencies_country"
-            columns: ["country"]
-            isOneToOne: false
-            referencedRelation: "pricing_parameters_management_consulting"
-            referencedColumns: ["country_name"]
-          },
-          {
-            foreignKeyName: "fk_currencies_country"
-            columns: ["country"]
-            isOneToOne: false
-            referencedRelation: "solution_seekers_comprehensive_view"
-            referencedColumns: ["country"]
-          },
-          {
             foreignKeyName: "fk_master_currencies_country"
             columns: ["country"]
             isOneToOne: false
             referencedRelation: "master_countries"
             referencedColumns: ["name"]
-          },
-          {
-            foreignKeyName: "fk_master_currencies_country"
-            columns: ["country"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["country_name"]
-          },
-          {
-            foreignKeyName: "fk_master_currencies_country"
-            columns: ["country"]
-            isOneToOne: false
-            referencedRelation: "pricing_configurations_detailed"
-            referencedColumns: ["country_name"]
-          },
-          {
-            foreignKeyName: "fk_master_currencies_country"
-            columns: ["country"]
-            isOneToOne: false
-            referencedRelation: "pricing_parameters_management_consulting"
-            referencedColumns: ["country_name"]
-          },
-          {
-            foreignKeyName: "fk_master_currencies_country"
-            columns: ["country"]
-            isOneToOne: false
-            referencedRelation: "solution_seekers_comprehensive_view"
-            referencedColumns: ["country"]
           },
         ]
       }
@@ -1036,91 +697,6 @@ export type Database = {
           version?: number | null
         }
         Relationships: []
-      }
-      master_domain_groups: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          description: string | null
-          hierarchy: Json | null
-          id: string
-          industry_segment_id: string | null
-          is_active: boolean
-          is_user_created: boolean | null
-          name: string
-          updated_at: string
-          version: number | null
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          hierarchy?: Json | null
-          id?: string
-          industry_segment_id?: string | null
-          is_active?: boolean
-          is_user_created?: boolean | null
-          name: string
-          updated_at?: string
-          version?: number | null
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          hierarchy?: Json | null
-          id?: string
-          industry_segment_id?: string | null
-          is_active?: boolean
-          is_user_created?: boolean | null
-          name?: string
-          updated_at?: string
-          version?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_domain_groups_industry_segment"
-            columns: ["industry_segment_id"]
-            isOneToOne: false
-            referencedRelation: "master_industry_segments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_domain_groups_industry_segment"
-            columns: ["industry_segment_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["industry_segment_id"]
-          },
-          {
-            foreignKeyName: "fk_master_domain_groups_industry_segment"
-            columns: ["industry_segment_id"]
-            isOneToOne: false
-            referencedRelation: "master_industry_segments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_master_domain_groups_industry_segment"
-            columns: ["industry_segment_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["industry_segment_id"]
-          },
-          {
-            foreignKeyName: "master_domain_groups_industry_segment_id_fkey"
-            columns: ["industry_segment_id"]
-            isOneToOne: false
-            referencedRelation: "master_industry_segments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "master_domain_groups_industry_segment_id_fkey"
-            columns: ["industry_segment_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["industry_segment_id"]
-          },
-        ]
       }
       master_engagement_model_subtypes: {
         Row: {
@@ -1241,48 +817,6 @@ export type Database = {
         }
         Relationships: []
       }
-      master_fee_components: {
-        Row: {
-          component_type: string
-          created_at: string
-          created_by: string | null
-          default_rate_type: string | null
-          description: string | null
-          id: string
-          is_active: boolean
-          is_user_created: boolean | null
-          name: string
-          updated_at: string
-          version: number | null
-        }
-        Insert: {
-          component_type: string
-          created_at?: string
-          created_by?: string | null
-          default_rate_type?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          is_user_created?: boolean | null
-          name: string
-          updated_at?: string
-          version?: number | null
-        }
-        Update: {
-          component_type?: string
-          created_at?: string
-          created_by?: string | null
-          default_rate_type?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          is_user_created?: boolean | null
-          name?: string
-          updated_at?: string
-          version?: number | null
-        }
-        Relationships: []
-      }
       master_industry_segments: {
         Row: {
           created_at: string | null
@@ -1312,78 +846,6 @@ export type Database = {
           is_user_created?: boolean | null
           name?: string
           updated_at?: string | null
-          version?: number | null
-        }
-        Relationships: []
-      }
-      master_membership_statuses: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          is_active: boolean
-          name: string
-          updated_at: string
-          version: number | null
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-          updated_at?: string
-          version?: number | null
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          updated_at?: string
-          version?: number | null
-        }
-        Relationships: []
-      }
-      master_onboarding_types: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          is_active: boolean
-          is_user_created: boolean | null
-          name: string
-          resources_included: Json | null
-          service_type: string
-          updated_at: string
-          version: number | null
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          is_user_created?: boolean | null
-          name: string
-          resources_included?: Json | null
-          service_type: string
-          updated_at?: string
-          version?: number | null
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          is_user_created?: boolean | null
-          name?: string
-          resources_included?: Json | null
-          service_type?: string
-          updated_at?: string
           version?: number | null
         }
         Relationships: []
@@ -1542,13 +1004,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "master_platform_fee_formulas_country_id_fkey"
-            columns: ["country_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["country_id"]
-          },
-          {
             foreignKeyName: "master_platform_fee_formulas_currency_id_fkey"
             columns: ["currency_id"]
             isOneToOne: false
@@ -1567,136 +1022,6 @@ export type Database = {
             columns: ["engagement_model_subtype_id"]
             isOneToOne: false
             referencedRelation: "master_engagement_model_subtypes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      master_pricing_parameters: {
-        Row: {
-          amount: number
-          complexity_applicable: boolean | null
-          country_id: string
-          created_at: string
-          created_by: string | null
-          currency_id: string
-          effective_from: string | null
-          effective_to: string | null
-          engagement_model_context: Json | null
-          entity_type_id: string
-          fee_component_id: string
-          id: string
-          is_active: boolean
-          is_user_created: boolean | null
-          organization_type_id: string
-          rate_type: string | null
-          unit_of_measure_id: string
-          updated_at: string
-          version: number | null
-        }
-        Insert: {
-          amount: number
-          complexity_applicable?: boolean | null
-          country_id: string
-          created_at?: string
-          created_by?: string | null
-          currency_id: string
-          effective_from?: string | null
-          effective_to?: string | null
-          engagement_model_context?: Json | null
-          entity_type_id: string
-          fee_component_id: string
-          id?: string
-          is_active?: boolean
-          is_user_created?: boolean | null
-          organization_type_id: string
-          rate_type?: string | null
-          unit_of_measure_id: string
-          updated_at?: string
-          version?: number | null
-        }
-        Update: {
-          amount?: number
-          complexity_applicable?: boolean | null
-          country_id?: string
-          created_at?: string
-          created_by?: string | null
-          currency_id?: string
-          effective_from?: string | null
-          effective_to?: string | null
-          engagement_model_context?: Json | null
-          entity_type_id?: string
-          fee_component_id?: string
-          id?: string
-          is_active?: boolean
-          is_user_created?: boolean | null
-          organization_type_id?: string
-          rate_type?: string | null
-          unit_of_measure_id?: string
-          updated_at?: string
-          version?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "master_pricing_parameters_country_id_fkey"
-            columns: ["country_id"]
-            isOneToOne: false
-            referencedRelation: "master_countries"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "master_pricing_parameters_country_id_fkey"
-            columns: ["country_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["country_id"]
-          },
-          {
-            foreignKeyName: "master_pricing_parameters_currency_id_fkey"
-            columns: ["currency_id"]
-            isOneToOne: false
-            referencedRelation: "master_currencies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "master_pricing_parameters_entity_type_id_fkey"
-            columns: ["entity_type_id"]
-            isOneToOne: false
-            referencedRelation: "master_entity_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "master_pricing_parameters_entity_type_id_fkey"
-            columns: ["entity_type_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["entity_type_id"]
-          },
-          {
-            foreignKeyName: "master_pricing_parameters_fee_component_id_fkey"
-            columns: ["fee_component_id"]
-            isOneToOne: false
-            referencedRelation: "master_fee_components"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "master_pricing_parameters_organization_type_id_fkey"
-            columns: ["organization_type_id"]
-            isOneToOne: false
-            referencedRelation: "master_organization_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "master_pricing_parameters_organization_type_id_fkey"
-            columns: ["organization_type_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["organization_type_id"]
-          },
-          {
-            foreignKeyName: "master_pricing_parameters_unit_of_measure_id_fkey"
-            columns: ["unit_of_measure_id"]
-            isOneToOne: false
-            referencedRelation: "master_units_of_measure"
             referencedColumns: ["id"]
           },
         ]
@@ -1739,204 +1064,6 @@ export type Database = {
           version?: number | null
         }
         Relationships: []
-      }
-      master_reward_types: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          id: string
-          is_user_created: boolean | null
-          name: string
-          type: string | null
-          updated_at: string | null
-          version: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_user_created?: boolean | null
-          name: string
-          type?: string | null
-          updated_at?: string | null
-          version?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_user_created?: boolean | null
-          name?: string
-          type?: string | null
-          updated_at?: string | null
-          version?: number | null
-        }
-        Relationships: []
-      }
-      master_seeker_membership_fees: {
-        Row: {
-          annual_amount: number | null
-          annual_currency: string | null
-          country: string
-          country_id: string
-          created_at: string
-          created_by: string | null
-          description: string | null
-          entity_type: string
-          entity_type_id: string
-          half_yearly_amount: number | null
-          half_yearly_currency: string | null
-          id: string
-          is_user_created: boolean | null
-          monthly_amount: number | null
-          monthly_currency: string | null
-          organization_type: string
-          organization_type_id: string
-          quarterly_amount: number | null
-          quarterly_currency: string | null
-          updated_at: string
-          version: number | null
-        }
-        Insert: {
-          annual_amount?: number | null
-          annual_currency?: string | null
-          country: string
-          country_id: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          entity_type: string
-          entity_type_id: string
-          half_yearly_amount?: number | null
-          half_yearly_currency?: string | null
-          id?: string
-          is_user_created?: boolean | null
-          monthly_amount?: number | null
-          monthly_currency?: string | null
-          organization_type: string
-          organization_type_id: string
-          quarterly_amount?: number | null
-          quarterly_currency?: string | null
-          updated_at?: string
-          version?: number | null
-        }
-        Update: {
-          annual_amount?: number | null
-          annual_currency?: string | null
-          country?: string
-          country_id?: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          entity_type?: string
-          entity_type_id?: string
-          half_yearly_amount?: number | null
-          half_yearly_currency?: string | null
-          id?: string
-          is_user_created?: boolean | null
-          monthly_amount?: number | null
-          monthly_currency?: string | null
-          organization_type?: string
-          organization_type_id?: string
-          quarterly_amount?: number | null
-          quarterly_currency?: string | null
-          updated_at?: string
-          version?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "master_seeker_membership_fees_country_id_fkey"
-            columns: ["country_id"]
-            isOneToOne: false
-            referencedRelation: "master_countries"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "master_seeker_membership_fees_country_id_fkey"
-            columns: ["country_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["country_id"]
-          },
-          {
-            foreignKeyName: "master_seeker_membership_fees_entity_type_id_fkey"
-            columns: ["entity_type_id"]
-            isOneToOne: false
-            referencedRelation: "master_entity_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "master_seeker_membership_fees_entity_type_id_fkey"
-            columns: ["entity_type_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["entity_type_id"]
-          },
-          {
-            foreignKeyName: "master_seeker_membership_fees_organization_type_id_fkey"
-            columns: ["organization_type_id"]
-            isOneToOne: false
-            referencedRelation: "master_organization_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "master_seeker_membership_fees_organization_type_id_fkey"
-            columns: ["organization_type_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["organization_type_id"]
-          },
-        ]
-      }
-      master_sub_categories: {
-        Row: {
-          category_id: string
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          is_active: boolean
-          is_user_created: boolean | null
-          name: string
-          updated_at: string
-          version: number | null
-        }
-        Insert: {
-          category_id: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          is_user_created?: boolean | null
-          name: string
-          updated_at?: string
-          version?: number | null
-        }
-        Update: {
-          category_id?: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          is_user_created?: boolean | null
-          name?: string
-          updated_at?: string
-          version?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_sub_categories_category"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "master_categories"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       master_sub_departments: {
         Row: {
@@ -2025,51 +1152,6 @@ export type Database = {
           name?: string
           response_time?: string | null
           service_level?: string
-          updated_at?: string
-          version?: number | null
-        }
-        Relationships: []
-      }
-      master_system_configurations: {
-        Row: {
-          category: string | null
-          config_key: string
-          config_value: string
-          created_at: string
-          created_by: string | null
-          data_type: string
-          description: string | null
-          id: string
-          is_active: boolean
-          is_system_config: boolean
-          updated_at: string
-          version: number | null
-        }
-        Insert: {
-          category?: string | null
-          config_key: string
-          config_value: string
-          created_at?: string
-          created_by?: string | null
-          data_type: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          is_system_config?: boolean
-          updated_at?: string
-          version?: number | null
-        }
-        Update: {
-          category?: string | null
-          config_key?: string
-          config_value?: string
-          created_at?: string
-          created_by?: string | null
-          data_type?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          is_system_config?: boolean
           updated_at?: string
           version?: number | null
         }
@@ -2252,24 +1334,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "master_tier_configurations_country_id_fkey"
-            columns: ["country_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["country_id"]
-          },
-          {
             foreignKeyName: "master_tier_configurations_currency_id_fkey"
             columns: ["currency_id"]
             isOneToOne: false
             referencedRelation: "master_currencies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "master_tier_configurations_onboarding_type_id_fkey"
-            columns: ["onboarding_type_id"]
-            isOneToOne: false
-            referencedRelation: "master_onboarding_types"
             referencedColumns: ["id"]
           },
           {
@@ -2284,13 +1352,6 @@ export type Database = {
             columns: ["support_type_id"]
             isOneToOne: false
             referencedRelation: "master_support_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "master_tier_configurations_workflow_template_id_fkey"
-            columns: ["workflow_template_id"]
-            isOneToOne: false
-            referencedRelation: "master_workflow_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -2403,54 +1464,6 @@ export type Database = {
         }
         Relationships: []
       }
-      master_workflow_templates: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          customization_level: string
-          description: string | null
-          fields_config: Json | null
-          id: string
-          is_active: boolean
-          is_user_created: boolean | null
-          name: string
-          template_count: number | null
-          template_type: string
-          updated_at: string
-          version: number | null
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          customization_level: string
-          description?: string | null
-          fields_config?: Json | null
-          id?: string
-          is_active?: boolean
-          is_user_created?: boolean | null
-          name: string
-          template_count?: number | null
-          template_type: string
-          updated_at?: string
-          version?: number | null
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          customization_level?: string
-          description?: string | null
-          fields_config?: Json | null
-          id?: string
-          is_active?: boolean
-          is_user_created?: boolean | null
-          name?: string
-          template_count?: number | null
-          template_type?: string
-          updated_at?: string
-          version?: number | null
-        }
-        Relationships: []
-      }
       media_processing: {
         Row: {
           created_at: string | null
@@ -2499,138 +1512,6 @@ export type Database = {
         }
         Relationships: []
       }
-      member_status_change_alerts: {
-        Row: {
-          alert_processed: boolean
-          change_detected_at: string
-          id: string
-          metadata: Json | null
-          new_status: string
-          organization_id: string
-          previous_status: string
-          processed_at: string | null
-        }
-        Insert: {
-          alert_processed?: boolean
-          change_detected_at?: string
-          id?: string
-          metadata?: Json | null
-          new_status: string
-          organization_id: string
-          previous_status: string
-          processed_at?: string | null
-        }
-        Update: {
-          alert_processed?: boolean
-          change_detected_at?: string
-          id?: string
-          metadata?: Json | null
-          new_status?: string
-          organization_id?: string
-          previous_status?: string
-          processed_at?: string | null
-        }
-        Relationships: []
-      }
-      messages: {
-        Row: {
-          attachments: string[] | null
-          content: string
-          conversation_id: string
-          created_at: string | null
-          id: string
-          is_deleted: boolean | null
-          is_edited: boolean | null
-          message_type: string | null
-          reply_to_id: string | null
-          sender_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          attachments?: string[] | null
-          content: string
-          conversation_id: string
-          created_at?: string | null
-          id?: string
-          is_deleted?: boolean | null
-          is_edited?: boolean | null
-          message_type?: string | null
-          reply_to_id?: string | null
-          sender_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          attachments?: string[] | null
-          content?: string
-          conversation_id?: string
-          created_at?: string | null
-          id?: string
-          is_deleted?: boolean | null
-          is_edited?: boolean | null
-          message_type?: string | null
-          reply_to_id?: string | null
-          sender_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_reply_to_id_fkey"
-            columns: ["reply_to_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      notifications: {
-        Row: {
-          actor_id: string | null
-          created_at: string | null
-          id: string
-          is_read: boolean | null
-          message: string | null
-          metadata: Json | null
-          target_id: string | null
-          target_type: string | null
-          title: string
-          type: string
-          user_id: string
-        }
-        Insert: {
-          actor_id?: string | null
-          created_at?: string | null
-          id?: string
-          is_read?: boolean | null
-          message?: string | null
-          metadata?: Json | null
-          target_id?: string | null
-          target_type?: string | null
-          title: string
-          type: string
-          user_id: string
-        }
-        Update: {
-          actor_id?: string | null
-          created_at?: string | null
-          id?: string
-          is_read?: boolean | null
-          message?: string | null
-          metadata?: Json | null
-          target_id?: string | null
-          target_type?: string | null
-          title?: string
-          type?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       org_admins: {
         Row: {
           admin_email: string
@@ -2657,61 +1538,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
-      }
-      organization_documents: {
-        Row: {
-          document_type: string
-          file_name: string
-          file_path: string
-          file_size: number | null
-          file_type: string | null
-          id: string
-          organization_id: string
-          uploaded_at: string
-        }
-        Insert: {
-          document_type: string
-          file_name: string
-          file_path: string
-          file_size?: number | null
-          file_type?: string | null
-          id?: string
-          organization_id: string
-          uploaded_at?: string
-        }
-        Update: {
-          document_type?: string
-          file_name?: string
-          file_path?: string
-          file_size?: number | null
-          file_type?: string | null
-          id?: string
-          organization_id?: string
-          uploaded_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_documents_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_documents_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_documents_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "solution_seekers_comprehensive_view"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       organizations: {
         Row: {
@@ -2783,13 +1609,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "organizations_country_id_fkey"
-            columns: ["country_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["country_id"]
-          },
-          {
             foreignKeyName: "organizations_entity_type_id_fkey"
             columns: ["entity_type_id"]
             isOneToOne: false
@@ -2797,25 +1616,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "organizations_entity_type_id_fkey"
-            columns: ["entity_type_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["entity_type_id"]
-          },
-          {
             foreignKeyName: "organizations_industry_segment_id_fkey"
             columns: ["industry_segment_id"]
             isOneToOne: false
             referencedRelation: "master_industry_segments"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organizations_industry_segment_id_fkey"
-            columns: ["industry_segment_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["industry_segment_id"]
           },
           {
             foreignKeyName: "organizations_organization_category_id_fkey"
@@ -2829,45 +1634,6 @@ export type Database = {
             columns: ["organization_type_id"]
             isOneToOne: false
             referencedRelation: "master_organization_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organizations_organization_type_id_fkey"
-            columns: ["organization_type_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["organization_type_id"]
-          },
-        ]
-      }
-      post_interactions: {
-        Row: {
-          created_at: string | null
-          id: string
-          interaction_type: string
-          post_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          interaction_type: string
-          post_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          interaction_type?: string
-          post_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "post_interactions_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
         ]
@@ -3067,13 +1833,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_advance_payment_type"
-            columns: ["advance_payment_type_id"]
-            isOneToOne: false
-            referencedRelation: "master_advance_payment_types"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fk_engagement_model_subtype"
             columns: ["engagement_model_subtype_id"]
             isOneToOne: false
@@ -3095,25 +1854,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "pricing_configurations_billing_frequency_fkey"
-            columns: ["billing_frequency_id"]
-            isOneToOne: false
-            referencedRelation: "master_billing_frequencies"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "pricing_configurations_country_fkey"
             columns: ["country_id"]
             isOneToOne: false
             referencedRelation: "master_countries"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pricing_configurations_country_fkey"
-            columns: ["country_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["country_id"]
           },
           {
             foreignKeyName: "pricing_configurations_currency_fkey"
@@ -3137,32 +1882,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "pricing_configurations_entity_type_fkey"
-            columns: ["entity_type_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["entity_type_id"]
-          },
-          {
-            foreignKeyName: "pricing_configurations_membership_status_fkey"
-            columns: ["membership_status_id"]
-            isOneToOne: false
-            referencedRelation: "master_membership_statuses"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "pricing_configurations_org_type_fkey"
             columns: ["organization_type_id"]
             isOneToOne: false
             referencedRelation: "master_organization_types"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pricing_configurations_org_type_fkey"
-            columns: ["organization_type_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["organization_type_id"]
           },
           {
             foreignKeyName: "pricing_configurations_unit_measure_fkey"
@@ -3337,175 +2061,6 @@ export type Database = {
           reaction_type?: string | null
           target_id?: string
           target_type?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      roles: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          is_active: boolean
-          name: string
-          updated_at: string
-          version: number | null
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-          updated_at?: string
-          version?: number | null
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          updated_at?: string
-          version?: number | null
-        }
-        Relationships: []
-      }
-      seeking_organization_roles: {
-        Row: {
-          category_id: string | null
-          created_at: string
-          created_by: string | null
-          department_id: string | null
-          domain_group_id: string | null
-          email_id: string
-          id: string
-          is_active: boolean
-          mobile_number: string
-          password: string
-          role_name: string
-          sub_department_id: string | null
-          subcategory_id: string | null
-          team_unit_id: string | null
-          updated_at: string
-          user_id: string
-          version: number | null
-        }
-        Insert: {
-          category_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          department_id?: string | null
-          domain_group_id?: string | null
-          email_id: string
-          id?: string
-          is_active?: boolean
-          mobile_number: string
-          password: string
-          role_name: string
-          sub_department_id?: string | null
-          subcategory_id?: string | null
-          team_unit_id?: string | null
-          updated_at?: string
-          user_id: string
-          version?: number | null
-        }
-        Update: {
-          category_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          department_id?: string | null
-          domain_group_id?: string | null
-          email_id?: string
-          id?: string
-          is_active?: boolean
-          mobile_number?: string
-          password?: string
-          role_name?: string
-          sub_department_id?: string | null
-          subcategory_id?: string | null
-          team_unit_id?: string | null
-          updated_at?: string
-          user_id?: string
-          version?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "seeking_organization_roles_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "master_categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "seeking_organization_roles_department_id_fkey"
-            columns: ["department_id"]
-            isOneToOne: false
-            referencedRelation: "master_departments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "seeking_organization_roles_domain_group_id_fkey"
-            columns: ["domain_group_id"]
-            isOneToOne: false
-            referencedRelation: "master_domain_groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "seeking_organization_roles_sub_department_id_fkey"
-            columns: ["sub_department_id"]
-            isOneToOne: false
-            referencedRelation: "master_sub_departments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "seeking_organization_roles_subcategory_id_fkey"
-            columns: ["subcategory_id"]
-            isOneToOne: false
-            referencedRelation: "master_sub_categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "seeking_organization_roles_team_unit_id_fkey"
-            columns: ["team_unit_id"]
-            isOneToOne: false
-            referencedRelation: "master_team_units"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      shares: {
-        Row: {
-          created_at: string | null
-          id: string
-          quote_content: string | null
-          share_type: string
-          target_id: string
-          target_type: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          quote_content?: string | null
-          share_type: string
-          target_id: string
-          target_type: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          quote_content?: string | null
-          share_type?: string
-          target_id?: string
-          target_type?: string
-          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -3685,36 +2240,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_skill_profiles: {
-        Row: {
-          created_at: string | null
-          id: string
-          is_verified: boolean | null
-          proficiency_level: string | null
-          skill_name: string
-          user_id: string
-          years_experience: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          is_verified?: boolean | null
-          proficiency_level?: string | null
-          skill_name: string
-          user_id: string
-          years_experience?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          is_verified?: boolean | null
-          proficiency_level?: string | null
-          skill_name?: string
-          user_id?: string
-          years_experience?: number | null
-        }
-        Relationships: []
-      }
       user_skills: {
         Row: {
           created_at: string | null
@@ -3790,214 +2315,7 @@ export type Database = {
       }
     }
     Views: {
-      organization_context: {
-        Row: {
-          address: string | null
-          contact_person_name: string | null
-          country_id: string | null
-          country_name: string | null
-          email: string | null
-          entity_type_id: string | null
-          entity_type_name: string | null
-          id: string | null
-          industry_segment_id: string | null
-          industry_segment_name: string | null
-          organization_id: string | null
-          organization_name: string | null
-          organization_type_id: string | null
-          organization_type_name: string | null
-          phone_number: string | null
-          user_id: string | null
-          website: string | null
-        }
-        Relationships: []
-      }
-      pricing_configurations_detailed: {
-        Row: {
-          base_value: number | null
-          billing_frequency: string | null
-          billing_months: number | null
-          calculated_value: number | null
-          config_name: string | null
-          country_code: string | null
-          country_name: string | null
-          created_at: string | null
-          currency_code: string | null
-          currency_name: string | null
-          currency_symbol: string | null
-          effective_from: string | null
-          effective_to: string | null
-          engagement_model: string | null
-          entity_type: string | null
-          id: string | null
-          is_active: boolean | null
-          is_percentage: boolean | null
-          membership_discount_percentage: number | null
-          membership_status: string | null
-          organization_type: string | null
-          remarks: string | null
-          unit_of_measure: string | null
-          unit_symbol: string | null
-          updated_at: string | null
-          version: number | null
-        }
-        Relationships: []
-      }
-      pricing_parameters_management_consulting: {
-        Row: {
-          amount: number | null
-          complexity_applicable: boolean | null
-          component_type: string | null
-          country_id: string | null
-          country_name: string | null
-          created_at: string | null
-          created_by: string | null
-          currency_id: string | null
-          currency_name: string | null
-          currency_symbol: string | null
-          effective_from: string | null
-          effective_to: string | null
-          engagement_model_context: Json | null
-          entity_type_id: string | null
-          entity_type_name: string | null
-          fee_component_id: string | null
-          fee_component_name: string | null
-          id: string | null
-          is_active: boolean | null
-          is_user_created: boolean | null
-          organization_type_id: string | null
-          organization_type_name: string | null
-          rate_type: string | null
-          unit_name: string | null
-          unit_of_measure_id: string | null
-          unit_symbol: string | null
-          updated_at: string | null
-          version: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "master_pricing_parameters_country_id_fkey"
-            columns: ["country_id"]
-            isOneToOne: false
-            referencedRelation: "master_countries"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "master_pricing_parameters_country_id_fkey"
-            columns: ["country_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["country_id"]
-          },
-          {
-            foreignKeyName: "master_pricing_parameters_currency_id_fkey"
-            columns: ["currency_id"]
-            isOneToOne: false
-            referencedRelation: "master_currencies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "master_pricing_parameters_entity_type_id_fkey"
-            columns: ["entity_type_id"]
-            isOneToOne: false
-            referencedRelation: "master_entity_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "master_pricing_parameters_entity_type_id_fkey"
-            columns: ["entity_type_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["entity_type_id"]
-          },
-          {
-            foreignKeyName: "master_pricing_parameters_fee_component_id_fkey"
-            columns: ["fee_component_id"]
-            isOneToOne: false
-            referencedRelation: "master_fee_components"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "master_pricing_parameters_organization_type_id_fkey"
-            columns: ["organization_type_id"]
-            isOneToOne: false
-            referencedRelation: "master_organization_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "master_pricing_parameters_organization_type_id_fkey"
-            columns: ["organization_type_id"]
-            isOneToOne: false
-            referencedRelation: "organization_context"
-            referencedColumns: ["organization_type_id"]
-          },
-          {
-            foreignKeyName: "master_pricing_parameters_unit_of_measure_id_fkey"
-            columns: ["unit_of_measure_id"]
-            isOneToOne: false
-            referencedRelation: "master_units_of_measure"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      solution_seekers_comprehensive_view: {
-        Row: {
-          activation_status: string | null
-          address: string | null
-          contact_person_name: string | null
-          country: string | null
-          country_code: string | null
-          created_at: string | null
-          current_frequency: string | null
-          discount_percentage: number | null
-          email: string | null
-          engagement_locked: boolean | null
-          engagement_model: string | null
-          engagement_model_details: Json | null
-          engagement_model_selected_at: string | null
-          enm_terms: boolean | null
-          entity_type: string | null
-          final_calculated_price: number | null
-          frequency_change_history: Json | null
-          frequency_payments: Json | null
-          has_engagement_record: boolean | null
-          has_user_account: boolean | null
-          id: string | null
-          industry_segment: string | null
-          last_activity: string | null
-          last_payment_date: string | null
-          lock_date: string | null
-          mem_payment_amount: number | null
-          mem_payment_currency: string | null
-          mem_payment_date: string | null
-          mem_payment_method: string | null
-          mem_payment_status: string | null
-          mem_receipt_number: string | null
-          mem_terms: boolean | null
-          membership_status: string | null
-          organization_id: string | null
-          organization_name: string | null
-          organization_type: string | null
-          overall_status: string | null
-          payment_simulation_status: string | null
-          phone_number: string | null
-          platform_fee_percentage: number | null
-          pricing_locked: boolean | null
-          pricing_tier: string | null
-          selected_frequency: string | null
-          terms_accepted: boolean | null
-          tier_features: Json | null
-          tier_selected_at: string | null
-          total_payments_made: number | null
-          updated_at: string | null
-          updated_platform_fee_percentage: number | null
-          user_id: string | null
-          website: string | null
-          workflow_completed: boolean | null
-          workflow_step: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       bulk_update_pricing_discount: {

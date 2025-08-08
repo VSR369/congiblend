@@ -36,7 +36,7 @@ interface UserStats {
   document_posts: number;
   link_posts: number;
   carousel_posts: number;
-  total_comments: number;
+  // total_comments removed - comments functionality not implemented
   profile_views_count: number;
   current_streak_days: number;
 }
@@ -92,7 +92,7 @@ export const UserStatsCard: React.FC = () => {
         headline: userData?.headline || 'Solution Provider',
         avatar_url: userData?.avatar_url,
         ...postCounts,
-        total_comments: 0,
+        // total_comments: 0, - removed
         profile_views_count: userData?.profile_views_count || 0,
         current_streak_days: userData?.current_streak_days || 0,
       });
