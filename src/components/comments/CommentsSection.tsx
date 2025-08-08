@@ -51,6 +51,23 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, postId, depth = 0 })
   const [showReply, setShowReply] = useState(false);
   const indent = Math.min(depth, 3) * 16;
 
+  const contentNodes = useMemo(() => {
+    const parts: React.ReactNode[] = [];
+    const text = comment.content || '';
+    const regex = /@([0-9a-fA-F-]{36})\b/g;
+    let lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = regex.exec(text)) !== null) {
+      const start = m.index;
+      if (start > lastIndex) parts.push(text.slice(lastIndex, start));
+      const id = m[1];
+      parts.push(<a key={`${id}-${start}`} href={`/messages?to=${id}`} className="text-primary hover:underline">@{id}</a>);
+      lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+    return parts;
+  }, [comment.content]);
+
   if (comment.is_deleted) {
     return (
       <div className="text-sm text-muted-foreground" style={{ marginLeft: indent }}>
@@ -73,7 +90,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, postId, depth = 0 })
         </div>
         <div className="flex-1">
           <div className="text-sm font-medium">{comment.author?.display_name || comment.author?.username || "User"}</div>
-          <div className="text-sm text-foreground whitespace-pre-wrap">{comment.content}</div>
+          <div className="text-sm text-foreground whitespace-pre-wrap">{contentNodes}</div>
           <div className="mt-1">
             <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setShowReply((s) => !s)}>
               Reply

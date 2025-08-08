@@ -15,6 +15,7 @@ const MainLayout = lazy(() => import("@/components/layout/MainLayout").then(m =>
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Messages = lazy(() => import("./pages/Messages"));
 
 // Loading component for Suspense
 const PageLoader = () => (
@@ -44,6 +45,7 @@ const AppContent = () => {
             </Route>
             <Route path="/login" element={<Auth />} />
             <Route path="/register" element={<Auth />} />
+            <Route path="/messages" element={<Messages />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

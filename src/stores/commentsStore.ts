@@ -127,8 +127,24 @@ export const useCommentsStore = create<CommentsStore>((set, get) => ({
     // reconcile temp id
     const reconciledFlat = get().byPostId[postId].flat.map((c) => (c.id === tempId ? (data as any) : c));
     set({ byPostId: { ...get().byPostId, [postId]: { ...get().byPostId[postId], flat: reconciledFlat, comments: buildThread(reconciledFlat) } } });
-  },
 
+    // Parse and insert @mentions of user IDs (UUIDs)
+    try {
+      const mentionRegex = /@([0-9a-fA-F-]{36})\b/g;
+      const ids = new Set<string>();
+      let match: RegExpExecArray | null;
+      while ((match = mentionRegex.exec(content)) !== null) {
+        const mentionedId = match[1];
+        if (mentionedId && mentionedId !== uid) ids.add(mentionedId);
+      }
+      if (ids.size > 0) {
+        const rows = Array.from(ids).map((mentioned_user_id) => ({ comment_id: (data as any).id, mentioned_user_id }));
+        await supabase.from('comment_mentions').insert(rows);
+      }
+    } catch (e) {
+      console.warn('Failed to insert comment mentions', e);
+    }
+  },
   toggleSoftDelete: async (postId: string, commentId: string, isDeleted: boolean) => {
     const { error } = await supabase.from("comments").update({ is_deleted: isDeleted }).eq("id", commentId);
     if (error) throw error;
