@@ -241,8 +241,8 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
               size="sm"
               onClick={handleLike}
               className={cn(
-                "text-muted-foreground hover:text-red-500",
-                post.userReaction === 'like' && "text-red-500"
+                "text-muted-foreground hover:text-primary",
+                post.userReaction === 'like' && "text-primary"
               )}
             >
               <Heart className="h-4 w-4 mr-1" />
@@ -256,8 +256,8 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
             variant="ghost"
             size="sm"
             className={cn(
-              "text-muted-foreground hover:text-yellow-500",
-              post.isSaved && "text-yellow-500"
+              "text-muted-foreground hover:text-primary",
+              post.isSaved && "text-primary"
             )}
           >
             <Bookmark className="h-4 w-4" />

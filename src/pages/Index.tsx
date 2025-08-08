@@ -12,11 +12,11 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('feed');
 
   return (
-    <div className="flex min-h-screen w-full bg-gradient-to-br from-white via-blue-50/30 to-gray-50/50 relative overflow-hidden">
+    <div className="flex min-h-screen w-full bg-gradient-to-br from-background via-muted/40 to-muted/60 relative overflow-hidden">
       {/* Background Elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-blue-400/5" />
-      <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-400/5 rounded-full blur-3xl" />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10" />
+      <div className="absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
       
       {/* Left Sidebar */}
       <LeftSidebar />

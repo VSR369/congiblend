@@ -10,8 +10,8 @@ const inputVariants = cva(
       variant: {
         default: "border-input",
         error: "border-destructive focus-visible:ring-destructive",
-        success: "border-green-500 focus-visible:ring-green-500",
-        warning: "border-yellow-500 focus-visible:ring-yellow-500",
+        success: "border-accent focus-visible:ring-accent",
+        warning: "border-primary focus-visible:ring-primary",
       },
       size: {
         default: "h-10",
@@ -72,9 +72,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const validationIcon = error ? (
       <AlertCircle className="h-4 w-4 text-destructive" />
     ) : success ? (
-      <CheckCircle className="h-4 w-4 text-green-500" />
+      <CheckCircle className="h-4 w-4 text-accent" />
     ) : warning ? (
-      <AlertCircle className="h-4 w-4 text-yellow-500" />
+      <AlertCircle className="h-4 w-4 text-primary" />
     ) : null
 
     const passwordToggle = type === 'password' && showPasswordToggle ? (
@@ -123,8 +123,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <p className={cn(
             "text-xs",
             error && "text-destructive",
-            success && "text-green-600",
-            warning && "text-yellow-600",
+            success && "text-accent",
+            warning && "text-primary",
             !error && !success && !warning && "text-muted-foreground"
           )}>
             {error || success || warning || helpText}

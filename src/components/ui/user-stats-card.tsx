@@ -163,8 +163,8 @@ export const UserStatsCard: React.FC = () => {
             {stats.text_posts > 0 && (
               <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
                 <div className="flex items-center space-x-1 mb-1">
-                  <FileText className="h-4 w-4 text-slate-600" />
-                  <span className="text-sm font-bold text-slate-600">{stats.text_posts}</span>
+                  <FileText className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-bold text-primary">{stats.text_posts}</span>
                 </div>
                 <span className="text-xs text-muted-foreground text-center">Text</span>
               </div>
@@ -174,8 +174,8 @@ export const UserStatsCard: React.FC = () => {
             {stats.image_posts > 0 && (
               <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
                 <div className="flex items-center space-x-1 mb-1">
-                  <Image className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-bold text-blue-600">{stats.image_posts}</span>
+                  <Image className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-bold text-primary">{stats.image_posts}</span>
                 </div>
                 <span className="text-xs text-muted-foreground text-center">Images</span>
               </div>
@@ -185,8 +185,8 @@ export const UserStatsCard: React.FC = () => {
             {stats.video_posts > 0 && (
               <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
                 <div className="flex items-center space-x-1 mb-1">
-                  <Video className="h-4 w-4 text-purple-600" />
-                  <span className="text-sm font-bold text-purple-600">{stats.video_posts}</span>
+                  <Video className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-bold text-primary">{stats.video_posts}</span>
                 </div>
                 <span className="text-xs text-muted-foreground text-center">Videos</span>
               </div>
@@ -196,8 +196,8 @@ export const UserStatsCard: React.FC = () => {
             {stats.voice_posts > 0 && (
               <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
                 <div className="flex items-center space-x-1 mb-1">
-                  <Mic className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-bold text-green-600">{stats.voice_posts}</span>
+                  <Mic className="h-4 w-4 text-accent" />
+                  <span className="text-sm font-bold text-accent">{stats.voice_posts}</span>
                 </div>
                 <span className="text-xs text-muted-foreground text-center">Voice</span>
               </div>
@@ -207,8 +207,8 @@ export const UserStatsCard: React.FC = () => {
             {stats.poll_posts > 0 && (
               <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
                 <div className="flex items-center space-x-1 mb-1">
-                  <BarChart className="h-4 w-4 text-orange-600" />
-                  <span className="text-sm font-bold text-orange-600">{stats.poll_posts}</span>
+                  <BarChart className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-bold text-primary">{stats.poll_posts}</span>
                 </div>
                 <span className="text-xs text-muted-foreground text-center">Polls</span>
               </div>
@@ -218,8 +218,8 @@ export const UserStatsCard: React.FC = () => {
             {stats.article_posts > 0 && (
               <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
                 <div className="flex items-center space-x-1 mb-1">
-                  <BookOpen className="h-4 w-4 text-indigo-600" />
-                  <span className="text-sm font-bold text-indigo-600">{stats.article_posts}</span>
+                  <BookOpen className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-bold text-primary">{stats.article_posts}</span>
                 </div>
                 <span className="text-xs text-muted-foreground text-center">Articles</span>
               </div>
@@ -229,8 +229,8 @@ export const UserStatsCard: React.FC = () => {
             {stats.event_posts > 0 && (
               <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
                 <div className="flex items-center space-x-1 mb-1">
-                  <Calendar className="h-4 w-4 text-red-600" />
-                  <span className="text-sm font-bold text-red-600">{stats.event_posts}</span>
+                  <Calendar className="h-4 w-4 text-destructive" />
+                  <span className="text-sm font-bold text-destructive">{stats.event_posts}</span>
                 </div>
                 <span className="text-xs text-muted-foreground text-center">Events</span>
               </div>
@@ -240,8 +240,8 @@ export const UserStatsCard: React.FC = () => {
             {stats.job_posts > 0 && (
               <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
                 <div className="flex items-center space-x-1 mb-1">
-                  <Briefcase className="h-4 w-4 text-yellow-600" />
-                  <span className="text-sm font-bold text-yellow-600">{stats.job_posts}</span>
+                  <Briefcase className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-bold text-primary">{stats.job_posts}</span>
                 </div>
                 <span className="text-xs text-muted-foreground text-center">Jobs</span>
               </div>
@@ -251,8 +251,8 @@ export const UserStatsCard: React.FC = () => {
             {stats.document_posts > 0 && (
               <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
                 <div className="flex items-center space-x-1 mb-1">
-                  <File className="h-4 w-4 text-gray-600" />
-                  <span className="text-sm font-bold text-gray-600">{stats.document_posts}</span>
+                  <File className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-bold text-muted-foreground">{stats.document_posts}</span>
                 </div>
                 <span className="text-xs text-muted-foreground text-center">Docs</span>
               </div>
@@ -262,8 +262,8 @@ export const UserStatsCard: React.FC = () => {
             {stats.link_posts > 0 && (
               <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
                 <div className="flex items-center space-x-1 mb-1">
-                  <Link className="h-4 w-4 text-cyan-600" />
-                  <span className="text-sm font-bold text-cyan-600">{stats.link_posts}</span>
+                  <Link className="h-4 w-4 text-accent" />
+                  <span className="text-sm font-bold text-accent">{stats.link_posts}</span>
                 </div>
                 <span className="text-xs text-muted-foreground text-center">Links</span>
               </div>
@@ -273,8 +273,8 @@ export const UserStatsCard: React.FC = () => {
             {stats.carousel_posts > 0 && (
               <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
                 <div className="flex items-center space-x-1 mb-1">
-                  <Images className="h-4 w-4 text-pink-600" />
-                  <span className="text-sm font-bold text-pink-600">{stats.carousel_posts}</span>
+                  <Images className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-bold text-primary">{stats.carousel_posts}</span>
                 </div>
                 <span className="text-xs text-muted-foreground text-center">Carousel</span>
               </div>
@@ -315,11 +315,11 @@ export const UserStatsCard: React.FC = () => {
           <motion.div
             initial={{ scale: 0.95 }}
             animate={{ scale: 1 }}
-            className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg p-3 text-center"
+            className="bg-gradient-to-r from-secondary to-primary/10 border border-border rounded-lg p-3 text-center"
           >
             <div className="flex items-center justify-center space-x-2">
-              <Flame className="h-5 w-5 text-orange-500" />
-              <span className="font-semibold text-orange-700">
+              <Flame className="h-5 w-5 text-primary" />
+              <span className="font-semibold text-primary">
                 {stats.current_streak_days}-day streak!
               </span>
             </div>

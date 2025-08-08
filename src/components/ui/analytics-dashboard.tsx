@@ -74,9 +74,9 @@ const MetricCard = ({ title, value, change, trend, icon, description }: MetricCa
   const getTrendIcon = () => {
     switch (trend) {
       case 'up':
-        return <ArrowUpRight className="h-4 w-4 text-green-500" />;
+        return <ArrowUpRight className="h-4 w-4 text-accent" />;
       case 'down':
-        return <ArrowDownRight className="h-4 w-4 text-red-500" />;
+        return <ArrowDownRight className="h-4 w-4 text-destructive" />;
       default:
         return <Minus className="h-4 w-4 text-muted-foreground" />;
     }
@@ -85,9 +85,9 @@ const MetricCard = ({ title, value, change, trend, icon, description }: MetricCa
   const getTrendColor = () => {
     switch (trend) {
       case 'up':
-        return 'text-green-600';
+        return 'text-accent';
       case 'down':
-        return 'text-red-600';
+        return 'text-destructive';
       default:
         return 'text-muted-foreground';
     }
@@ -329,7 +329,7 @@ export const AnalyticsDashboard = () => {
                       <span>Goal: {metric.target}{metric.unit}</span>
                       <span className={cn(
                         "flex items-center",
-                        metric.change > 0 ? "text-green-600" : "text-red-600"
+                        metric.change > 0 ? "text-accent" : "text-destructive"
                       )}>
                         {metric.change > 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
                         {metric.change > 0 ? '+' : ''}{metric.change}%

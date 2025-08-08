@@ -147,9 +147,9 @@ export const RightSidebar = () => {
               style={{ animationDelay: `${200 + index * 50}ms` }}
             >
               <div className="flex-shrink-0 mt-0.5">
-                {activity.type === 'like' && <Heart className="h-3 w-3 text-red-400" />}
-                {activity.type === 'follow' && <Users className="h-3 w-3 text-green-400" />}
-                {activity.type === 'follow' && <Users className="h-3 w-3 text-green-400" />}
+                {activity.type === 'like' && <Heart className="h-3 w-3 text-primary" />}
+                {activity.type === 'follow' && <Users className="h-3 w-3 text-accent" />}
+                {activity.type === 'follow' && <Users className="h-3 w-3 text-accent" />}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-foreground">

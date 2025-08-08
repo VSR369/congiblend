@@ -26,7 +26,7 @@ export const LeftSidebar = () => {
   const location = useLocation();
 
   return (
-    <div className="w-80 h-screen overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-white to-blue-50/30">
+    <div className="w-80 h-screen overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-background to-muted/30">
       {/* User Stats Card */}
       <div className="animate-fade-in">
         <UserStatsCard />
@@ -45,8 +45,8 @@ export const LeftSidebar = () => {
               className={`
                 flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 
                 ${location.pathname === item.url 
-                  ? 'bg-blue-50 text-blue-700 border border-blue-200' 
-                  : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'
+                  ? 'bg-primary/10 text-primary border border-primary/30' 
+                  : 'text-foreground hover:bg-muted hover:text-primary'
                 }
               `}
             >

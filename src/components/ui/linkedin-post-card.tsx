@@ -234,7 +234,7 @@ export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCar
             <div className="flex items-center space-x-4">
               {totalReactions > 0 && (
                 <span className="flex items-center space-x-1">
-                  <Heart className="h-4 w-4 text-red-500" />
+                  <Heart className="h-4 w-4 text-primary" />
                   <span>{totalReactions}</span>
                 </span>
               )}

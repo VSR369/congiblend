@@ -69,11 +69,11 @@ export const SystemRecoveryStatus: React.FC<SystemRecoveryStatusProps> = ({ onRe
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'success':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-accent" />;
       case 'warning':
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+        return <AlertTriangle className="h-4 w-4 text-primary" />;
       case 'error':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
+        return <AlertTriangle className="h-4 w-4 text-destructive" />;
       default:
         return <Circle className="h-4 w-4 text-muted-foreground animate-pulse" />;
     }
@@ -82,9 +82,9 @@ export const SystemRecoveryStatus: React.FC<SystemRecoveryStatusProps> = ({ onRe
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'success':
-        return <Badge variant="default" className="bg-green-100 text-green-800">Fixed</Badge>;
+        return <Badge variant="default" className="bg-accent/15 text-accent">Fixed</Badge>;
       case 'warning':
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Partial</Badge>;
+        return <Badge variant="secondary" className="bg-primary/15 text-primary">Partial</Badge>;
       case 'error':
         return <Badge variant="destructive">Error</Badge>;
       default:
@@ -104,7 +104,7 @@ export const SystemRecoveryStatus: React.FC<SystemRecoveryStatusProps> = ({ onRe
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {allChecksComplete && successCount === totalChecks ? (
-            <CheckCircle className="h-5 w-5 text-green-500" />
+            <CheckCircle className="h-5 w-5 text-accent" />
           ) : (
             <RefreshCw className="h-5 w-5 animate-spin" />
           )}
@@ -177,7 +177,7 @@ export const SystemRecoveryStatus: React.FC<SystemRecoveryStatusProps> = ({ onRe
           <div className="pt-4 border-t">
             {successCount === totalChecks ? (
               <div className="text-center space-y-2">
-                <div className="flex items-center justify-center gap-2 text-green-700">
+                <div className="flex items-center justify-center gap-2 text-accent">
                   <CheckCircle className="h-5 w-5" />
                   <span className="font-medium">System Recovery Complete</span>
                 </div>
@@ -187,7 +187,7 @@ export const SystemRecoveryStatus: React.FC<SystemRecoveryStatusProps> = ({ onRe
               </div>
             ) : (
               <div className="text-center space-y-2">
-                <div className="flex items-center justify-center gap-2 text-yellow-700">
+                <div className="flex items-center justify-center gap-2 text-primary">
                   <AlertTriangle className="h-5 w-5" />
                   <span className="font-medium">Partial Recovery</span>
                 </div>

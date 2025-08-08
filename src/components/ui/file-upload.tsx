@@ -224,7 +224,7 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
                       </p>
                       
                       {fileItem.error && (
-                        <p className="text-xs text-red-500 mt-1">
+                        <p className="text-xs text-destructive mt-1">
                           {fileItem.error}
                         </p>
                       )}

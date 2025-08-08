@@ -335,7 +335,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
               <div className="flex items-center text-sm text-muted-foreground mb-2">
                 <div className="flex items-center space-x-1">
                   <div className="flex -space-x-1">
-                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                    <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
                       <Heart className="h-3 w-3 text-white" />
                     </div>
                   </div>
