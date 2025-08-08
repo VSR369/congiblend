@@ -5,6 +5,7 @@ import { useFeedStore } from '@/stores/feedStore';
 import { useThemeStore } from '@/stores/themeStore';
 import type { Post, User } from '@/types/feed';
 import type { FeedFilters } from '@/stores/feedStore';
+import { ALL_POST_TYPES } from '@/utils/constants';
 
 // Global App State Interface
 interface AppState {
@@ -75,7 +76,7 @@ const initialState: AppState = {
   },
   filters: {
     userFilter: 'all',
-    contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event'],
+    contentTypes: ALL_POST_TYPES,
     timeRange: 'all'
   },
   theme: 'light'

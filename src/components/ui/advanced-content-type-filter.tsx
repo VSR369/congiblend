@@ -1,5 +1,5 @@
 import * as React from "react";
-import { FileText, Image, Video, MessageSquare, Calendar, Briefcase, FileType, Link, RotateCcw, Volume2 } from "lucide-react";
+import { FileText, Image, Video, MessageSquare, Calendar, FileType, Link, RotateCcw, Volume2 } from "lucide-react";
 import { FilterChip } from "./filter-chip";
 import { cn } from "@/lib/utils";
 import type { PostType } from "@/types/feed";
@@ -18,7 +18,6 @@ const contentTypeConfig = {
   article: { label: "Articles", icon: FileType },
   poll: { label: "Polls", icon: MessageSquare },
   event: { label: "Events", icon: Calendar },
-  job: { label: "Jobs", icon: Briefcase },
   document: { label: "Documents", icon: FileText },
   link: { label: "Links", icon: Link },
   carousel: { label: "Carousels", icon: RotateCcw }

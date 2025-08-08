@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Post, FeedSettings, CreatePostData, ReactionType, PostType, User } from '@/types/feed';
 
 import { supabase } from '@/integrations/supabase/client';
+import { ALL_POST_TYPES } from '@/utils/constants';
 
 export interface FeedFilters {
   userFilter: 'all' | 'my_posts' | 'others' | string; // 'string' for specific user
@@ -262,7 +263,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
     users: [],
     feedSettings: {
       showRecentFirst: true,
-      contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event'],
+      contentTypes: ALL_POST_TYPES,
       showFromConnections: true,
       showFromCompanies: true,
       showTrending: true,
@@ -270,7 +271,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
     },
     filters: {
       userFilter: 'all',
-      contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event'],
+      contentTypes: ALL_POST_TYPES,
       timeRange: 'all'
     },
 
@@ -341,7 +342,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
         }
 
         // Apply content type filter
-        if (filters.contentTypes.length > 0 && filters.contentTypes.length < 7) {
+        if (filters.contentTypes.length > 0 && filters.contentTypes.length < ALL_POST_TYPES.length) {
           query = query.in('post_type', filters.contentTypes);
         }
 
@@ -376,11 +377,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
           console.log('✅ Skipped time filter - showing posts from all time periods');
         }
 
-        // Visibility
-        // For "others", only public posts are visible; for "all" or "my_posts" rely on RLS to include own private posts too
-        if (filters.userFilter === 'others') {
-          query = query.eq('visibility', 'public');
-        }
 
         const pageSize = 20;
         const offset = reset ? 0 : state.posts.length;

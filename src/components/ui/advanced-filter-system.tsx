@@ -10,6 +10,7 @@ import { AdvancedTimeRangeFilter } from "./advanced-time-range-filter";
 import { useFeedStore } from "@/stores/feedStore";
 import { cn } from "@/lib/utils";
 import type { PostType, User } from "@/types/feed";
+import { ALL_POST_TYPES } from "@/utils/constants";
 
 interface AdvancedFilterSystemProps {
   className?: string;
@@ -60,7 +61,7 @@ export const AdvancedFilterSystem = React.memo(({ className }: AdvancedFilterSys
     console.log('🧹 Clearing all filters');
     updateFilters({
       userFilter: 'all',
-      contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event'],
+      contentTypes: ALL_POST_TYPES,
       timeRange: 'all'
     });
     setSelectedUser(null);
@@ -70,7 +71,7 @@ export const AdvancedFilterSystem = React.memo(({ className }: AdvancedFilterSys
     const start = performance.now();
     let count = 0;
     if (filters.userFilter !== 'all') count++;
-    if (filters.contentTypes.length < 6) count++;
+    if (filters.contentTypes.length < ALL_POST_TYPES.length) count++;
     if (filters.timeRange !== 'all') count++;
     const end = performance.now();
     if (end - start > 1) {
@@ -168,11 +169,11 @@ export const AdvancedFilterSystem = React.memo(({ className }: AdvancedFilterSys
             </Badge>
           )}
           
-          {filters.contentTypes.length < 6 && (
+          {filters.contentTypes.length < ALL_POST_TYPES.length && (
             <Badge variant="secondary" className="text-xs">
               {filters.contentTypes.length} content types
               <button 
-                onClick={() => updateFilters({ contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event'] })}
+                onClick={() => updateFilters({ contentTypes: ALL_POST_TYPES })}
                 className="ml-1 hover:bg-muted-foreground/20 rounded-full"
               >
                 <X className="h-3 w-3" />

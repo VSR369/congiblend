@@ -10,6 +10,7 @@ import { TimeRangeFilter } from "./time-range-filter";
 import { useFeedStore } from "@/stores/feedStore";
 import { PostType } from "@/types/feed";
 import { cn } from "@/lib/utils";
+import { ALL_POST_TYPES } from "@/utils/constants";
 
 interface FilterBarProps {
   className?: string;
@@ -29,7 +30,7 @@ export const FilterBar = ({ className }: FilterBarProps) => {
   const clearAllFilters = () => {
     updateFilters({
       userFilter: 'all',
-      contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event'],
+      contentTypes: ALL_POST_TYPES,
       timeRange: 'all'
     });
   };
@@ -37,7 +38,7 @@ export const FilterBar = ({ className }: FilterBarProps) => {
   const getActiveFilterCount = () => {
     let count = 0;
     if (filters.userFilter !== 'all') count++;
-    if (filters.contentTypes.length < 6) count++;
+    if (filters.contentTypes.length < ALL_POST_TYPES.length) count++;
     if (filters.timeRange !== 'all') count++;
     return count;
   };
@@ -119,11 +120,11 @@ export const FilterBar = ({ className }: FilterBarProps) => {
             </Badge>
           )}
           
-          {filters.contentTypes.length < 6 && (
+          {filters.contentTypes.length < ALL_POST_TYPES.length && (
             <Badge variant="secondary" className="text-xs">
               {filters.contentTypes.length} types
               <button 
-                onClick={() => updateFilters({ contentTypes: ['text', 'image', 'video', 'article', 'poll', 'event'] })}
+                onClick={() => updateFilters({ contentTypes: ALL_POST_TYPES })}
                 className="ml-1 hover:bg-muted-foreground/20 rounded-full"
               >
                 <X className="h-3 w-3" />

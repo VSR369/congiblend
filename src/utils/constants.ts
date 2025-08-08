@@ -1,3 +1,4 @@
+import type { PostType } from "@/types/feed";
 // App Configuration
 export const APP_CONFIG = {
   name: 'Synapse Platform',
@@ -108,3 +109,17 @@ export const SUCCESS_MESSAGES = {
   created: 'Created successfully!',
   uploaded: 'File uploaded successfully!',
 } as const;
+
+// Feed constants
+export const ALL_POST_TYPES: PostType[] = [
+  'text',
+  'image',
+  'video',
+  'audio',
+  'article',
+  'poll',
+  'event',
+  'document',
+  'link',
+  'carousel'
+];
