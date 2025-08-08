@@ -154,15 +154,25 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
     };
   }
 
+  const authorData = author ?? {
+    id: dbPost.user_id || 'unknown',
+    username: dbPost.metadata?.author?.username || (dbPost as any).username || 'user',
+    display_name: dbPost.metadata?.author?.display_name || (dbPost as any).display_name || (dbPost as any).username || 'User',
+    avatar_url: (dbPost as any).avatar_url || dbPost.metadata?.author?.avatar_url,
+    is_verified: dbPost.metadata?.author?.is_verified || false,
+  };
+  if (!author) {
+    console.warn('⚠️ Missing author profile for post, using fallback author', dbPost.id);
+  }
   return {
     id: dbPost.id,
     type: dbPost.post_type || 'text',
     author: {
-      id: author.id,
-      name: author.display_name || author.username,
-      username: author.username,
-      avatar: author.avatar_url,
-      verified: author.is_verified || false,
+      id: authorData.id,
+      name: authorData.display_name || authorData.username,
+      username: authorData.username,
+      avatar: authorData.avatar_url,
+      verified: authorData.is_verified || false,
     },
     content: dbPost.content,
     media,
@@ -304,7 +314,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
             created_at,
             updated_at,
             user_id,
-            profiles!posts_user_id_fkey (
+            profiles:user_id (
               id,
               username,
               display_name,
@@ -318,12 +328,22 @@ export const useFeedStore = create<FeedState>((set, get) => {
         // Apply user filter
         console.log('🔍 Current userFilter:', filters.userFilter);
         if (filters.userFilter === 'my_posts') {
-          const currentUser = supabase.auth.getUser();
-          query = query.eq('user_id', (await currentUser).data.user?.id);
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) {
+            console.warn('⏳ Auth not ready for my_posts; deferring load');
+            set({ loading: false });
+            return;
+          }
+          query = query.eq('user_id', user.id);
           console.log('✅ Applied my_posts filter');
         } else if (filters.userFilter === 'others') {
-          const currentUser = supabase.auth.getUser();
-          query = query.neq('user_id', (await currentUser).data.user?.id);
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) {
+            console.warn('⏳ Auth not ready for others; deferring load');
+            set({ loading: false });
+            return;
+          }
+          query = query.neq('user_id', user.id);
           console.log('✅ Applied others filter');
         } else if (filters.userFilter !== 'all' && filters.userFilter !== undefined) {
           // For specific user filter, we'll join with profiles table
