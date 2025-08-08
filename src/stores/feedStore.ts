@@ -919,26 +919,27 @@ export const useFeedStore = create<FeedState>((set, get) => {
     },
 
     addComment: async (postId: string, content: string, parentId?: string) => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('User not authenticated');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
 
-        // Optimistic update - add comment immediately to UI
-        const newComment = {
-          id: `temp-${Date.now()}`,
-          content,
-          author: {
-            id: user.id,
-            name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
-            username: user.user_metadata?.username || user.email?.split('@')[0] || 'user',
-            avatar: user.user_metadata?.avatar_url
-          },
-          createdAt: new Date(),
-          parentId,
-          reactions: [],
-          reactionsCount: 0,
-          replies: []
-        };
+      // Optimistic update - add comment immediately to UI
+      const newComment = {
+        id: `temp-${Date.now()}`,
+        content,
+        author: {
+          id: user.id,
+          name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
+          username: user.user_metadata?.username || user.email?.split('@')[0] || 'user',
+          avatar: user.user_metadata?.avatar_url
+        },
+        createdAt: new Date(),
+        parentId,
+        reactions: [],
+        reactionsCount: 0,
+        replies: []
+      };
+
+      try {
 
         set(state => ({
           posts: state.posts.map(p => {
@@ -956,15 +957,63 @@ export const useFeedStore = create<FeedState>((set, get) => {
           body: {
             post_id: postId,
             content,
-            parent_id: parentId || null
+            parent_comment_id: parentId || null
           }
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Comment edge function error:', error);
+          throw error;
+        }
+
+        // Replace optimistic comment with actual comment data
+        if (data) {
+          set(state => ({
+            posts: state.posts.map(p => {
+              if (p.id !== postId) return p;
+              
+              const updatedComments = p.comments.map(c => 
+                c.id === newComment.id ? {
+                  id: data.id,
+                  content: data.content,
+                  author: {
+                    id: data.author?.id || data.user_id,
+                    name: data.author?.display_name || data.author?.username || 'User',
+                    username: data.author?.username || 'user',
+                    avatar: data.author?.avatar_url
+                  },
+                  createdAt: new Date(data.created_at),
+                  parentId: data.parent_comment_id,
+                  reactions: [],
+                  reactionsCount: data.reactions_count || 0,
+                  replies: []
+                } : c
+              );
+              
+              return {
+                ...p,
+                comments: updatedComments
+              };
+            })
+          }));
+        }
 
         return data;
       } catch (error) {
         console.error('Error adding comment:', error);
+        
+        // Revert optimistic update on error
+        set(state => ({
+          posts: state.posts.map(p => {
+            if (p.id !== postId) return p;
+            return {
+              ...p,
+              comments: p.comments.filter(c => c.id !== newComment.id),
+              commentsCount: Math.max(0, p.commentsCount - 1)
+            };
+          })
+        }));
+        
         throw error;
       }
     },
