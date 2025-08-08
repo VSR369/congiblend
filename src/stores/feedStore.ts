@@ -315,24 +315,30 @@ export const useFeedStore = create<FeedState>((set, get) => {
           `);
 
         // Apply user filter
+        console.log('🔍 Current userFilter:', filters.userFilter);
         if (filters.userFilter === 'my_posts') {
           const currentUser = supabase.auth.getUser();
           query = query.eq('user_id', (await currentUser).data.user?.id);
+          console.log('✅ Applied my_posts filter');
         } else if (filters.userFilter === 'others') {
           const currentUser = supabase.auth.getUser();
           query = query.neq('user_id', (await currentUser).data.user?.id);
-         } else if (filters.userFilter !== 'all') {
-           // For specific user filter, we'll join with profiles table
-           const { data: specificUser } = await supabase
-             .from('profiles')
-             .select('id')
-             .eq('username', filters.userFilter)
-             .single();
-           
-           if (specificUser) {
-             query = query.eq('user_id', specificUser.id);
-           }
-         }
+          console.log('✅ Applied others filter');
+        } else if (filters.userFilter !== 'all' && filters.userFilter !== undefined) {
+          // For specific user filter, we'll join with profiles table
+          const { data: specificUser } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('username', filters.userFilter)
+            .single();
+          
+          if (specificUser) {
+            query = query.eq('user_id', specificUser.id);
+            console.log('✅ Applied specific user filter for:', filters.userFilter);
+          }
+        } else {
+          console.log('✅ No user filter applied (showing all posts)');
+        }
 
         // Apply content type filter
         if (filters.contentTypes.length > 0 && filters.contentTypes.length < 7) {
@@ -362,6 +368,23 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: postsData, error: postsError } = await query
           .order('created_at', { ascending: false })
           .limit(20);
+
+        console.log('📊 Query results:', {
+          totalPosts: postsData?.length || 0,
+          userFilter: filters.userFilter,
+          contentTypes: filters.contentTypes,
+          timeRange: filters.timeRange,
+          posts: postsData?.map(p => ({ 
+            id: p.id, 
+            user_id: p.user_id, 
+            type: p.post_type, 
+            created_at: p.created_at,
+            username: p.profiles?.username,
+            display_name: p.profiles?.display_name
+          }))
+        });
+
+        if (postsError) console.error('❌ Posts query error:', postsError);
 
         if (postsError) throw postsError;
 
