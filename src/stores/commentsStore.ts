@@ -128,15 +128,39 @@ export const useCommentsStore = create<CommentsStore>((set, get) => ({
     const reconciledFlat = get().byPostId[postId].flat.map((c) => (c.id === tempId ? (data as any) : c));
     set({ byPostId: { ...get().byPostId, [postId]: { ...get().byPostId[postId], flat: reconciledFlat, comments: buildThread(reconciledFlat) } } });
 
-    // Parse and insert @mentions of user IDs (UUIDs)
+    // Parse and insert @mentions (support both UUIDs and @usernames)
     try {
-      const mentionRegex = /@([0-9a-fA-F-]{36})\b/g;
       const ids = new Set<string>();
-      let match: RegExpExecArray | null;
-      while ((match = mentionRegex.exec(content)) !== null) {
-        const mentionedId = match[1];
+
+      // 1) UUID mentions (backward compatible)
+      const uuidRegex = /@([0-9a-fA-F-]{36})\b/g;
+      let m: RegExpExecArray | null;
+      while ((m = uuidRegex.exec(content)) !== null) {
+        const mentionedId = m[1];
         if (mentionedId && mentionedId !== uid) ids.add(mentionedId);
       }
+
+      // 2) Username mentions: capture tokens like @username
+      // Allow letters, numbers, underscore, dot and hyphen
+      const usernameRegex = /(^|\s)@([a-zA-Z0-9_.-]{2,32})\b/g;
+      const usernames = new Set<string>();
+      while ((m = usernameRegex.exec(content)) !== null) {
+        const uname = m[2];
+        if (uname) usernames.add(uname.toLowerCase());
+      }
+
+      if (usernames.size > 0) {
+        const { data: profiles, error: profErr } = await supabase
+          .from('profiles')
+          .select('id, username')
+          .in('username', Array.from(usernames));
+        if (!profErr && profiles) {
+          for (const p of profiles as any[]) {
+            if (p.id !== uid) ids.add(p.id);
+          }
+        }
+      }
+
       if (ids.size > 0) {
         const rows = Array.from(ids).map((mentioned_user_id) => ({ comment_id: (data as any).id, mentioned_user_id }));
         await supabase.from('comment_mentions').insert(rows);
