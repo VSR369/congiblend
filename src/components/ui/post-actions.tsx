@@ -1,8 +1,8 @@
 import * as React from "react";
-import { Heart, MessageCircle, Bookmark } from "lucide-react";
+import { Heart, Bookmark } from "lucide-react";
 import { Button } from "./button";
 import { LikeButton } from "./like-button";
-import { CommentsSection } from "./comments-section";
+
 import { cn } from "@/lib/utils";
 import type { Post } from "@/types/feed";
 
@@ -50,25 +50,6 @@ const ActionButton = ({
   </Button>
 );
 
-export const CommentButton = ({ 
-  postId, 
-  commentsCount = 0, 
-  onClick, 
-  className 
-}: { 
-  postId: string; 
-  commentsCount?: number; 
-  onClick?: () => void; 
-  className?: string; 
-}) => (
-  <ActionButton
-    icon={MessageCircle}
-    count={commentsCount}
-    onClick={onClick}
-    aria-label={`Comment on post ${postId}`}
-    className={className}
-  />
-);
 
 
 export const SaveButton = ({ 
@@ -99,7 +80,7 @@ export const PostActions = ({
   onSave,
   className 
 }: PostActionsProps) => {
-  const [showComments, setShowComments] = React.useState(false);
+  
 
   return (
     <div className={cn("space-y-3", className)}>
@@ -112,11 +93,6 @@ export const PostActions = ({
             currentReaction={post.userReaction}
             reactions={post.reactions}
           />
-          <CommentButton 
-            postId={post.id} 
-            commentsCount={post.commentsCount} 
-            onClick={() => setShowComments(!showComments)} 
-          />
         </div>
         
         <SaveButton 
@@ -126,14 +102,6 @@ export const PostActions = ({
         />
       </div>
 
-      {/* Comments Section */}
-      {showComments && (
-        <CommentsSection
-          postId={post.id}
-          comments={post.comments}
-          commentsCount={post.commentsCount}
-        />
-      )}
     </div>
   );
 };

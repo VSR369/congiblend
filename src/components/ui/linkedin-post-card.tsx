@@ -1,9 +1,9 @@
 import * as React from "react";
-import { MoreHorizontal, MessageCircle, Share2, Bookmark, Heart } from "lucide-react";
+import { MoreHorizontal, Bookmark, Heart } from "lucide-react";
 import { formatRelativeTime } from "@/utils/formatters";
 import { LikeButton } from "./like-button";
 import { PostErrorBoundary } from "./post-error-boundary";
-import { SimpleCommentsSection } from "./simple-comments-section";
+
 import { Button } from "./button";
 import { Badge } from "./badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./dropdown-menu";
@@ -229,7 +229,7 @@ export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCar
         </div>
 
         {/* Engagement Stats */}
-        {(totalReactions > 0 || post.comments.length > 0) && (
+        {totalReactions > 0 && (
           <div className="flex items-center justify-between text-sm text-muted-foreground px-4 pb-2 border-b">
             <div className="flex items-center space-x-4">
               {totalReactions > 0 && (
@@ -238,12 +238,7 @@ export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCar
                   <span>{totalReactions}</span>
                 </span>
               )}
-              
-              {post.comments.length > 0 && (
-                <span>{post.comments.length} comments</span>
-              )}
             </div>
-
           </div>
         )}
 
@@ -257,10 +252,6 @@ export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCar
               reactions={post.reactions}
             />
 
-            <Button variant="ghost" size="sm" className="text-muted-foreground">
-              <MessageCircle className="h-4 w-4 mr-1" />
-              Comment
-            </Button>
 
             <Button 
               variant="ghost" 
@@ -276,12 +267,6 @@ export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCar
           </div>
         </div>
 
-        {/* Comments Section */}
-        <SimpleCommentsSection
-          postId={post.id}
-          comments={post.comments}
-          commentsCount={post.comments.length}
-        />
       </article>
     </PostErrorBoundary>
   );

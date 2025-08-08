@@ -1,9 +1,9 @@
 import * as React from "react";
-import { MoreHorizontal, MessageCircle, Share2, Bookmark, Flag, Heart, Send } from "lucide-react";
+import { MoreHorizontal, Bookmark, Heart } from "lucide-react";
 import { formatRelativeTime } from "@/utils/formatters";
 import { LikeButton } from "./like-button";
 import { PostErrorBoundary } from "./post-error-boundary";
-import { SimpleCommentsSection } from "./simple-comments-section";
+
 import { Button } from "./button";
 import { Avatar } from "./avatar";
 import { Badge } from "./badge";
@@ -19,37 +19,12 @@ interface PostCardProps {
 }
 
 export const PostCard = React.memo(({ post, className }: PostCardProps) => {
-  const { toggleSave, votePoll, addComment } = useFeedStore();
-  const [showCommentInput, setShowCommentInput] = React.useState(false);
-  const [commentDraft, setCommentDraft] = React.useState("");
-  const [isSubmittingComment, setIsSubmittingComment] = React.useState(false);
+  const { toggleSave, votePoll } = useFeedStore();
 
   const handleSaveToggle = React.useCallback(() => {
     toggleSave(post.id);
   }, [post.id, toggleSave]);
 
-  const handleAddComment = React.useCallback(async (content: string) => {
-    if (isSubmittingComment) return;
-    
-    setIsSubmittingComment(true);
-    try {
-      await addComment(post.id, content);
-      setCommentDraft("");
-      toast({
-        title: "Comment added",
-        description: "Your comment has been posted successfully."
-      });
-    } catch (error) {
-      console.error("Failed to add comment:", error);
-      toast({
-        title: "Comment failed",
-        description: "Failed to post your comment. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmittingComment(false);
-    }
-  }, [post.id, addComment, isSubmittingComment]);
 
 
   // PHASE 3: Memoized poll vote handler
@@ -357,7 +332,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
         </div>
 
         {/* LinkedIn-Style Engagement Stats */}
-        {(totalReactions > 0 || post.comments.length > 0) && (
+        {totalReactions > 0 && (
           <div className="px-4 pb-3">
             {/* LinkedIn-style engagement summary */}
             {totalReactions > 0 && (
@@ -374,19 +349,6 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
                 </div>
               </div>
             )}
-            
-            {/* LinkedIn-style metrics line */}
-            {post.comments.length > 0 && (
-              <div className="flex items-center justify-between text-sm text-muted-foreground border-b pb-3">
-                <div className="flex items-center space-x-2">
-                  {post.comments.length > 0 && (
-                    <span className="hover:text-primary cursor-pointer hover:underline">
-                      {post.comments.length} comment{post.comments.length !== 1 ? 's' : ''}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -400,14 +362,6 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
               reactions={post.reactions}
             />
 
-            <Button 
-              variant="ghost" 
-              onClick={() => setShowCommentInput(!showCommentInput)}
-              className="linkedin-action-btn text-muted-foreground hover:bg-muted h-12 px-4 rounded-none flex flex-col items-center"
-            >
-              <MessageCircle className="h-5 w-5 mb-1" />
-              <span className="text-xs font-medium">Comment</span>
-            </Button>
 
 
             <Button 
@@ -424,18 +378,6 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
           </div>
         </div>
 
-        {/* Comments Section */}
-        <SimpleCommentsSection
-          postId={post.id}
-          comments={post.comments}
-          commentsCount={post.commentsCount}
-          showCommentInput={showCommentInput}
-          onToggleCommentInput={() => setShowCommentInput(!showCommentInput)}
-          commentDraft={commentDraft}
-          onCommentDraftChange={setCommentDraft}
-          onAddComment={handleAddComment}
-          isSubmittingComment={isSubmittingComment}
-        />
 
       </article>
     </PostErrorBoundary>
