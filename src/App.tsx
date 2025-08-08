@@ -9,6 +9,7 @@ import { FeedErrorBoundary } from "@/components/boundaries/FeedErrorBoundary";
 import { useThemeStore } from "@/stores/themeStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useSimplePerformance } from "@/hooks/useSimplePerformance";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Lazy load pages for better performance
 const MainLayout = lazy(() => import("@/components/layout/MainLayout").then(m => ({ default: m.MainLayout })));
@@ -16,6 +17,9 @@ const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Messages = lazy(() => import("./pages/Messages"));
+
+// React Query client
+const queryClient = new QueryClient();
 
 // Loading component for Suspense
 const PageLoader = () => (
@@ -79,9 +83,11 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <AppProvider>
-        <AppContent />
-      </AppProvider>
+      <QueryClientProvider client={queryClient}>
+        <AppProvider>
+          <AppContent />
+        </AppProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 };

@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import KnowledgeSparksPanel from '@/components/knowledge-sparks/KnowledgeSparksPanel';
+import { ModalErrorBoundary } from '@/components/ui/modal-error-boundary';
 
 const navigationItems = [
   { title: 'Mission Control', url: '/', icon: Home },
@@ -82,7 +83,9 @@ export const LeftSidebar = () => {
                 </SheetTitle>
               </SheetHeader>
               <div className="h-[calc(100vh-4rem)]">
-                <KnowledgeSparksPanel />
+                <ModalErrorBoundary onReset={() => setOpen(false)}>
+                  <KnowledgeSparksPanel />
+                </ModalErrorBoundary>
               </div>
             </SheetContent>
           </Sheet>
