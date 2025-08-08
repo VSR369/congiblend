@@ -14,8 +14,7 @@ import {
   Briefcase, 
   File, 
   Link, 
-  Images,
-  MessageSquare
+  Images
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
@@ -70,11 +69,7 @@ export const UserStatsCard: React.FC = () => {
         .select('post_type')
         .eq('user_id', user.id);
 
-      // Get comment count
-      const { data: commentStats } = await supabase
-        .from('comments')
-        .select('id')
-        .eq('user_id', user.id);
+      // Comments functionality removed
 
       // Process post statistics
       const postCounts = {
@@ -97,7 +92,7 @@ export const UserStatsCard: React.FC = () => {
         headline: userData?.headline || 'Solution Provider',
         avatar_url: userData?.avatar_url,
         ...postCounts,
-        total_comments: commentStats?.length || 0,
+        total_comments: 0,
         profile_views_count: userData?.profile_views_count || 0,
         current_streak_days: userData?.current_streak_days || 0,
       });
@@ -285,20 +280,10 @@ export const UserStatsCard: React.FC = () => {
               </div>
             )}
             
-            {/* Comments */}
-            {stats.total_comments > 0 && (
-              <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
-                <div className="flex items-center space-x-1 mb-1">
-                  <MessageSquare className="h-4 w-4 text-emerald-600" />
-                  <span className="text-sm font-bold text-emerald-600">{stats.total_comments}</span>
-                </div>
-                <span className="text-xs text-muted-foreground text-center">Comments</span>
-              </div>
-            )}
           </div>
           
           {/* Show message if no content created yet */}
-          {stats.total_posts === 0 && stats.total_comments === 0 && (
+          {stats.total_posts === 0 && (
             <div className="text-center py-4">
               <p className="text-sm text-muted-foreground">No content created yet</p>
               <p className="text-xs text-muted-foreground">Start sharing your thoughts!</p>

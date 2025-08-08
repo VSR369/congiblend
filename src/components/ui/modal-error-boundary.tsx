@@ -24,7 +24,6 @@ export class ModalErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Modal error:', error, errorInfo);
-    // TODO: Send to error tracking service
   }
 
   private handleRetry = () => {

@@ -479,9 +479,9 @@ export const useFeedStore = create<FeedState>((set, get) => {
                   const currentState = get();
                   
                   // Check if this is our own optimistic post
-                  const optimisticPost = currentState.posts.find(p => 
-                    p.id.startsWith('temp-') && p.author.id === payload.new.user_id
-                  );
+                const optimisticPost = currentState.posts.find(p => 
+                  p.id.startsWith('post-') && p.author.id === payload.new.user_id
+                );
                   
                   // Get complete post data with author info
                   const { data: postData } = await supabase
@@ -618,7 +618,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
         // Create optimistic post for immediate display
         const optimisticPost: Post = {
-          id: `temp-${Date.now()}`,
+          id: `post-${Date.now()}`,
           type: data.post_type || 'text',
           author: {
             id: user.id,
@@ -629,17 +629,17 @@ export const useFeedStore = create<FeedState>((set, get) => {
           },
           content: data.content,
           media: mediaUrls.map((url, index) => ({
-            id: `temp-media-${index}`,
+            id: `media-${Date.now()}-${index}`,
             type: determineMediaType(url, ''),
             url,
             alt: `Media ${index + 1}`,
             thumbnail: url
           })),
           poll: data.poll_data ? {
-            id: `temp-poll-${Date.now()}`,
+            id: `poll-${Date.now()}`,
             question: data.content,
             options: data.poll_data.options.map((option, index) => ({
-              id: `temp-option-${index}`,
+              id: `option-${Date.now()}-${index}`,
               text: option.text,
               votes: 0,
               percentage: 0
@@ -649,7 +649,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
             allowMultiple: data.poll_data.multiple_choice || false,
           } : undefined,
           event: data.event_data ? {
-            id: `temp-event-${Date.now()}`,
+            id: `event-${Date.now()}`,
             title: data.event_data.title,
             description: data.event_data.description || '',
             startDate: new Date(data.event_data.start_date),
@@ -773,7 +773,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
             // Add new reaction if provided
             if (reaction) {
               updatedReactions.push({
-                id: `temp-${Date.now()}`,
+                id: `reaction-${Date.now()}`,
                 type: reaction,
                 user: {
                   id: user.id,

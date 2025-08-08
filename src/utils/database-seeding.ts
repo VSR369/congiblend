@@ -133,24 +133,9 @@ const createTestPosts = async (users: any[], count: number) => {
   return testPosts;
 };
 
-// Create test interactions (comments, reactions, connections)
+  // Create test interactions (reactions, connections)
 const createTestInteractions = async (users: any[], posts: any[]) => {
-  // Create test comments
-  for (let i = 0; i < 100; i++) {
-    const randomPost = posts[Math.floor(Math.random() * posts.length)];
-    const randomUser = users[Math.floor(Math.random() * users.length)];
-    
-    try {
-      await supabase.from('comments').insert({
-        post_id: randomPost.id,
-        user_id: randomUser.id,
-        content: `Great post! This is test comment ${i + 1}`,
-        reactions_count: Math.floor(Math.random() * 10),
-      });
-    } catch (error) {
-      console.warn('Error creating comment:', error);
-    }
-  }
+  // Comments functionality removed
   
   // Create test reactions
   for (let i = 0; i < 200; i++) {
@@ -232,15 +217,7 @@ export const validateProductionData = async () => {
       issues.push(`Found ${testPostCount} test posts in production`);
     }
     
-    // Check for orphaned comments
-    const { data: orphanedComments } = await supabase
-      .from('comments')
-      .select('id')
-      .is('post_id', null);
-    
-    if (orphanedComments && orphanedComments.length > 0) {
-      issues.push(`Found ${orphanedComments.length} orphaned comments`);
-    }
+    // Comments functionality removed
     
     // Check for orphaned reactions (reactions without valid target posts)
     const { data: orphanedReactions } = await supabase
@@ -282,8 +259,7 @@ export const cleanupTestData = async () => {
       // Delete reactions by test users
       await supabase.from('reactions').delete().in('user_id', userIds);
       
-      // Delete comments by test users
-      await supabase.from('comments').delete().in('user_id', userIds);
+      // Comments functionality removed
       
       // Delete posts by test users
       await supabase.from('posts').delete().in('user_id', userIds);
