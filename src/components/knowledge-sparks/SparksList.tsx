@@ -28,7 +28,7 @@ interface SparksListProps {
 export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId }) => {
   const [query, setQuery] = useState("");
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["knowledge-sparks", "list"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -67,7 +67,9 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId }) 
         />
       </div>
       <div className="flex-1 overflow-y-auto space-y-2 p-2">
-        {isLoading ? (
+        {isError ? (
+          <div className="p-4 text-sm text-destructive">Failed to load sparks. Please try again.</div>
+        ) : isLoading ? (
           <>
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
@@ -83,8 +85,8 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId }) 
             />
           ))
         )}
-        {!isLoading && filtered.length === 0 ? (
-          <div className="p-4 text-sm text-muted-foreground">No sparks found.</div>
+        {!isLoading && !isError && filtered.length === 0 ? (
+          <div className="p-4 text-sm text-muted-foreground">No sparks found. Create one using the form above.</div>
         ) : null}
       </div>
     </div>

@@ -28,6 +28,7 @@ const navigationItems = [
 
 export const LeftSidebar = () => {
   const location = useLocation();
+  const [open, setOpen] = React.useState(false);
 
   return (
     <div className="w-80 h-screen overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-background to-muted/30">
@@ -62,11 +63,12 @@ export const LeftSidebar = () => {
 
         {/* Knowledge Sparks entry (opens panel in a Sheet - no route changes) */}
         <div className="debounced-enter" style={{ animationDelay: `300ms` }}>
-          <Sheet>
+          <Sheet open={open} onOpenChange={(v) => { console.log('KnowledgeSparks Sheet onOpenChange:', v); setOpen(v); }}>
             <SheetTrigger asChild>
               <button
                 className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-foreground hover:bg-muted hover:text-primary"
                 aria-label="Open Knowledge Sparks"
+                onClick={() => { console.log('KnowledgeSparks: trigger clicked'); setOpen(true); }}
               >
                 <Lightbulb className="h-5 w-5" />
                 <span className="font-medium">Knowledge Sparks</span>
