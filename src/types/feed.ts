@@ -82,18 +82,7 @@ export interface Reaction {
   createdAt: Date;
 }
 
-export interface Comment {
-  id: string;
-  content: string;
-  author: User;
-  createdAt: Date;
-  reactions: Reaction[];
-  reactionsCount: number;
-  replies?: Comment[];
-  parentId?: string;
-  edited?: boolean;
-  editedAt?: Date;
-}
+// Comment interface removed - comments functionality not implemented
 
 export interface Post {
   id: string;
@@ -118,8 +107,7 @@ export interface Post {
   hashtags: string[];
   mentions: User[];
   reactions: Reaction[];
-  comments: Comment[];
-  commentsCount: number;
+  // Comments removed - functionality not implemented
   likes: number;
   saves: number;
   views: number;

@@ -26,9 +26,7 @@ interface FeedState {
   
   // Engagement actions
   toggleReaction: (postId: string, reaction: ReactionType | null) => Promise<void>;
-  toggleCommentReaction: (commentId: string, postId: string, reaction: ReactionType | null) => Promise<void>;
-  addComment: (postId: string, content: string, parentId?: string) => void;
-  deleteComment: (postId: string, commentId: string) => void;
+  // Comment functions removed - comments functionality not implemented
   toggleSave: (postId: string) => void;
   
   
@@ -130,7 +128,7 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
       totalVotes,
       expiresAt: dbPost.poll_data.expires_at && !isNaN(new Date(dbPost.poll_data.expires_at).getTime()) ? new Date(dbPost.poll_data.expires_at) : undefined,
       allowMultiple: dbPost.poll_data.multiple_choice || false,
-      userVote: undefined // TODO: Get user's vote from database
+      userVote: undefined
     };
     console.log('Transformed poll:', poll);
   }
@@ -170,8 +168,7 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
     hashtags: extractHashtags(dbPost.content),
     mentions: [],
     reactions,
-    comments: [],
-    commentsCount: dbPost.comments_count || 0,
+    // Comments removed - functionality not implemented
     likes: dbPost.likes_count || 0,
     saves: 0,
     views: 0,
@@ -368,7 +365,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
         // Get current user for reactions
         const { data: { user } } = await supabase.auth.getUser();
         
-        // Transform posts to our format with reactions and comments loaded separately
+        // Transform posts to our format with reactions loaded separately
         const transformedPosts = await Promise.all(
           (postsData || []).map(async (dbPost) => {
             try {
@@ -390,7 +387,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
                 .eq('target_type', 'post')
                 .eq('target_id', dbPost.id);
 
-              // Add reactions to the post data (no comments)
+              // Add reactions to the post data
               const postWithData = {
                 ...dbPost,
                 reactions: reactions || []
@@ -399,7 +396,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
               return transformDbPost(postWithData, dbPost.profiles, user?.id);
             } catch (error) {
               console.error('Error loading post data:', error);
-              // Return post without reactions/comments if there's an error
+              // Return post without reactions if there's an error
               return transformDbPost({ ...dbPost, reactions: [] }, dbPost.profiles, user?.id);
             }
           })
@@ -665,8 +662,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           hashtags: extractHashtags(data.content),
           mentions: [],
           reactions: [],
-          comments: [],
-          commentsCount: 0,
+          // Comments removed - functionality not implemented
           likes: 0,
           saves: 0,
           views: 0,
@@ -845,144 +841,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
       }
     },
 
-    addComment: async (postId: string, content: string, parentId?: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      // Get user profile for complete author data
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('id, username, display_name, avatar_url, is_verified')
-        .eq('id', user.id)
-        .single();
-
-      // Optimistic update - add comment immediately to UI
-      const tempId = `temp-${Date.now()}`;
-      const newComment = {
-        id: tempId,
-        content,
-        author: {
-          id: user.id,
-          name: userProfile?.display_name || userProfile?.username || user.email?.split('@')[0] || 'User',
-          username: userProfile?.username || user.email?.split('@')[0] || 'user',
-          avatar: userProfile?.avatar_url,
-          verified: userProfile?.is_verified || false
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        parentId,
-        reactions: [],
-        reactionsCount: 0
-      };
-
-      try {
-        // Add optimistic comment to UI
-        set(state => ({
-          posts: state.posts.map(p => {
-            if (p.id !== postId) return p;
-            return {
-              ...p,
-              comments: [...p.comments, newComment],
-              commentsCount: p.commentsCount + 1
-            };
-          })
-        }));
-
-        // Call the comments edge function
-        const { data, error } = await supabase.functions.invoke('comments', {
-          body: {
-            post_id: postId,
-            content,
-            parent_comment_id: parentId || null
-          }
-        });
-
-        if (error) {
-          console.error('Comment edge function error:', error);
-          throw error;
-        }
-
-        console.log('Comment creation response:', data);
-
-        // Replace optimistic comment with actual comment data
-        if (data && data.comment) {
-          const commentData = data.comment;
-          set(state => ({
-            posts: state.posts.map(p => {
-              if (p.id !== postId) return p;
-              
-              // Replace the temporary comment with real data
-              const updatedComments = p.comments.map(c => 
-                c.id === tempId ? {
-                  id: commentData.id,
-                  content: commentData.content,
-                  author: {
-                    id: commentData.profiles?.id || newComment.author.id,
-                    name: commentData.profiles?.display_name || newComment.author.name,
-                    username: commentData.profiles?.username || newComment.author.username,
-                    avatar: commentData.profiles?.avatar_url || newComment.author.avatar,
-                    verified: commentData.profiles?.is_verified || false
-                  },
-                  createdAt: new Date(commentData.created_at),
-                  updatedAt: new Date(commentData.updated_at || commentData.created_at),
-                  parentId: commentData.parent_id,
-                  reactions: [],
-                  reactionsCount: commentData.reactions_count || 0
-                } : c
-              );
-              
-              return {
-                ...p,
-                comments: updatedComments
-              };
-            })
-          }));
-        }
-
-        return data;
-      } catch (error) {
-        console.error('Error adding comment:', error);
-        
-        // Revert optimistic update on error
-        set(state => ({
-          posts: state.posts.map(p => {
-            if (p.id !== postId) return p;
-            return {
-              ...p,
-              comments: p.comments.filter(c => c.id !== tempId),
-              commentsCount: Math.max(0, p.commentsCount - 1)
-            };
-          })
-        }));
-        
-        throw error;
-      }
-    },
-
-    deleteComment: async (postId: string, commentId: string) => {
-      try {
-        const { error } = await supabase
-          .from('comments')
-          .delete()
-          .eq('id', commentId);
-
-        if (error) throw error;
-
-        set(state => ({
-          posts: state.posts.map(post => {
-            if (post.id !== postId) return post;
-            
-            return {
-              ...post,
-              comments: post.comments.filter(c => c.id !== commentId)
-            };
-          })
-        }));
-      } catch (error) {
-        console.error('Error deleting comment:', error);
-        throw error;
-      }
-    },
+    // Comment functions removed - comments functionality not implemented
 
     votePoll: async (postId: string, optionIndex: number) => {
       try {
@@ -1108,68 +967,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
       get().loadPosts(true);
     },
 
-    toggleCommentReaction: async (commentId: string, postId: string, reaction: ReactionType | null) => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('User not authenticated');
-
-        // Optimistic update - update comment reactions count
-        set(state => ({
-          posts: state.posts.map(p => {
-            if (p.id !== postId) return p;
-            
-            return {
-              ...p,
-              comments: p.comments.map(comment => {
-                if (comment.id !== commentId) return comment;
-                
-                const hasExistingReaction = comment.reactions.some(r => r.user.id === user.id);
-                const reactionCountChange = reaction ? 
-                  (hasExistingReaction ? 0 : 1) : 
-                  (hasExistingReaction ? -1 : 0);
-                
-                const updatedReactions = comment.reactions.filter(r => r.user.id !== user.id);
-                
-                if (reaction) {
-                  updatedReactions.push({
-                    id: `temp-${Date.now()}`,
-                    type: reaction,
-                    user: {
-                      id: user.id,
-                      name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
-                      username: user.user_metadata?.username || user.email?.split('@')[0] || 'user'
-                    },
-                    createdAt: new Date()
-                  });
-                }
-                
-                return {
-                  ...comment,
-                  reactions: updatedReactions,
-                  reactionsCount: Math.max(0, comment.reactionsCount + reactionCountChange)
-                };
-              })
-            };
-          })
-        }));
-
-        // Call backend API
-        const { data, error } = await supabase.functions.invoke('reactions', {
-          body: {
-            target_type: 'comment',
-            target_id: commentId,
-            reaction_type: reaction
-          }
-        });
-
-        if (error) throw error;
-
-      } catch (error) {
-        console.error('Error toggling comment reaction:', error);
-        // Revert optimistic update on error
-        get().loadPosts(true);
-        throw error;
-      }
-    }
+    // Comment reaction function removed - comments functionality not implemented
   };
 });

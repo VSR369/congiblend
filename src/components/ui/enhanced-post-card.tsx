@@ -249,10 +249,7 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
               <span className="text-xs">{post.likes}</span>
             </Button>
             
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-blue-500">
-              <MessageCircle className="h-4 w-4 mr-1" />
-              <span className="text-xs">{post.commentsCount}</span>
-            </Button>
+            {/* Comments removed - functionality not implemented */}
           </div>
           
           <Button

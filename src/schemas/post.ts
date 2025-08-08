@@ -9,18 +9,14 @@ export const postSchema = z.object({
   mentions: z.array(z.string()).optional(),
 });
 
-export const commentSchema = z.object({
-  content: z.string().min(1, "Comment cannot be empty").max(1000, "Comment too long"),
-  post_id: z.string().uuid(),
-  parent_id: z.string().uuid().optional(),
-});
+// Comment schema removed - comments functionality not implemented
 
 export const reactionSchema = z.object({
-  target_type: z.enum(['post', 'comment']),
+  target_type: z.enum(['post']),
   target_id: z.string().uuid(),
   reaction_type: z.enum(['like', 'love', 'insightful', 'support', 'celebrate', 'curious']),
 });
 
 export type PostFormData = z.infer<typeof postSchema>;
-export type CommentFormData = z.infer<typeof commentSchema>;
+// CommentFormData removed - comments functionality not implemented
 export type ReactionFormData = z.infer<typeof reactionSchema>;

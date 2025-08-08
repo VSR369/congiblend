@@ -8,8 +8,7 @@ import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { FeedErrorBoundary } from "@/components/boundaries/FeedErrorBoundary";
 import { useThemeStore } from "@/stores/themeStore";
 import { useAuthStore } from "@/stores/authStore";
-import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
-// Debug components removed for production
+import { useSimplePerformance } from "@/hooks/useSimplePerformance";
 
 // Lazy load pages for better performance
 const MainLayout = lazy(() => import("@/components/layout/MainLayout").then(m => ({ default: m.MainLayout })));
@@ -26,8 +25,8 @@ const PageLoader = () => (
 
 // App content component that uses context
 const AppContent = () => {
-  // Initialize performance monitoring inside context
-  usePerformanceMonitor(process.env.NODE_ENV === 'development');
+  // Minimal performance monitoring for development only
+  useSimplePerformance(process.env.NODE_ENV === 'development');
 
   return (
     <TooltipProvider>
