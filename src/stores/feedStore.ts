@@ -376,14 +376,18 @@ export const useFeedStore = create<FeedState>((set, get) => {
           console.log('✅ Skipped time filter - showing posts from all time periods');
         }
 
-        // Only show public posts unless it's user's own posts
-        if (filters.userFilter !== 'my_posts') {
+        // Visibility
+        // For "others", only public posts are visible; for "all" or "my_posts" rely on RLS to include own private posts too
+        if (filters.userFilter === 'others') {
           query = query.eq('visibility', 'public');
         }
 
+        const pageSize = 20;
+        const offset = reset ? 0 : state.posts.length;
+
         const { data: postsData, error: postsError } = await query
           .order('created_at', { ascending: false })
-          .limit(20);
+          .range(offset, offset + pageSize - 1);
 
         console.log('📊 Query results:', {
           totalPosts: postsData?.length || 0,
@@ -478,10 +482,14 @@ export const useFeedStore = create<FeedState>((set, get) => {
           })
         );
 
-        set({ 
-          posts: reset ? transformedPosts : [...state.posts, ...transformedPosts],
-          loading: false,
-          hasMore: transformedPosts.length === 20
+        set((state) => {
+          const merged = reset ? transformedPosts : [...state.posts, ...transformedPosts];
+          const unique = Array.from(new Map(merged.map(p => [p.id, p])).values());
+          return {
+            posts: unique,
+            loading: false,
+            hasMore: transformedPosts.length === pageSize
+          };
         });
 
         // PHASE 4: Intelligent real-time updates with scroll awareness
