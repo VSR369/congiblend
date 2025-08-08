@@ -12,9 +12,9 @@ export const REACTION_CONFIG = {
   like: {
     icon: ThumbsUp,
     label: 'Like',
-    color: 'text-blue-600',
-    hoverColor: 'hover:text-blue-600',
-    bgHover: 'hover:bg-blue-50',
+    color: 'text-primary',
+    hoverColor: 'hover:text-primary',
+    bgHover: 'hover:bg-primary/10',
   },
   love: {
     icon: Heart,
@@ -33,9 +33,9 @@ export const REACTION_CONFIG = {
   support: {
     icon: Target,
     label: 'Support',
-    color: 'text-green-600',
-    hoverColor: 'hover:text-green-600',
-    bgHover: 'hover:bg-green-50',
+    color: 'text-accent',
+    hoverColor: 'hover:text-accent',
+    bgHover: 'hover:bg-accent/10',
   },
   celebrate: {
     icon: Award,
