@@ -28,14 +28,9 @@ const supabase = createClient(
 
 // Valid reaction types
 const VALID_REACTION_TYPES = [
-  'like',
-  'love', 
-  'celebrate',
-  'support',
-  'insightful',
-  'funny',
-  'angry',
-  'sad'
+  'innovative',
+  'practical',
+  'well_researched'
 ];
 
 // Valid target types

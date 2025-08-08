@@ -57,7 +57,7 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
 
   const handleClick = async () => {
     // LinkedIn behavior: click toggles between Like and no reaction
-    const reactionToToggle = currentReaction === 'like' ? null : 'like';
+    const reactionToToggle = currentReaction === 'innovative' ? null : 'innovative';
     await toggleReaction(targetId, reactionToToggle);
   };
 
@@ -67,7 +67,7 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
   };
 
   // Determine button appearance based on current reaction
-  const currentConfig = currentReaction ? REACTION_CONFIG[currentReaction] : REACTION_CONFIG.like;
+  const currentConfig = currentReaction ? REACTION_CONFIG[currentReaction] : REACTION_CONFIG.innovative;
   const isActive = !!currentReaction;
 
   return (

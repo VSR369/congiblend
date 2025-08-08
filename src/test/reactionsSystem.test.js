@@ -152,7 +152,7 @@ describe('Reactions System', () => {
 
   test('Should add reactions to posts', async () => {
     const post = posts[0];
-    const reactionTypes = ['like', 'love', 'celebrate', 'support', 'insightful'];
+    const reactionTypes = ['innovative', 'practical', 'well_researched'];
     const users = [alice, bob, charlie, diana];
     
     console.log(`Adding reactions to post: ${post.id}`);
@@ -197,18 +197,18 @@ describe('Reactions System', () => {
     
     global.reactionTestStage = 'after_change';
     
-    // Alice changes from previous reaction to 'funny'
+    // Alice changes from previous reaction to 'practical'
     const response = await request(app)
       .put('/api/reactions')
       .set('Authorization', `Bearer ${alice.token}`)
       .send({
         target_type: 'post',
         target_id: post.id,
-        reaction_type: 'funny'
+        reaction_type: 'practical'
       })
       .expect(200);
     
-    expect(response.body.reaction_type).toBe('funny');
+    expect(response.body.reaction_type).toBe('practical');
     expect(response.body.target_id).toBe(post.id);
     expect(response.body.target_type).toBe('post');
     expect(response.body.updated_at).toBeTruthy();
@@ -255,7 +255,7 @@ describe('Reactions System', () => {
 
   test('Should validate reaction types', async () => {
     const post = posts[0];
-    const validReactionTypes = ['like', 'love', 'celebrate', 'support', 'insightful', 'funny', 'angry', 'sad'];
+    const validReactionTypes = ['innovative', 'practical', 'well_researched'];
     const invalidReactionTypes = ['invalid', 'unknown', '', null, undefined];
     
     // Test that all valid reaction types are accepted
@@ -298,11 +298,11 @@ describe('Reactions System', () => {
       .send({
         target_type: 'post',
         target_id: post.id,
-        reaction_type: 'like'
+        reaction_type: 'innovative'
       })
       .expect(201);
     
-    expect(firstReaction.body.reaction_type).toBe('like');
+    expect(firstReaction.body.reaction_type).toBe('innovative');
     
     // Same user tries to add different reaction (should update, not create new)
     const secondReaction = await request(app)
@@ -311,11 +311,11 @@ describe('Reactions System', () => {
       .send({
         target_type: 'post',
         target_id: post.id,
-        reaction_type: 'love'
+        reaction_type: 'practical'
       })
       .expect(201);
     
-    expect(secondReaction.body.reaction_type).toBe('love');
+    expect(secondReaction.body.reaction_type).toBe('practical');
     
     console.log('✅ Multiple reactions from same user handled correctly');
   });
@@ -330,7 +330,7 @@ describe('Reactions System', () => {
       const incompleteData = {
         target_type: 'post',
         target_id: post.id,
-        reaction_type: 'like'
+        reaction_type: 'innovative'
       };
       
       delete incompleteData[field];

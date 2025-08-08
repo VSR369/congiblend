@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, MessageCircle, Bookmark, MoreHorizontal, Users, Calendar, MapPin, Briefcase } from 'lucide-react';
+import { Lightbulb, Heart, MessageCircle, Bookmark, MoreHorizontal, Users, Calendar, MapPin, Briefcase } from 'lucide-react';
 import { Button } from './button';
 import { Badge } from './badge';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
@@ -32,7 +32,7 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
 
   const handleLike = async () => {
     try {
-      await toggleReaction(post.id, post.userReaction === 'like' ? null : 'like');
+      await toggleReaction(post.id, post.userReaction === 'innovative' ? null : 'innovative');
     } catch (error) {
       console.error('Failed to toggle like:', error);
     }
@@ -242,10 +242,10 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
               onClick={handleLike}
               className={cn(
                 "text-muted-foreground hover:text-primary",
-                post.userReaction === 'like' && "text-primary"
+                post.userReaction === 'innovative' && "text-primary"
               )}
             >
-              <Heart className="h-4 w-4 mr-1" />
+              <Lightbulb className="h-4 w-4 mr-1" />
               <span className="text-xs">{post.likes}</span>
             </Button>
             

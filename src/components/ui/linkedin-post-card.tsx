@@ -44,7 +44,7 @@ export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCar
   const totalReactions = post.reactions.length;
   const topReactions = React.useMemo(() => {
     const reactionCounts: Record<ReactionType, number> = {
-      like: 0, love: 0, celebrate: 0, support: 0, insightful: 0, curious: 0
+      innovative: 0, practical: 0, well_researched: 0
     };
     
     post.reactions.forEach(reaction => {

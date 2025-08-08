@@ -141,7 +141,7 @@ const createTestInteractions = async (users: any[], posts: any[]) => {
   for (let i = 0; i < 200; i++) {
     const randomPost = posts[Math.floor(Math.random() * posts.length)];
     const randomUser = users[Math.floor(Math.random() * users.length)];
-    const reactionTypes = ['like', 'love', 'celebrate', 'support', 'insightful', 'curious'];
+    const reactionTypes = ['innovative', 'practical', 'well_researched'];
     
     try {
       await supabase.from('reactions').insert({

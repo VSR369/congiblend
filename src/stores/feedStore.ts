@@ -95,7 +95,7 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
     
     return {
       id: reaction.id,
-      type: reaction.reaction_type || 'like',
+      type: reaction.reaction_type || 'innovative',
       user: {
         id: reaction.user_id,
         name: reaction.profiles?.display_name || reaction.profiles?.username || 'User',

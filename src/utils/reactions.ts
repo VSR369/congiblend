@@ -1,55 +1,31 @@
 import { 
-  ThumbsUp, 
-  Heart, 
-  Lightbulb, 
-  Target, 
-  Award,
-  Smile
+  Lightbulb,
+  Wrench,
+  BookOpen
 } from 'lucide-react';
 import type { ReactionType } from '@/types/feed';
 
 export const REACTION_CONFIG = {
-  like: {
-    icon: ThumbsUp,
-    label: 'Like',
+  innovative: {
+    icon: Lightbulb,
+    label: 'Innovative',
     color: 'text-primary',
     hoverColor: 'hover:text-primary',
     bgHover: 'hover:bg-primary/10',
   },
-  love: {
-    icon: Heart,
-    label: 'Love',
-    color: 'text-red-600',
-    hoverColor: 'hover:text-red-600',
-    bgHover: 'hover:bg-red-50',
-  },
-  insightful: {
-    icon: Lightbulb,
-    label: 'Insightful',
-    color: 'text-yellow-600',
-    hoverColor: 'hover:text-yellow-600',
-    bgHover: 'hover:bg-yellow-50',
-  },
-  support: {
-    icon: Target,
-    label: 'Support',
+  practical: {
+    icon: Wrench,
+    label: 'Practical',
     color: 'text-accent',
     hoverColor: 'hover:text-accent',
     bgHover: 'hover:bg-accent/10',
   },
-  celebrate: {
-    icon: Award,
-    label: 'Celebrate',
-    color: 'text-purple-600',
-    hoverColor: 'hover:text-purple-600',
-    bgHover: 'hover:bg-purple-50',
-  },
-  curious: {
-    icon: Smile,
-    label: 'Curious',
-    color: 'text-pink-600',
-    hoverColor: 'hover:text-pink-600',
-    bgHover: 'hover:bg-pink-50',
+  well_researched: {
+    icon: BookOpen,
+    label: 'Well-Researched',
+    color: 'text-foreground',
+    hoverColor: 'hover:text-foreground',
+    bgHover: 'hover:bg-muted/30',
   },
 } as const;
 

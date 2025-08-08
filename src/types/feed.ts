@@ -73,7 +73,7 @@ export interface LinkPreview {
 
 export type PostType = 'text' | 'image' | 'video' | 'audio' | 'article' | 'poll' | 'event' | 'document' | 'link' | 'carousel';
 
-export type ReactionType = 'like' | 'love' | 'insightful' | 'support' | 'celebrate' | 'curious';
+export type ReactionType = 'innovative' | 'practical' | 'well_researched';
 
 export interface Reaction {
   id: string;
