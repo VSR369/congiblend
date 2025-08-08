@@ -21,6 +21,7 @@ interface PostCardProps {
 export const PostCard = React.memo(({ post, className }: PostCardProps) => {
   const { toggleSave, votePoll } = useFeedStore();
   const [showCommentInput, setShowCommentInput] = React.useState(false);
+  const [commentDraft, setCommentDraft] = React.useState("");
 
   const handleSaveToggle = React.useCallback(() => {
     toggleSave(post.id);
@@ -406,6 +407,8 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
           commentsCount={post.commentsCount}
           showCommentInput={showCommentInput}
           onToggleCommentInput={() => setShowCommentInput(!showCommentInput)}
+          commentDraft={commentDraft}
+          onCommentDraftChange={setCommentDraft}
         />
 
       </article>

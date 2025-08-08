@@ -923,25 +923,34 @@ export const useFeedStore = create<FeedState>((set, get) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      // Get user profile for complete author data
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, is_verified')
+        .eq('id', user.id)
+        .single();
+
       // Optimistic update - add comment immediately to UI
+      const tempId = `temp-${Date.now()}`;
       const newComment = {
-        id: `temp-${Date.now()}`,
+        id: tempId,
         content,
         author: {
           id: user.id,
-          name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
-          username: user.user_metadata?.username || user.email?.split('@')[0] || 'user',
-          avatar: user.user_metadata?.avatar_url
+          name: userProfile?.display_name || userProfile?.username || user.email?.split('@')[0] || 'User',
+          username: userProfile?.username || user.email?.split('@')[0] || 'user',
+          avatar: userProfile?.avatar_url,
+          verified: userProfile?.is_verified || false
         },
         createdAt: new Date(),
+        updatedAt: new Date(),
         parentId,
         reactions: [],
-        reactionsCount: 0,
-        replies: []
+        reactionsCount: 0
       };
 
       try {
-
+        // Add optimistic comment to UI
         set(state => ({
           posts: state.posts.map(p => {
             if (p.id !== postId) return p;
@@ -953,7 +962,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           })
         }));
 
-        // Use the comments Edge Function
+        // Call the comments edge function
         const { data, error } = await supabase.functions.invoke('comments', {
           body: {
             post_id: postId,
@@ -967,48 +976,27 @@ export const useFeedStore = create<FeedState>((set, get) => {
           throw error;
         }
 
+        console.log('Comment creation response:', data);
+
         // Replace optimistic comment with actual comment data
         if (data) {
           set(state => ({
             posts: state.posts.map(p => {
               if (p.id !== postId) return p;
               
+              // Replace the temporary comment with real data
               const updatedComments = p.comments.map(c => 
-                c.id === newComment.id ? {
+                c.id === tempId ? {
                   id: data.id,
                   content: data.content,
-                  author: {
-                    id: data.author?.id || data.user_id,
-                    name: data.author?.display_name || data.author?.username || 'User',
-                    username: data.author?.username || 'user',
-                    avatar: data.author?.avatar_url
-                  },
+                  author: newComment.author, // Keep the author data we already have
                   createdAt: new Date(data.created_at),
+                  updatedAt: new Date(data.updated_at || data.created_at),
                   parentId: data.parent_comment_id,
                   reactions: [],
-                  reactionsCount: data.reactions_count || 0,
-                  replies: []
+                  reactionsCount: data.reactions_count || 0
                 } : c
               );
-              
-              // If we didn't find the temp comment, add the new one
-              if (!updatedComments.some(c => c.id === data.id)) {
-                updatedComments.push({
-                  id: data.id,
-                  content: data.content,
-                  author: {
-                    id: data.author?.id || data.user_id,
-                    name: data.author?.display_name || data.author?.username || 'User',
-                    username: data.author?.username || 'user',
-                    avatar: data.author?.avatar_url
-                  },
-                  createdAt: new Date(data.created_at),
-                  parentId: data.parent_comment_id,
-                  reactions: [],
-                  reactionsCount: data.reactions_count || 0,
-                  replies: []
-                });
-              }
               
               return {
                 ...p,
@@ -1028,7 +1016,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
             if (p.id !== postId) return p;
             return {
               ...p,
-              comments: p.comments.filter(c => c.id !== newComment.id),
+              comments: p.comments.filter(c => c.id !== tempId),
               commentsCount: Math.max(0, p.commentsCount - 1)
             };
           })

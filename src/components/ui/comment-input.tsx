@@ -11,16 +11,24 @@ interface CommentInputProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  value?: string;
+  onChange?: (value: string) => void;
 }
 
 export const CommentInput = ({ 
   onSubmit, 
   placeholder = "Write a comment...", 
   disabled = false,
-  className 
+  className,
+  value: controlledValue,
+  onChange: onControlledChange
 }: CommentInputProps) => {
-  const [content, setContent] = React.useState("");
+  const [internalContent, setInternalContent] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  
+  // Use controlled value if provided, otherwise use internal state
+  const content = controlledValue !== undefined ? controlledValue : internalContent;
+  const setContent = onControlledChange || setInternalContent;
   const [user, setUser] = React.useState<any>(null);
 
   React.useEffect(() => {
@@ -38,7 +46,12 @@ export const CommentInput = ({
     setIsSubmitting(true);
     try {
       await onSubmit(content.trim());
-      setContent("");
+      // Clear content after successful submission
+      if (onControlledChange) {
+        onControlledChange("");
+      } else {
+        setInternalContent("");
+      }
     } catch (error) {
       console.error("Error submitting comment:", error);
     } finally {
@@ -74,6 +87,7 @@ export const CommentInput = ({
             disabled={disabled || isSubmitting}
             className="border-0 min-h-[44px] max-h-[120px] resize-none focus-visible:ring-0 focus-visible:ring-offset-0"
             rows={1}
+            autoFocus={true}
           />
           
             <div className="flex items-center justify-between p-2 border-t">
