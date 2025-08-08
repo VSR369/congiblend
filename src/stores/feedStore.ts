@@ -116,6 +116,9 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
   if (dbPost.poll_data && dbPost.poll_data.options) {
     console.log('Transforming poll data:', dbPost.poll_data);
     const totalVotes = dbPost.poll_data.options.reduce((sum: number, option: any) => sum + (option.votes || 0), 0);
+    const userVoteIndices: string[] | undefined = Array.isArray((dbPost as any).userVoteIndices)
+      ? (dbPost as any).userVoteIndices
+      : undefined;
     poll = {
       id: `${dbPost.id}-poll`,
       question: dbPost.content, // Use post content as question
@@ -128,7 +131,7 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
       totalVotes,
       expiresAt: dbPost.poll_data.expires_at && !isNaN(new Date(dbPost.poll_data.expires_at).getTime()) ? new Date(dbPost.poll_data.expires_at) : undefined,
       allowMultiple: dbPost.poll_data.multiple_choice || false,
-      userVote: undefined
+      userVote: userVoteIndices
     };
     console.log('Transformed poll:', poll);
   }
@@ -387,11 +390,45 @@ export const useFeedStore = create<FeedState>((set, get) => {
                 .eq('target_type', 'post')
                 .eq('target_id', dbPost.id);
 
-              // Add reactions to the post data
-              const postWithData = {
+              // Add reactions and poll vote data
+              let postWithData: any = {
                 ...dbPost,
                 reactions: reactions || []
               };
+
+              // If this is a poll post, compute vote counts and current user's vote
+              const pollData: any = (dbPost as any).poll_data;
+              if (pollData && Array.isArray(pollData.options)) {
+                const { data: votesData } = await supabase
+                  .from('votes')
+                  .select('option_index, user_id')
+                  .eq('post_id', dbPost.id);
+
+                const voteCounts: Record<number, number> = {};
+                let userVoteIndices: string[] | undefined = undefined;
+
+                (votesData || []).forEach(v => {
+                  voteCounts[v.option_index] = (voteCounts[v.option_index] || 0) + 1;
+                  if (user?.id && v.user_id === user.id) {
+                    userVoteIndices = [String(v.option_index)];
+                  }
+                });
+
+                const updatedOptions = pollData.options.map((opt: any, idx: number) => ({
+                  text: opt.text,
+                  votes: voteCounts[idx] || 0
+                }));
+
+                postWithData = {
+                  ...postWithData,
+                  poll_data: {
+                    options: updatedOptions,
+                    multiple_choice: pollData.multiple_choice ?? false,
+                    expires_at: pollData.expires_at ?? null,
+                  },
+                    userVoteIndices
+                };
+              }
 
               return transformDbPost(postWithData, dbPost.profiles, user?.id);
             } catch (error) {
@@ -856,25 +893,33 @@ export const useFeedStore = create<FeedState>((set, get) => {
           .select('*')
           .eq('user_id', user.id)
           .eq('post_id', postId)
-          .single();
+          .maybeSingle();
 
         console.log('Existing vote:', existingVote);
 
-        // Insert or update vote in the votes table
-        const { data: voteData, error: voteError } = await supabase
-          .from('votes')
-          .upsert({
-            user_id: user.id,
-            post_id: postId,
-            option_index: optionIndex
-          }, {
-            onConflict: 'user_id,post_id'
-          })
-          .select();
-
-        if (voteError) {
-          console.error('Vote error:', voteError);
-          throw voteError;
+        // Insert or update vote in the votes table without relying on DB constraints
+        let voteData;
+        if (existingVote) {
+          const { data: updated, error: updateError } = await supabase
+            .from('votes')
+            .update({ option_index: optionIndex, updated_at: new Date().toISOString() })
+            .eq('id', existingVote.id)
+            .select();
+          if (updateError) {
+            console.error('Vote update error:', updateError);
+            throw updateError;
+          }
+          voteData = updated;
+        } else {
+          const { data: inserted, error: insertError } = await supabase
+            .from('votes')
+            .insert({ user_id: user.id, post_id: postId, option_index: optionIndex })
+            .select();
+          if (insertError) {
+            console.error('Vote insert error:', insertError);
+            throw insertError;
+          }
+          voteData = inserted;
         }
 
         console.log('Vote saved:', voteData);
