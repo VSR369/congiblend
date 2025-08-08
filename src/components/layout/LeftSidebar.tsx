@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   Home, 
@@ -9,12 +10,15 @@ import {
   MessageCircle,
   Eye,
   FileText,
-  TrendingUp
+  TrendingUp,
+  Lightbulb
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { UserStatsCard } from '@/components/ui/user-stats-card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import KnowledgeSparksPanel from '@/components/knowledge-sparks/KnowledgeSparksPanel';
 
 const navigationItems = [
   { title: 'Mission Control', url: '/', icon: Home },
@@ -55,6 +59,32 @@ export const LeftSidebar = () => {
             </Link>
           </div>
         ))}
+
+        {/* Knowledge Sparks entry (opens panel in a Sheet - no route changes) */}
+        <div className="debounced-enter" style={{ animationDelay: `300ms` }}>
+          <Sheet>
+            <SheetTrigger asChild>
+              <button
+                className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-foreground hover:bg-muted hover:text-primary"
+                aria-label="Open Knowledge Sparks"
+              >
+                <Lightbulb className="h-5 w-5" />
+                <span className="font-medium">Knowledge Sparks</span>
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:max-w-3xl p-0">
+              <SheetHeader className="px-6 py-4 border-b">
+                <SheetTitle className="flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-primary" />
+                  Knowledge Sparks
+                </SheetTitle>
+              </SheetHeader>
+              <div className="h-[calc(100vh-4rem)]">
+                <KnowledgeSparksPanel />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
       {/* Footer Card */}
       <div className="glass-card p-3 rounded-lg border border-white/10 animate-fade-in">

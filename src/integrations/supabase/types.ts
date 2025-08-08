@@ -461,6 +461,69 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_sparks: {
+        Row: {
+          author_id: string
+          category: string | null
+          content_length: number
+          contributor_count: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          last_edited_at: string
+          last_edited_by: string | null
+          reactions_count: number
+          slug: string
+          tags: string[]
+          title: string
+          total_edits: number
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          author_id: string
+          category?: string | null
+          content_length?: number
+          contributor_count?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          last_edited_at?: string
+          last_edited_by?: string | null
+          reactions_count?: number
+          slug: string
+          tags?: string[]
+          title: string
+          total_edits?: number
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          author_id?: string
+          category?: string | null
+          content_length?: number
+          contributor_count?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          last_edited_at?: string
+          last_edited_by?: string | null
+          reactions_count?: number
+          slug?: string
+          tags?: string[]
+          title?: string
+          total_edits?: number
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: []
+      }
       master_analytics_access_types: {
         Row: {
           created_at: string
@@ -2287,6 +2350,286 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      spark_analytics: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          session_duration: number | null
+          spark_id: string
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          session_duration?: number | null
+          spark_id: string
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          session_duration?: number | null
+          spark_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spark_analytics_spark_id_fkey"
+            columns: ["spark_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_sparks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spark_bookmarks: {
+        Row: {
+          bookmark_type: string
+          created_at: string
+          id: string
+          notes: string | null
+          spark_id: string
+          user_id: string
+        }
+        Insert: {
+          bookmark_type?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          spark_id: string
+          user_id: string
+        }
+        Update: {
+          bookmark_type?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          spark_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spark_bookmarks_spark_id_fkey"
+            columns: ["spark_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_sparks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spark_categories: {
+        Row: {
+          color_code: string | null
+          created_at: string
+          description: string | null
+          icon_name: string | null
+          id: string
+          is_active: boolean
+          name: string
+          parent_category_id: string | null
+          spark_count: number
+        }
+        Insert: {
+          color_code?: string | null
+          created_at?: string
+          description?: string | null
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          parent_category_id?: string | null
+          spark_count?: number
+        }
+        Update: {
+          color_code?: string | null
+          created_at?: string
+          description?: string | null
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          parent_category_id?: string | null
+          spark_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spark_categories_parent_category_id_fkey"
+            columns: ["parent_category_id"]
+            isOneToOne: false
+            referencedRelation: "spark_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spark_comments: {
+        Row: {
+          comment_type: string | null
+          content: string
+          created_at: string
+          id: string
+          is_resolved: boolean
+          parent_comment_id: string | null
+          resolved_by: string | null
+          spark_id: string
+          updated_at: string
+          upvotes: number
+          user_id: string
+        }
+        Insert: {
+          comment_type?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          is_resolved?: boolean
+          parent_comment_id?: string | null
+          resolved_by?: string | null
+          spark_id: string
+          updated_at?: string
+          upvotes?: number
+          user_id: string
+        }
+        Update: {
+          comment_type?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_resolved?: boolean
+          parent_comment_id?: string | null
+          resolved_by?: string | null
+          spark_id?: string
+          updated_at?: string
+          upvotes?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spark_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "spark_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spark_comments_spark_id_fkey"
+            columns: ["spark_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_sparks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spark_content_versions: {
+        Row: {
+          change_summary: string | null
+          character_count: number
+          content: Json
+          content_html: string | null
+          content_plain: string | null
+          created_at: string
+          edit_type: string | null
+          edited_by: string
+          id: string
+          sections_modified: string[]
+          spark_id: string
+          version_number: number
+          word_count: number
+        }
+        Insert: {
+          change_summary?: string | null
+          character_count?: number
+          content?: Json
+          content_html?: string | null
+          content_plain?: string | null
+          created_at?: string
+          edit_type?: string | null
+          edited_by: string
+          id?: string
+          sections_modified?: string[]
+          spark_id: string
+          version_number: number
+          word_count?: number
+        }
+        Update: {
+          change_summary?: string | null
+          character_count?: number
+          content?: Json
+          content_html?: string | null
+          content_plain?: string | null
+          created_at?: string
+          edit_type?: string | null
+          edited_by?: string
+          id?: string
+          sections_modified?: string[]
+          spark_id?: string
+          version_number?: number
+          word_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spark_content_versions_spark_id_fkey"
+            columns: ["spark_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_sparks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spark_contributors: {
+        Row: {
+          characters_added: number
+          characters_removed: number
+          contribution_quality_score: number
+          contribution_type: string
+          edit_count: number
+          first_contribution_at: string
+          id: string
+          is_active_contributor: boolean
+          last_contribution_at: string
+          sections_contributed: string[]
+          spark_id: string
+          user_id: string
+        }
+        Insert: {
+          characters_added?: number
+          characters_removed?: number
+          contribution_quality_score?: number
+          contribution_type?: string
+          edit_count?: number
+          first_contribution_at?: string
+          id?: string
+          is_active_contributor?: boolean
+          last_contribution_at?: string
+          sections_contributed?: string[]
+          spark_id: string
+          user_id: string
+        }
+        Update: {
+          characters_added?: number
+          characters_removed?: number
+          contribution_quality_score?: number
+          contribution_type?: string
+          edit_count?: number
+          first_contribution_at?: string
+          id?: string
+          is_active_contributor?: boolean
+          last_contribution_at?: string
+          sections_contributed?: string[]
+          spark_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spark_contributors_spark_id_fkey"
+            columns: ["spark_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_sparks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tier_engagement_model_restrictions: {
         Row: {
