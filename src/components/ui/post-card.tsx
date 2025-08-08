@@ -19,13 +19,37 @@ interface PostCardProps {
 }
 
 export const PostCard = React.memo(({ post, className }: PostCardProps) => {
-  const { toggleSave, votePoll } = useFeedStore();
+  const { toggleSave, votePoll, addComment } = useFeedStore();
   const [showCommentInput, setShowCommentInput] = React.useState(false);
   const [commentDraft, setCommentDraft] = React.useState("");
+  const [isSubmittingComment, setIsSubmittingComment] = React.useState(false);
 
   const handleSaveToggle = React.useCallback(() => {
     toggleSave(post.id);
   }, [post.id, toggleSave]);
+
+  const handleAddComment = React.useCallback(async (content: string) => {
+    if (isSubmittingComment) return;
+    
+    setIsSubmittingComment(true);
+    try {
+      await addComment(post.id, content);
+      setCommentDraft("");
+      toast({
+        title: "Comment added",
+        description: "Your comment has been posted successfully."
+      });
+    } catch (error) {
+      console.error("Failed to add comment:", error);
+      toast({
+        title: "Comment failed",
+        description: "Failed to post your comment. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  }, [post.id, addComment, isSubmittingComment]);
 
 
   // PHASE 3: Memoized poll vote handler
@@ -409,6 +433,8 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
           onToggleCommentInput={() => setShowCommentInput(!showCommentInput)}
           commentDraft={commentDraft}
           onCommentDraftChange={setCommentDraft}
+          onAddComment={handleAddComment}
+          isSubmittingComment={isSubmittingComment}
         />
 
       </article>

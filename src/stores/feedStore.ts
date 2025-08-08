@@ -336,6 +336,22 @@ export const useFeedStore = create<FeedState>((set, get) => {
               is_verified,
               title,
               company
+            ),
+            comments (
+              id,
+              content,
+              created_at,
+              updated_at,
+              parent_id,
+              reactions_count,
+              user_id,
+              profiles!comments_user_id_fkey (
+                id,
+                username,
+                display_name,
+                avatar_url,
+                is_verified
+              )
             )
           `);
 
@@ -979,7 +995,8 @@ export const useFeedStore = create<FeedState>((set, get) => {
         console.log('Comment creation response:', data);
 
         // Replace optimistic comment with actual comment data
-        if (data) {
+        if (data && data.comment) {
+          const commentData = data.comment;
           set(state => ({
             posts: state.posts.map(p => {
               if (p.id !== postId) return p;
@@ -987,14 +1004,20 @@ export const useFeedStore = create<FeedState>((set, get) => {
               // Replace the temporary comment with real data
               const updatedComments = p.comments.map(c => 
                 c.id === tempId ? {
-                  id: data.id,
-                  content: data.content,
-                  author: newComment.author, // Keep the author data we already have
-                  createdAt: new Date(data.created_at),
-                  updatedAt: new Date(data.updated_at || data.created_at),
-                  parentId: data.parent_comment_id,
+                  id: commentData.id,
+                  content: commentData.content,
+                  author: {
+                    id: commentData.profiles?.id || newComment.author.id,
+                    name: commentData.profiles?.display_name || newComment.author.name,
+                    username: commentData.profiles?.username || newComment.author.username,
+                    avatar: commentData.profiles?.avatar_url || newComment.author.avatar,
+                    verified: commentData.profiles?.is_verified || false
+                  },
+                  createdAt: new Date(commentData.created_at),
+                  updatedAt: new Date(commentData.updated_at || commentData.created_at),
+                  parentId: commentData.parent_id,
                   reactions: [],
-                  reactionsCount: data.reactions_count || 0
+                  reactionsCount: commentData.reactions_count || 0
                 } : c
               );
               

@@ -125,7 +125,7 @@ export const CommentInput = ({
                   disabled={!content.trim() || isSubmitting || disabled}
                   className="h-7 px-3"
                 >
-                  Post
+                  {isSubmitting ? "Posting..." : "Post"}
                 </Button>
               </div>
             </div>

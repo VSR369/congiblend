@@ -18,6 +18,8 @@ interface SimpleCommentsSectionProps {
   onToggleCommentInput?: () => void;
   commentDraft?: string;
   onCommentDraftChange?: (draft: string) => void;
+  onAddComment?: (content: string) => Promise<void>;
+  isSubmittingComment?: boolean;
   className?: string;
 }
 
@@ -29,6 +31,8 @@ export const SimpleCommentsSection = React.memo(({
   onToggleCommentInput,
   commentDraft = "",
   onCommentDraftChange,
+  onAddComment: onAddCommentProp,
+  isSubmittingComment = false,
   className 
 }: SimpleCommentsSectionProps) => {
   const [showComments, setShowComments] = React.useState(false);
@@ -44,16 +48,20 @@ export const SimpleCommentsSection = React.memo(({
 
   const handleAddComment = React.useCallback(async (content: string) => {
     try {
-      await addComment(postId, content);
-      setShowComments(true); // Auto-expand after adding comment
-      // Clear the draft after successful submission
-      if (onCommentDraftChange) {
-        onCommentDraftChange("");
+      if (onAddCommentProp) {
+        await onAddCommentProp(content);
+      } else {
+        await addComment(postId, content);
+        // Clear the draft after successful submission
+        if (onCommentDraftChange) {
+          onCommentDraftChange("");
+        }
       }
+      setShowComments(true); // Auto-expand after adding comment
     } catch (error) {
       throw error;
     }
-  }, [postId, addComment, onCommentDraftChange]);
+  }, [postId, addComment, onCommentDraftChange, onAddCommentProp]);
 
   const handleAddReply = React.useCallback(async (content: string, parentId: string) => {
     try {
@@ -86,6 +94,7 @@ export const SimpleCommentsSection = React.memo(({
             className="px-4"
             value={commentDraft}
             onChange={onCommentDraftChange}
+            disabled={isSubmittingComment}
           />
         </div>
       )}
