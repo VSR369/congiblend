@@ -14,6 +14,136 @@ export type Database = {
   }
   public: {
     Tables: {
+      comment_attachments: {
+        Row: {
+          comment_id: string
+          created_at: string
+          file_name: string | null
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_attachments_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_mentions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          mentioned_user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          mentioned_user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          mentioned_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_mentions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          content: string
+          content_type: string
+          created_at: string
+          edit_history: Json
+          id: string
+          is_deleted: boolean
+          metadata: Json
+          parent_id: string | null
+          post_id: string
+          reactions_count: number
+          replies_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          content_type?: string
+          created_at?: string
+          edit_history?: Json
+          id?: string
+          is_deleted?: boolean
+          metadata?: Json
+          parent_id?: string | null
+          post_id: string
+          reactions_count?: number
+          replies_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          content_type?: string
+          created_at?: string
+          edit_history?: Json
+          id?: string
+          is_deleted?: boolean
+          metadata?: Json
+          parent_id?: string | null
+          post_id?: string
+          reactions_count?: number
+          replies_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           cover_url: string | null

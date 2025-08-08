@@ -12,6 +12,7 @@ import { useFeedStore } from "@/stores/feedStore";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import type { Post, ReactionType } from "@/types/feed";
+import { CommentsSection } from "@/components/comments/CommentsSection";
 
 interface PostCardProps {
   post: Post;
@@ -373,7 +374,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
           </div>
         </div>
 
-
+        <CommentsSection postId={post.id} />
       </article>
     </PostErrorBoundary>
   );
