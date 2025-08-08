@@ -23,6 +23,7 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
 }) => {
   const [showPicker, setShowPicker] = useState(false);
   const [simpleLikeDisplay, setSimpleLikeDisplay] = useState(false);
+  const [showReactionDetails, setShowReactionDetails] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout>();
   const { toggleReaction } = useFeedStore();
 
@@ -61,24 +62,29 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
     // LinkedIn behavior: click toggles between Like and no reaction
     const reactionToToggle = currentReaction === 'innovative' ? null : 'innovative';
     await toggleReaction(targetId, reactionToToggle);
-    // UI-only: when setting default reaction via click, keep displaying 'Like'
+    // UI-only: when setting default reaction via click, keep displaying 'Like' and hide detail pill
     if (reactionToToggle === 'innovative') {
       setSimpleLikeDisplay(true);
+      setShowReactionDetails(false);
     } else {
       setSimpleLikeDisplay(false);
+      setShowReactionDetails(false);
     }
   };
 
   const handleReactionSelect = async (reactionType: ReactionType) => {
     setShowPicker(false);
-    // Selecting from picker should show specific reaction label/icon
-    setSimpleLikeDisplay(false);
+    // Selecting from picker should keep Like visible and show reaction detail pill
+    setSimpleLikeDisplay(true);
+    setShowReactionDetails(true);
     await toggleReaction(targetId, reactionType);
   };
 
   // Determine button appearance based on current reaction
   const currentConfig = currentReaction ? REACTION_CONFIG[currentReaction] : REACTION_CONFIG.innovative;
   const isActive = !!currentReaction;
+  const DetailIcon = currentReaction && currentReaction !== 'innovative' ? REACTION_CONFIG[currentReaction].icon : null;
+  const detailLabel = currentReaction && currentReaction !== 'innovative' ? REACTION_CONFIG[currentReaction].label : null;
 
   return (
     <div 
@@ -116,6 +122,13 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
           )}
         </span>
       </button>
+
+      {showReactionDetails && DetailIcon && detailLabel && (
+        <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-1 text-xs text-muted-foreground">
+          <DetailIcon className="h-3.5 w-3.5" />
+          <span>{detailLabel}</span>
+        </span>
+      )}
 
       {/* PHASE 1: Pure CSS animation for picker */}
       {showPicker && (
