@@ -137,12 +137,12 @@
   }
 
   /* LinkedIn-Style Comments Section */
-  .linkedin-comment-item {
-    @apply p-3 rounded-lg border border-transparent transition-all duration-200;
+.linkedin-comment-item {
+    @apply p-3 rounded-lg border border-border/40 transition-all duration-200;
   }
 
-  .linkedin-comment-item:hover {
-    @apply bg-muted/30 border-border/50;
+.linkedin-comment-item:hover {
+    @apply bg-muted/30 border-border/60;
   }
 
   .linkedin-comment-composer {

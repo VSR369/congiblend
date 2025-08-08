@@ -80,9 +80,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, postId, depth
 
   return (
     <div 
-      className={cn(
+    className={cn(
         "linkedin-comment-item group",
-        isNested && "ml-6 border-l border-border/30 pl-4"
+        isNested && "ml-6 border-l border-border/50 pl-4"
       )}
       style={{ marginLeft: indent }}
     >
@@ -172,7 +172,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, postId, depth
           
           {/* Reply Composer */}
           {showReply && (
-            <div className="mt-3 pt-3 border-t border-border/30">
+            <div className="mt-3 pt-3 border-t border-border/50">
               <CommentComposer 
                 postId={postId} 
                 parentId={comment.id} 
