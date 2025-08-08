@@ -22,6 +22,7 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
   className
 }) => {
   const [showPicker, setShowPicker] = useState(false);
+  const [simpleLikeDisplay, setSimpleLikeDisplay] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout>();
   const { toggleReaction } = useFeedStore();
 
@@ -60,10 +61,18 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
     // LinkedIn behavior: click toggles between Like and no reaction
     const reactionToToggle = currentReaction === 'innovative' ? null : 'innovative';
     await toggleReaction(targetId, reactionToToggle);
+    // UI-only: when setting default reaction via click, keep displaying 'Like'
+    if (reactionToToggle === 'innovative') {
+      setSimpleLikeDisplay(true);
+    } else {
+      setSimpleLikeDisplay(false);
+    }
   };
 
   const handleReactionSelect = async (reactionType: ReactionType) => {
     setShowPicker(false);
+    // Selecting from picker should show specific reaction label/icon
+    setSimpleLikeDisplay(false);
     await toggleReaction(targetId, reactionType);
   };
 
@@ -81,7 +90,7 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
         type="button"
         onClick={handleClick}
         aria-pressed={isActive}
-        aria-label={isActive ? currentConfig.label : 'Like'}
+        aria-label={(isActive && simpleLikeDisplay) ? 'Like' : (isActive ? currentConfig.label : 'Like')}
         className={cn(
           "flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200",
           "hover:bg-muted",
@@ -91,13 +100,15 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
           className
         )}
       >
-        {isActive ? (
+        {isActive && simpleLikeDisplay ? (
+          <ThumbsUp className="h-5 w-5" />
+        ) : isActive ? (
           <currentConfig.icon className="h-5 w-5" />
         ) : (
           <ThumbsUp className="h-5 w-5" />
         )}
         <span className="text-sm">
-          {isActive ? currentConfig.label : 'Like'}
+          {(isActive && simpleLikeDisplay) ? 'Like' : (isActive ? currentConfig.label : 'Like')}
           {totalReactions > 0 && (
             <span className="ml-1 text-xs opacity-70">
               {totalReactions}
