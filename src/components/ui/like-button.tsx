@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { useFeedStore } from '@/stores/feedStore';
 import type { ReactionType, Reaction } from '@/types/feed';
 import { REACTION_CONFIG, getReactionCounts } from '@/utils/reactions';
+import { ThumbsUp } from 'lucide-react';
 
 interface LikeButtonProps {
   targetId: string;
@@ -77,7 +78,10 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
       onMouseLeave={handleMouseLeave}
     >
       <button
+        type="button"
         onClick={handleClick}
+        aria-pressed={isActive}
+        aria-label={isActive ? currentConfig.label : 'Like'}
         className={cn(
           "flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200",
           "hover:bg-muted",
@@ -87,9 +91,13 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
           className
         )}
       >
-        <currentConfig.icon className="h-5 w-5" />
+        {isActive ? (
+          <currentConfig.icon className="h-5 w-5" />
+        ) : (
+          <ThumbsUp className="h-5 w-5" />
+        )}
         <span className="text-sm">
-          {currentConfig.label}
+          {isActive ? currentConfig.label : 'Like'}
           {totalReactions > 0 && (
             <span className="ml-1 text-xs opacity-70">
               {totalReactions}
