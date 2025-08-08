@@ -990,6 +990,25 @@ export const useFeedStore = create<FeedState>((set, get) => {
                 } : c
               );
               
+              // If we didn't find the temp comment, add the new one
+              if (!updatedComments.some(c => c.id === data.id)) {
+                updatedComments.push({
+                  id: data.id,
+                  content: data.content,
+                  author: {
+                    id: data.author?.id || data.user_id,
+                    name: data.author?.display_name || data.author?.username || 'User',
+                    username: data.author?.username || 'user',
+                    avatar: data.author?.avatar_url
+                  },
+                  createdAt: new Date(data.created_at),
+                  parentId: data.parent_comment_id,
+                  reactions: [],
+                  reactionsCount: data.reactions_count || 0,
+                  replies: []
+                });
+              }
+              
               return {
                 ...p,
                 comments: updatedComments

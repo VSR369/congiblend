@@ -26,19 +26,6 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 )
 
-// Helper function to extract hashtags and mentions
-const extractHashtags = (content: string): string[] => {
-  const hashtagRegex = /#[\w]+/g;
-  const matches = content.match(hashtagRegex) || [];
-  return [...new Set(matches)];
-};
-
-const extractMentions = (content: string): string[] => {
-  const mentionRegex = /@[\w]+/g;
-  const matches = content.match(mentionRegex) || [];
-  return [...new Set(matches.map(m => m.substring(1)))];
-};
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -80,6 +67,8 @@ serve(async (req) => {
     if (req.method === 'POST' && endpoint === 'comments') {
       const { post_id, content, parent_comment_id } = await req.json();
 
+      console.log('Creating comment:', { post_id, content, parent_comment_id, userId });
+
       // Validate required fields
       if (!post_id || !content || !content.trim()) {
         return new Response(
@@ -96,6 +85,7 @@ serve(async (req) => {
         .single();
 
       if (postCheckError || !postExists) {
+        console.error('Post check error:', postCheckError);
         return new Response(
           JSON.stringify({ error: 'Post not found' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -111,6 +101,7 @@ serve(async (req) => {
           .single();
 
         if (parentCheckError || !parentComment) {
+          console.error('Parent comment check error:', parentCheckError);
           return new Response(
             JSON.stringify({ error: 'Parent comment not found' }),
             { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -125,112 +116,89 @@ serve(async (req) => {
         }
       }
 
-      // Extract hashtags and mentions
-      const hashtags = extractHashtags(content);
-      const mentions = extractMentions(content);
-
-      // Create the comment
-      const { data: newComment, error: commentError } = await authSupabase
+      // Insert the comment
+      const { data: comment, error: insertError } = await authSupabase
         .from('comments')
         .insert({
           post_id: post_id,
           user_id: userId,
           content: content.trim(),
-          parent_id: parent_comment_id || null,
-          reactions_count: 0,
-          replies_count: 0,
-          is_edited: false
+          parent_comment_id: parent_comment_id || null
         })
         .select(`
-          *,
-          author:user_id (
+          id,
+          content,
+          created_at,
+          parent_comment_id,
+          reactions_count,
+          user_id,
+          profiles!comments_user_id_fkey (
             id,
             username,
             display_name,
-            avatar_url,
-            is_verified
+            avatar_url
           )
         `)
         .single();
 
-      if (commentError) {
-        console.error('Comment creation error:', commentError);
+      if (insertError) {
+        console.error('Comment creation error:', insertError);
         return new Response(
-          JSON.stringify({ error: 'Failed to create comment' }),
+          JSON.stringify({ error: 'Failed to create comment', details: insertError.message }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      // Update post comment count
-      await updatePostCommentCount(authSupabase, post_id, 1);
+      console.log('Comment created:', comment);
 
-      // If this is a reply, update parent comment reply count
-      if (parent_comment_id) {
-        await updateCommentReplyCount(authSupabase, parent_comment_id, 1);
-      }
-
-      return new Response(
-        JSON.stringify({
-          ...newComment,
-          author_id: newComment.user_id,
-          reaction_count: newComment.reactions_count,
-          reply_count: newComment.replies_count,
-          hashtags,
-          mentions,
-          parent_comment_id: newComment.parent_id
-        }),
-        { 
-          status: 201, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      return new Response(JSON.stringify({
+        ...comment,
+        author: comment.profiles
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 201
+      });
     }
 
     // GET COMMENT REPLIES
     if (req.method === 'GET' && pathParts.length >= 2 && pathParts[pathParts.length - 1] === 'replies') {
       const commentId = pathParts[pathParts.length - 2];
       
-      const { data: replies, error: repliesError } = await authSupabase
+      const { data, error } = await authSupabase
         .from('comments')
         .select(`
-          *,
-          author:user_id (
+          id,
+          content,
+          created_at,
+          parent_comment_id,
+          reactions_count,
+          user_id,
+          profiles!comments_user_id_fkey (
             id,
             username,
             display_name,
-            avatar_url,
-            is_verified
+            avatar_url
           )
         `)
-        .eq('parent_id', commentId)
+        .eq('parent_comment_id', commentId)
         .order('created_at', { ascending: true });
 
-      if (repliesError) {
-        console.error('Replies fetch error:', repliesError);
+      if (error) {
+        console.error('Replies fetch error:', error);
         return new Response(
           JSON.stringify({ error: 'Failed to fetch replies' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      // Format replies for response
-      const formattedReplies = replies?.map(reply => ({
-        ...reply,
-        author_id: reply.user_id,
-        reaction_count: reply.reactions_count,
-        reply_count: reply.replies_count,
-        parent_comment_id: reply.parent_id
-      })) || [];
-
-      return new Response(
-        JSON.stringify({
-          replies: formattedReplies
-        }),
-        { 
-          status: 200, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      return new Response(JSON.stringify(
+        data.map(comment => ({
+          ...comment,
+          author: comment.profiles
+        }))
+      ), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // GET SINGLE COMMENT
@@ -238,41 +206,38 @@ serve(async (req) => {
       const commentId = pathParts[pathParts.length - 1];
       
       if (commentId !== 'comments') {
-        const { data: comment, error: commentError } = await authSupabase
+        const { data, error } = await authSupabase
           .from('comments')
           .select(`
-            *,
-            author:user_id (
+            id,
+            content,
+            created_at,
+            parent_comment_id,
+            reactions_count,
+            user_id,
+            profiles!comments_user_id_fkey (
               id,
               username,
               display_name,
-              avatar_url,
-              is_verified
+              avatar_url
             )
           `)
           .eq('id', commentId)
           .single();
 
-        if (commentError) {
+        if (error) {
           return new Response(
             JSON.stringify({ error: 'Comment not found' }),
             { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
-        return new Response(
-          JSON.stringify({
-            ...comment,
-            author_id: comment.user_id,
-            reaction_count: comment.reactions_count,
-            reply_count: comment.replies_count,
-            parent_comment_id: comment.parent_id
-          }),
-          { 
-            status: 200, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
+        return new Response(JSON.stringify({
+          ...data,
+          author: data.profiles
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
     }
 
@@ -291,55 +256,43 @@ serve(async (req) => {
       }
 
       // Get top-level comments (no parent)
-      const { data: comments, error: commentsError } = await authSupabase
+      const { data, error } = await authSupabase
         .from('comments')
         .select(`
-          *,
-          author:user_id (
+          id,
+          content,
+          created_at,
+          parent_comment_id,
+          reactions_count,
+          user_id,
+          profiles!comments_user_id_fkey (
             id,
             username,
             display_name,
-            avatar_url,
-            is_verified
+            avatar_url
           )
         `)
         .eq('post_id', postId)
-        .is('parent_id', null)
+        .is('parent_comment_id', null)
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
-      if (commentsError) {
-        console.error('Comments fetch error:', commentsError);
+      if (error) {
+        console.error('Comments fetch error:', error);
         return new Response(
           JSON.stringify({ error: 'Failed to fetch comments' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      // Format comments for response
-      const formattedComments = comments?.map(comment => ({
-        ...comment,
-        author_id: comment.user_id,
-        reaction_count: comment.reactions_count,
-        reply_count: comment.replies_count,
-        parent_comment_id: comment.parent_id
-      })) || [];
-
-      return new Response(
-        JSON.stringify({
-          comments: formattedComments,
-          pagination: {
-            page,
-            limit,
-            total: formattedComments.length,
-            hasMore: formattedComments.length === limit
-          }
-        }),
-        { 
-          status: 200, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      return new Response(JSON.stringify(
+        data.map(comment => ({
+          ...comment,
+          author: comment.profiles
+        }))
+      ), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     return new Response(
@@ -350,70 +303,8 @@ serve(async (req) => {
   } catch (error) {
     console.error('Function error:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 })
-
-// Helper function to update post comment count
-async function updatePostCommentCount(authSupabase: any, postId: string, increment: number) {
-  try {
-    // Get current count
-    const { data: currentData, error: fetchError } = await authSupabase
-      .from('posts')
-      .select('comments_count')
-      .eq('id', postId)
-      .single();
-
-    if (fetchError || !currentData) {
-      console.error('Failed to fetch current post comment count:', fetchError);
-      return;
-    }
-
-    const newCount = Math.max(0, (currentData.comments_count || 0) + increment);
-
-    // Update count
-    const { error: updateError } = await authSupabase
-      .from('posts')
-      .update({ comments_count: newCount })
-      .eq('id', postId);
-
-    if (updateError) {
-      console.error('Failed to update post comment count:', updateError);
-    }
-  } catch (error) {
-    console.error('Error updating post comment count:', error);
-  }
-}
-
-// Helper function to update comment reply count
-async function updateCommentReplyCount(authSupabase: any, commentId: string, increment: number) {
-  try {
-    // Get current count
-    const { data: currentData, error: fetchError } = await authSupabase
-      .from('comments')
-      .select('replies_count')
-      .eq('id', commentId)
-      .single();
-
-    if (fetchError || !currentData) {
-      console.error('Failed to fetch current comment reply count:', fetchError);
-      return;
-    }
-
-    const newCount = Math.max(0, (currentData.replies_count || 0) + increment);
-
-    // Update count
-    const { error: updateError } = await authSupabase
-      .from('comments')
-      .update({ replies_count: newCount })
-      .eq('id', commentId);
-
-    if (updateError) {
-      console.error('Failed to update comment reply count:', updateError);
-    }
-  } catch (error) {
-    console.error('Error updating comment reply count:', error);
-  }
-}
