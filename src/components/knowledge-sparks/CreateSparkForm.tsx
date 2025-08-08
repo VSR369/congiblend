@@ -5,6 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuthStore } from "@/stores/authStore";
+import { Link } from "react-router-dom";
 
 type Spark = {
   id: string;
@@ -33,6 +35,7 @@ export const CreateSparkForm: React.FC<CreateSparkFormProps> = ({ onCreated }) =
   const [category, setCategory] = useState("");
   const [tagsCsv, setTagsCsv] = useState("");
   const [description, setDescription] = useState("");
+  const { isAuthenticated } = useAuthStore();
 
   const slug = useMemo(() => (title ? slugify(title) : ""), [title]);
 
@@ -109,6 +112,14 @@ export const CreateSparkForm: React.FC<CreateSparkFormProps> = ({ onCreated }) =
 
   return (
     <div className="space-y-3">
+      {!isAuthenticated && (
+        <div className="p-3 rounded-lg bg-muted text-sm flex items-center justify-between">
+          <span>Sign in to create a Knowledge Spark.</span>
+          <Button asChild size="sm" variant="secondary">
+            <Link to="/login">Sign in</Link>
+          </Button>
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
         <Input
           value={title}
@@ -136,7 +147,7 @@ export const CreateSparkForm: React.FC<CreateSparkFormProps> = ({ onCreated }) =
         <div className="text-xs text-muted-foreground">
           Slug: {slug || "(auto)"} 
         </div>
-        <Button onClick={handleCreate}>Create Spark</Button>
+        <Button onClick={handleCreate} disabled={!isAuthenticated}>Create Spark</Button>
       </div>
     </div>
   );

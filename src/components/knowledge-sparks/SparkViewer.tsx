@@ -1,7 +1,9 @@
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuthStore } from "@/stores/authStore";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +23,7 @@ interface SparkViewerProps {
 
 export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   const qc = useQueryClient();
+  const { isAuthenticated } = useAuthStore();
 
   const { data: latestVersion, isLoading } = useQuery({
     queryKey: ["spark", spark.id, "latestVersion"],
@@ -46,6 +49,20 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   const nextVersionNumber = useMemo(() => {
     return (latestVersion?.version_number ?? 0) + 1;
   }, [latestVersion]);
+
+  // Log a non-blocking view analytics event when a spark is opened
+  useEffect(() => {
+    if (!spark?.id) return;
+    (async () => {
+      const { error } = await supabase
+        .from("spark_analytics")
+        .insert({ spark_id: spark.id, action_type: "view" });
+      if (error) {
+        // Silently ignore analytics errors
+        console.debug("spark_analytics insert error", error);
+      }
+    })();
+  }, [spark.id]);
 
   const handleSuggestEdit = async () => {
     const { data: auth } = await supabase.auth.getUser();
@@ -98,6 +115,15 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
           {editing ? "Cancel" : "Suggest Edit"}
         </Button>
       </div>
+
+      {!isAuthenticated && (
+        <div className="mt-4 p-3 rounded-lg bg-muted text-sm flex items-center justify-between">
+          <span>Sign in to contribute to Knowledge Sparks.</span>
+          <Button asChild size="sm" variant="secondary">
+            <Link to="/login">Sign in</Link>
+          </Button>
+        </div>
+      )}
 
       <div className="mt-4">
         {isLoading ? (

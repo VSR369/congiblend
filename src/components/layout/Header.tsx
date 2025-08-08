@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, Search, Settings, User, Menu, Sun, Moon, PanelLeft } from 'lucide-react';
+import { Bell, Search, Settings, User, Menu, Sun, Moon, PanelLeft, Lightbulb } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -201,7 +201,13 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false }: Head
                      Settings
                    </Link>
                  </DropdownMenuItem>
-                 <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild className="p-3">
+                    <Link to="/knowledge-sparks" className="flex items-center">
+                      <Lightbulb className="mr-3 h-5 w-5" />
+                      Knowledge Sparks
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                  <DropdownMenuItem onClick={handleSignOut} className="p-3 text-destructive">
                    Log out
                 </DropdownMenuItem>

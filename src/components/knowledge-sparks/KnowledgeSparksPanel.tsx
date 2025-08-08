@@ -16,8 +16,28 @@ type Spark = {
   tags?: string[] | null;
 };
 
-export const KnowledgeSparksPanel: React.FC = () => {
+interface KnowledgeSparksPanelProps { initialSlug?: string }
+export const KnowledgeSparksPanel: React.FC<KnowledgeSparksPanelProps> = ({ initialSlug }) => {
   const [selected, setSelected] = useState<Spark | null>(null);
+  // Preselect by slug if provided
+  useEffect(() => {
+    if (!initialSlug) return;
+    let active = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from("knowledge_sparks")
+        .select("id,title,slug,description,category,tags")
+        .eq("slug", initialSlug)
+        .eq("is_active", true)
+        .single();
+      if (error) {
+        console.warn("Failed to preselect spark by slug:", error);
+        return;
+      }
+      if (active && data) setSelected(data as Spark);
+    })();
+    return () => { active = false; };
+  }, [initialSlug]);
 
   // Realtime: Refresh selected viewer when new version arrives
   useEffect(() => {

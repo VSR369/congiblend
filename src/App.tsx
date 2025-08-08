@@ -17,6 +17,7 @@ const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Messages = lazy(() => import("./pages/Messages"));
+const KnowledgeSparks = lazy(() => import("./pages/KnowledgeSparks"));
 
 // React Query client
 const queryClient = new QueryClient();
@@ -46,6 +47,8 @@ const AppContent = () => {
               </FeedErrorBoundary>
             }>
               <Route index element={<Index />} />
+              <Route path="knowledge-sparks" element={<KnowledgeSparks />} />
+              <Route path="knowledge-sparks/:slug" element={<KnowledgeSparks />} />
             </Route>
             <Route path="/login" element={<Auth />} />
             <Route path="/register" element={<Auth />} />
