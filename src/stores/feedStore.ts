@@ -164,9 +164,14 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
   if (!author) {
     console.warn('⚠️ Missing author profile for post, using fallback author', dbPost.id);
   }
+  // Determine final type (treat text with article_html as article)
+  let computedType = dbPost.post_type || 'text';
+  if (computedType === 'text' && dbPost.metadata?.article_html) {
+    computedType = 'article';
+  }
   return {
     id: dbPost.id,
-    type: dbPost.post_type || 'text',
+    type: computedType,
     author: {
       id: authorData.id,
       name: authorData.display_name || authorData.username,

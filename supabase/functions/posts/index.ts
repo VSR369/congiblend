@@ -140,13 +140,17 @@ serve(async (req) => {
       const hashtags = extractHashtags(postData.content);
       const mentions = extractMentions(postData.content);
 
+      // Normalize post_type to match DB constraints (map 'article' to 'text')
+      const normalizedType = postData.post_type === 'article' ? 'text' : (postData.post_type || 'text');
+      console.log('Normalized post_type:', postData.post_type, '->', normalizedType);
+
       // Create the post
       const { data: newPost, error: postError } = await authenticatedSupabase
         .from('posts')
         .insert({
           user_id: userId,
           content: postData.content.trim(),
-          post_type: postData.post_type || 'text',
+          post_type: normalizedType,
           visibility: postData.visibility || 'public',
           media_urls: postData.media_urls || null,
           thumbnail_url: postData.thumbnail_url || null,
@@ -180,7 +184,7 @@ serve(async (req) => {
       if (postError) {
         console.error('Post creation error:', postError);
         return new Response(
-          JSON.stringify({ error: 'Failed to create post' }),
+          JSON.stringify({ error: 'Failed to create post', code: (postError as any).code, message: (postError as any).message, details: (postError as any).details ?? null }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
