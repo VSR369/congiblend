@@ -14,6 +14,7 @@ import { toast } from "@/hooks/use-toast";
 import type { Post, ReactionType } from "@/types/feed";
 import { CommentsSection } from "@/components/comments/CommentsSection";
 import { Link } from "react-router-dom";
+import { format } from "date-fns";
 
 interface PostCardProps {
   post: Post;
@@ -21,7 +22,7 @@ interface PostCardProps {
 }
 
 export const PostCard = React.memo(({ post, className }: PostCardProps) => {
-  const { toggleSave, votePoll } = useFeedStore();
+  const { toggleSave, votePoll, rsvpEvent } = useFeedStore();
 
   const handleSaveToggle = React.useCallback(() => {
     toggleSave(post.id);
@@ -209,8 +210,13 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
                 <div className="flex items-center justify-between text-sm">
                   <div>
                     <p className="font-medium">
-                      {post.event.startDate.toLocaleDateString()} at{" "}
-                      {post.event.startDate.toLocaleTimeString()}
+                      {format(post.event.startDate, "dd MMM yyyy, HH:mm")}
+                      {post.event.endDate && (
+                        <>
+                          {" "}–{" "}
+                          {format(post.event.endDate, "dd MMM yyyy, HH:mm")}
+                        </>
+                      )}
                     </p>
                     {post.event.location && (
                       <p className="text-muted-foreground">{post.event.location}</p>
@@ -225,8 +231,12 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
                     )}
                   </div>
                 </div>
-                <Button className="w-full" variant="outline">
-                  {post.event.userRSVP === 'going' ? 'Going' : 'RSVP'}
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => rsvpEvent(post.id, 'attending')}
+                >
+                  {post.event.userRSVP === 'attending' ? 'Going' : 'RSVP'}
                 </Button>
               </div>
             )}

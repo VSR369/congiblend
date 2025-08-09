@@ -34,6 +34,9 @@ interface FeedState {
   // Poll actions
   votePoll: (postId: string, optionIndex: number) => Promise<any>;
   
+  // Event actions
+  rsvpEvent: (postId: string, status: 'attending' | 'interested' | 'not_attending') => Promise<void>;
+  
   // Settings
   updateFeedSettings: (settings: Partial<FeedSettings>) => void;
   updateFilters: (filters: Partial<FeedFilters>) => void;
@@ -150,7 +153,8 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
       isVirtual: dbPost.event_data.is_virtual || false,
       attendees: dbPost.event_data.attendees || 0,
       maxAttendees: dbPost.event_data.max_attendees,
-      userRSVP: dbPost.event_data.user_rsvp || undefined
+      userRSVP: dbPost.event_data.user_rsvp || undefined,
+      speakers: Array.isArray(dbPost.event_data.speakers) ? dbPost.event_data.speakers : undefined,
     };
   }
 
@@ -1055,6 +1059,58 @@ export const useFeedStore = create<FeedState>((set, get) => {
         return voteData;
       } catch (error) {
         console.error('Error voting on poll:', error);
+        throw error;
+      }
+    },
+
+    rsvpEvent: async (postId: string, status: 'attending' | 'interested' | 'not_attending') => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) throw new Error('User not authenticated');
+
+        const prev = get().posts.find(p => p.id === postId)?.event?.userRSVP;
+
+        const response = await fetch(`https://cmtehutbazgfjoksmkly.supabase.co/functions/v1/posts/posts/${postId}/rsvp`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtdGVodXRiYXpnZmpva3Nta2x5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2NDc3MzcsImV4cCI6MjA2NzIyMzczN30.N_pjYJGlpV8cIENLeRcVyYiHGxiR_WCv669MKOxXJRA',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status }),
+        });
+
+        if (!response.ok) {
+          const txt = await response.text();
+          console.error('RSVP failed:', response.status, txt);
+          throw new Error('Failed to RSVP');
+        }
+
+        // Update local state
+        set(state => ({
+          posts: state.posts.map(p => {
+            if (p.id !== postId || !p.event) return p;
+            const wasAttending = p.event.userRSVP === 'attending';
+            const willAttend = status === 'attending';
+            let attendees = p.event.attendees;
+            if (willAttend && !wasAttending) attendees = attendees + 1;
+            if (!willAttend && wasAttending) attendees = Math.max(0, attendees - 1);
+            return {
+              ...p,
+              event: {
+                ...p.event,
+                userRSVP: status,
+                attendees,
+              },
+              event_data: {
+                ...p.event_data,
+                user_rsvp: status,
+              }
+            };
+          })
+        }));
+      } catch (error) {
+        console.error('Error on RSVP:', error);
         throw error;
       }
     },

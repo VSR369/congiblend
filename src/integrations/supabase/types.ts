@@ -434,6 +434,38 @@ export type Database = {
           },
         ]
       }
+      event_rsvps: {
+        Row: {
+          created_at: string
+          post_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          post_id: string
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          post_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_rsvps_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       follows: {
         Row: {
           created_at: string | null

@@ -59,7 +59,13 @@ export interface Event {
   isHybrid?: boolean;
   attendees: number;
   maxAttendees?: number;
-  userRSVP?: 'going' | 'interested' | 'not_going';
+  userRSVP?: 'attending' | 'interested' | 'not_attending';
+  speakers?: Array<{
+    name: string;
+    profile?: string;
+    description?: string;
+    photo_url?: string;
+  }>;
 }
 
 
@@ -101,6 +107,12 @@ export interface Post {
     max_attendees?: number | null;
     is_virtual?: boolean;
     is_hybrid?: boolean;
+    speakers?: Array<{
+      name: string;
+      profile?: string;
+      description?: string;
+      photo_url?: string;
+    }>;
   };
   
   linkPreview?: LinkPreview;
@@ -150,6 +162,12 @@ export interface CreatePostData {
     max_attendees?: number | null;
     is_virtual?: boolean;
     is_hybrid?: boolean;
+    speakers?: Array<{
+      name: string;
+      profile?: string;
+      description?: string;
+      photo_url?: string;
+    }>;
   };
   metadata?: any;
 }
