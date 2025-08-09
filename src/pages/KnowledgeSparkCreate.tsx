@@ -1,8 +1,7 @@
 import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import SparksList from "@/components/knowledge-sparks/SparksList";
+import CreateSparkForm from "@/components/knowledge-sparks/CreateSparkForm";
 
 const setMetaTag = (name: string, content: string) => {
   let tag = document.querySelector(`meta[name="${name}"]`);
@@ -24,31 +23,36 @@ const setCanonical = (href: string) => {
   link.setAttribute("href", href);
 };
 
-const KnowledgeSparksBrowsePage: React.FC = () => {
+const KnowledgeSparkCreatePage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    document.title = "Knowledge Sparks – Browse and Search";
-    setMetaTag("description", "Browse and search Knowledge Sparks. Discover, explore, and open sparks to contribute.");
+    document.title = "Create Knowledge Spark – Knowledge Sparks";
+    setMetaTag("description", "Create a new Knowledge Spark to share and refine knowledge collaboratively.");
     setCanonical(window.location.href);
   }, []);
 
   return (
-    <main className="w-full max-w-screen-2xl mx-auto px-4 py-6">
+    <main className="w-full max-w-screen-lg mx-auto px-4 py-6">
       <header className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Knowledge Sparks</h1>
-          <p className="text-sm text-muted-foreground">Browse and search sparks. Click a card to read and contribute.</p>
+          <h1 className="text-2xl font-bold">Create Knowledge Spark</h1>
+          <p className="text-sm text-muted-foreground">Start a new collaborative knowledge thread.</p>
         </div>
-        <Button asChild>
-          <Link to="/knowledge-sparks/new">Create Spark</Link>
+        <Button asChild variant="secondary">
+          <Link to="/knowledge-sparks">Back to Browse</Link>
         </Button>
       </header>
-      <section aria-label="Sparks list">
-        <SparksList onSelect={(spark) => navigate(`/knowledge-sparks/${spark.slug}`)} selectedId={null} />
+
+      <section aria-label="Create spark form">
+        <CreateSparkForm
+          onCreated={(spark) => {
+            if (spark?.slug) navigate(`/knowledge-sparks/${spark.slug}`);
+          }}
+        />
       </section>
     </main>
   );
 };
 
-export default KnowledgeSparksBrowsePage;
+export default KnowledgeSparkCreatePage;
