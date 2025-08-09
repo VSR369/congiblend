@@ -2948,6 +2948,10 @@ export type Database = {
         Args: { check_user_id?: string }
         Returns: string
       }
+      is_spark_author: {
+        Args: { p_spark_id: string; p_user_id?: string }
+        Returns: boolean
+      }
       safe_delete_fee_component: {
         Args: { component_id: string; cascade_delete?: boolean }
         Returns: Json

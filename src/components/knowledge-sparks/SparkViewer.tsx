@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +10,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { RichTextEditor, htmlToPlainText } from "@/components/knowledge-sparks/RichTextEditor";
+import { useIsSparkAuthor } from "@/hooks/useIsSparkAuthor";
 
 type Spark = {
   id: string;
@@ -26,6 +26,7 @@ interface SparkViewerProps {
 export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   const qc = useQueryClient();
   const { isAuthenticated } = useAuthStore();
+  const { isAuthor } = useIsSparkAuthor(spark?.id);
 
   const { data: latestVersion, isLoading } = useQuery({
     queryKey: ["spark", spark.id, "latestVersion"],
@@ -96,6 +97,13 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     }
   }, [editing]);
 
+  // Ensure non-authors cannot remain in "replace" mode
+  useEffect(() => {
+    if (!isAuthor && editMode === "replace") {
+      setEditMode("append");
+    }
+  }, [isAuthor, editMode]);
+
   const handleSuggestEdit = async () => {
     const { data: auth } = await supabase.auth.getUser();
     const user = auth?.user;
@@ -132,7 +140,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       content_html: finalHtml || null,
       content_plain: finalPlain,
       change_summary: summary,
-      edit_type: "modification",
+      edit_type: editMode === "replace" ? "replacement" : "append",
       word_count: finalPlain.split(/\s+/).filter(Boolean).length,
       character_count: finalPlain.length,
       sections_modified: [],
@@ -141,7 +149,12 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
 
     if (error) {
       console.error("Insert version error:", error);
-      toast.error("Failed to submit edit.");
+      // Help users understand replace restriction if it occurs
+      if (String(error.message || "").toLowerCase().includes("author")) {
+        toast.error("Only the author can replace content. Try using Append instead.");
+      } else {
+        toast.error("Failed to submit edit.");
+      }
       return;
     }
 
@@ -239,13 +252,22 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               onChange={(e) => setChangeSummary(e.target.value)}
               placeholder="Change summary (optional)"
             />
-            <Select value={editMode} onValueChange={(v) => setEditMode(v as "append" | "replace")}>
+            <Select
+              value={editMode}
+              onValueChange={(v) => {
+                if (v === "replace" && !isAuthor) {
+                  toast.error("Only the author can replace content. Use Append instead.");
+                  return; // keep current (append)
+                }
+                setEditMode(v as "append" | "replace");
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Edit mode" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="append">Append</SelectItem>
-                <SelectItem value="replace">Replace</SelectItem>
+                <SelectItem value="replace" disabled={!isAuthor}>Replace</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -253,6 +275,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             {editMode === "append"
               ? "Your text will be added to the end of the current content."
               : "Your text will replace the current content."}
+            {!isAuthor ? " • Only the author can replace content." : ""}
           </div>
           <RichTextEditor
             valueHtml={contentHtmlDraft}
