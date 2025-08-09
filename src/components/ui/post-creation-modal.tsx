@@ -4,7 +4,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter, ModalTitle } from "./modal"
 import { Button } from "./button";
 import { Input } from "./input";
 import { Textarea } from "./textarea";
-import { Avatar } from "./avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "./avatar";
 import { Badge } from "./badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 import { Progress } from "./progress";
@@ -305,7 +305,15 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
           location: eventData.location.trim() || null,
           max_attendees: eventData.max_attendees ? parseInt(eventData.max_attendees) : null,
           is_virtual: eventData.is_virtual,
-          is_hybrid: eventData.is_hybrid
+          is_hybrid: eventData.is_hybrid,
+          speakers: (eventSpeakers || [])
+            .filter((s) => (s.name && s.name.trim()) || (s.profile && s.profile.trim()) || (s.description && s.description.trim()) || s.photo_url)
+            .map((s) => ({
+              name: s.name.trim(),
+              profile: s.profile?.trim() || undefined,
+              description: s.description?.trim() || undefined,
+              photo_url: s.photo_url || undefined,
+            })),
         };
       }
 
@@ -488,10 +496,70 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
                 <span className="text-sm">Hybrid Event</span>
               </label>
             </div>
-          </div>
-        );
 
-      case "image":
+            {/* Speakers Section */}
+            <div className="space-y-3 rounded-md border border-border p-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Speakers</label>
+                <Button variant="outline" size="sm" onClick={() => dispatch({ type: 'ADD_EVENT_SPEAKER' })}>
+                  Add speaker
+                </Button>
+              </div>
+              {eventSpeakers.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No speakers added yet.</p>
+              ) : (
+                <div className="space-y-4">
+                  {eventSpeakers.map((sp, i) => (
+                    <div key={i} className="grid grid-cols-[auto,1fr,auto] gap-3 items-start">
+                      <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                        {sp.photo_url ? (
+                          <img src={sp.photo_url} alt={sp.name || `Speaker ${i + 1}`} className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="text-xs font-medium">{(sp.name || 'S').slice(0, 2).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Input
+                          placeholder="Name *"
+                          value={sp.name}
+                          onChange={(e) => dispatch({ type: 'UPDATE_EVENT_SPEAKER', index: i, payload: { name: e.target.value } })}
+                        />
+                        <Input
+                          placeholder="Profile URL (optional)"
+                          type="url"
+                          value={sp.profile || ''}
+                          onChange={(e) => dispatch({ type: 'UPDATE_EVENT_SPEAKER', index: i, payload: { profile: e.target.value } })}
+                        />
+                        <Textarea
+                          placeholder="Short description (optional)"
+                          value={sp.description || ''}
+                          onChange={(e) => dispatch({ type: 'UPDATE_EVENT_SPEAKER', index: i, payload: { description: e.target.value } })}
+                          className="min-h-20"
+                        />
+                        <div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleSpeakerPhotoUpload(i, file);
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="pt-1">
+                        <Button variant="ghost" size="sm" onClick={() => dispatch({ type: 'REMOVE_EVENT_SPEAKER', index: i })}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+
+        case "image":
       case "video":
       case "audio":
         return (

@@ -231,6 +231,40 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
                     )}
                   </div>
                 </div>
+
+                {/* Speakers from event_data */}
+                {post.event_data?.speakers && post.event_data.speakers.length > 0 && (
+                  <div className="mt-2 space-y-2">
+                    <h5 className="text-sm font-medium">Speakers</h5>
+                    <div className="space-y-2">
+                      {post.event_data.speakers.map((sp, idx) => (
+                        <div key={idx} className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                            {sp.photo_url ? (
+                              <img src={sp.photo_url} alt={`${sp.name} photo`} className="w-full h-full object-cover" loading="lazy" />
+                            ) : (
+                              <span className="text-xs font-medium">{(sp.name || 'S').slice(0,2).toUpperCase()}</span>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">{sp.name}</span>
+                              {sp.profile && (
+                                <a href={sp.profile} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                                  Profile
+                                </a>
+                              )}
+                            </div>
+                            {sp.description && (
+                              <p className="text-xs text-muted-foreground">{sp.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <Button
                   className="w-full"
                   variant="outline"
