@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { usePostCreationReducer } from "@/hooks/usePostCreationReducer";
 import type { PostType, CreatePostData } from "@/types/feed";
+import { EventDateTimeFields } from "./event-date-time-fields";
 
 interface PostCreationModalProps {
   open: boolean;
@@ -42,6 +43,13 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
     eventData
   } = state;
 
+  // Local state for improved Event date/time UX (does not change global logic)
+  const [startDate, setStartDate] = React.useState<Date | undefined>(undefined);
+  const [startTime, setStartTime] = React.useState<string>("");
+  const [hasEnd, setHasEnd] = React.useState<boolean>(false);
+  const [endDate, setEndDate] = React.useState<Date | undefined>(undefined);
+  const [endTime, setEndTime] = React.useState<string>("");
+
   // Ensure active tab aligns with provided initialType/allowedTypes
   React.useEffect(() => {
     if (!open) return;
@@ -53,6 +61,55 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
       }
     }
   }, [open, initialType, allowedTypes]);
+
+  // Initialize local event date/time when opening modal or switching to event tab
+  React.useEffect(() => {
+    if (!open || activeTab !== "event") return;
+
+    const parseDateTime = (dt?: string) => {
+      if (!dt) return { d: undefined as Date | undefined, t: "" };
+      // Accept both "YYYY-MM-DDTHH:mm" and ISO strings
+      const iso = dt.includes("T") ? dt : `${dt}T00:00`;
+      const dateObj = new Date(iso);
+      // Extract HH:mm from the original if available; fallback to local from dateObj
+      let hhmm = "00:00";
+      const m = dt.match(/T(\d{2}:\d{2})/);
+      if (m && m[1]) hhmm = m[1];
+      else {
+        const h = dateObj.getHours().toString().padStart(2, "0");
+        const mi = dateObj.getMinutes().toString().padStart(2, "0");
+        hhmm = `${h}:${mi}`;
+      }
+      // Ensure date part is accurate (ignore timezone offsets for input/display)
+      return { d: new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()), t: hhmm };
+    };
+
+    const s = parseDateTime(state.eventData.start_date);
+    setStartDate(s.d);
+    setStartTime(s.t);
+
+    const hasEndExisting = !!state.eventData.end_date;
+    setHasEnd(hasEndExisting);
+    if (hasEndExisting) {
+      const e = parseDateTime(state.eventData.end_date);
+      setEndDate(e.d);
+      setEndTime(e.t);
+    } else {
+      setEndDate(undefined);
+      setEndTime("");
+    }
+  }, [open, activeTab, state.eventData.start_date, state.eventData.end_date]);
+
+  // Helper to build the same local "YYYY-MM-DDTHH:mm" string semantics as before
+  const toLocalTimestampString = React.useCallback((d?: Date, t?: string) => {
+    if (!d || !t) return "";
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const [hh = "00", mi = "00"] = t.split(":");
+    // Return without timezone suffix to keep existing DB semantics
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  }, []);
 
   const allPostTypes: { type: PostType; label: string; icon: React.ComponentType<any>; description: string }[] = [
     { type: "text", label: "Text", icon: FileText, description: "Share your thoughts" },
@@ -113,8 +170,12 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
   const handleSubmit = React.useCallback(async () => {
     // For event posts, content is not required but event fields are
     if (activeTab === 'event') {
-      if (!eventData.title?.trim() || !eventData.description?.trim() || !eventData.start_date) {
-        console.log('❌ Event submission blocked - missing required fields');
+      const missingBasics = !eventData.title?.trim() || !eventData.description?.trim();
+      const missingStart = !startDate || !startTime;
+      if (missingBasics || missingStart) {
+        console.log('❌ Event submission blocked - missing required fields', {
+          missingBasics, missingStart, startDate: !!startDate, startTime: !!startTime
+        });
         return;
       }
     } else if (activeTab !== 'poll' && !content.trim()) {
@@ -196,15 +257,18 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
         if (!eventData.description.trim()) {
           throw new Error('Event description is required');
         }
-        if (!eventData.start_date) {
+        if (!startDate || !startTime) {
           throw new Error('Event start date is required');
         }
+
+        const startLocal = toLocalTimestampString(startDate, startTime);
+        const endLocal = hasEnd && endDate && endTime ? toLocalTimestampString(endDate, endTime) : null;
 
         postData.event_data = {
           title: eventData.title.trim(),
           description: eventData.description.trim(),
-          start_date: eventData.start_date,
-          end_date: eventData.end_date || null,
+          start_date: startLocal,
+          end_date: endLocal,
           location: eventData.location.trim() || null,
           max_attendees: eventData.max_attendees ? parseInt(eventData.max_attendees) : null,
           is_virtual: eventData.is_virtual,
@@ -230,7 +294,7 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
     } finally {
       dispatch({ type: 'SET_IS_POSTING', payload: false });
     }
-  }, [content, selectedFiles, activeTab, pollOptions, eventData, hashtags, mentions, createPost, onClose, dispatch]);
+  }, [content, selectedFiles, activeTab, pollOptions, eventData, startDate, startTime, hasEnd, endDate, endTime, hashtags, mentions, createPost, onClose, dispatch, toLocalTimestampString]);
 
   const extractHashtags = React.useCallback((text: string) => {
     const start = performance.now();
@@ -327,7 +391,40 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
               onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { description: e.target.value } })}
               className="min-h-24"
             />
-            <div className="grid grid-cols-2 gap-4">
+
+            <div className="space-y-3 rounded-md border border-border p-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <EventDateTimeFields
+                  label="Start date & time"
+                  date={startDate}
+                  time={startTime}
+                  onDateChange={setStartDate}
+                  onTimeChange={setStartTime}
+                  required
+                />
+
+                {hasEnd && (
+                  <EventDateTimeFields
+                    label="End date & time"
+                    date={endDate}
+                    time={endTime}
+                    onDateChange={setEndDate}
+                    onTimeChange={setEndTime}
+                  />
+                )}
+              </div>
+
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={hasEnd}
+                  onChange={(e) => setHasEnd(e.target.checked)}
+                />
+                <span className="text-sm">Add end date & time</span>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input 
                 placeholder="Location"
                 value={eventData.location}
@@ -338,18 +435,6 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
                 placeholder="Max attendees"
                 value={eventData.max_attendees}
                 onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { max_attendees: e.target.value } })}
-              />
-              <Input 
-                type="datetime-local"
-                placeholder="Start date & time *"
-                value={eventData.start_date}
-                onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { start_date: e.target.value } })}
-              />
-              <Input 
-                type="datetime-local"
-                placeholder="End date & time"
-                value={eventData.end_date}
-                onChange={(e) => dispatch({ type: 'SET_EVENT_DATA', payload: { end_date: e.target.value } })}
               />
             </div>
             <div className="flex gap-4">
@@ -464,7 +549,7 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
           </TabsContent>
         </Tabs>
 
-        {/* Character Count */}
+        {/* Character Count + Preview Tags */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             {hashtags.length > 0 && (
@@ -542,7 +627,12 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
             const isPostingCheck = isPosting;
             const characterCheck = characterCount > characterLimit;
             const textCheck = activeTab === 'text' && !content.trim();
-            const eventCheck = activeTab === 'event' && (!eventData.title || !eventData.title.trim() || !eventData.description || !eventData.description.trim() || !eventData.start_date);
+            // Updated event validation to use improved local fields (keeps original logic intent)
+            const eventCheck = activeTab === 'event' && (
+              !eventData.title || !eventData.title.trim() ||
+              !eventData.description || !eventData.description.trim() ||
+              !startDate || !startTime || (hasEnd && (!endDate || !endTime))
+            );
             const pollCheck = activeTab === 'poll' && (!content.trim() || !pollOptions.some(opt => opt.trim()));
             const mediaCheck = ['image', 'video', 'audio'].includes(activeTab) && selectedFiles.length === 0 && !content.trim();
             
@@ -556,8 +646,10 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
                   titleTrimmed: eventData.title?.trim(),
                   description: eventData.description,
                   descriptionTrimmed: eventData.description?.trim(),
-                  start_date: eventData.start_date
                 },
+                start: { date: !!startDate, time: !!startTime },
+                endEnabled: hasEnd,
+                end: { date: !!endDate, time: !!endTime },
                 eventCheck,
                 finalDisabled: isPostingCheck || characterCheck || eventCheck
               });

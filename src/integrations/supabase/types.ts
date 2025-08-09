@@ -463,6 +463,7 @@ export type Database = {
       }
       knowledge_sparks: {
         Row: {
+          archived_at: string | null
           author_id: string
           category: string | null
           content_length: number
@@ -471,6 +472,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
+          is_archived: boolean
           is_featured: boolean
           last_edited_at: string
           last_edited_by: string | null
@@ -483,6 +485,7 @@ export type Database = {
           view_count: number
         }
         Insert: {
+          archived_at?: string | null
           author_id: string
           category?: string | null
           content_length?: number
@@ -491,6 +494,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_archived?: boolean
           is_featured?: boolean
           last_edited_at?: string
           last_edited_by?: string | null
@@ -503,6 +507,7 @@ export type Database = {
           view_count?: number
         }
         Update: {
+          archived_at?: string | null
           author_id?: string
           category?: string | null
           content_length?: number
@@ -511,6 +516,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_archived?: boolean
           is_featured?: boolean
           last_edited_at?: string
           last_edited_by?: string | null
@@ -1903,6 +1909,8 @@ export type Database = {
           content: string
           created_at: string | null
           event_data: Json | null
+          event_end_at: string | null
+          event_start_at: string | null
           hashtags: string[] | null
           id: string
           images: string[] | null
@@ -1928,6 +1936,8 @@ export type Database = {
           content: string
           created_at?: string | null
           event_data?: Json | null
+          event_end_at?: string | null
+          event_start_at?: string | null
           hashtags?: string[] | null
           id?: string
           images?: string[] | null
@@ -1953,6 +1963,8 @@ export type Database = {
           content?: string
           created_at?: string | null
           event_data?: Json | null
+          event_end_at?: string | null
+          event_start_at?: string | null
           hashtags?: string[] | null
           id?: string
           images?: string[] | null
@@ -2865,6 +2877,10 @@ export type Database = {
         }
         Returns: number
       }
+      can_delete_spark: {
+        Args: { p_spark_id: string; p_user_id?: string }
+        Returns: boolean
+      }
       check_active_challenges_for_user: {
         Args: { user_id_param: string }
         Returns: number
@@ -2934,6 +2950,10 @@ export type Database = {
       get_user_current_global_model: {
         Args: { user_id_param: string }
         Returns: Json
+      }
+      has_external_contributions: {
+        Args: { p_spark_id: string }
+        Returns: boolean
       }
       increment_profile_view: {
         Args: {
