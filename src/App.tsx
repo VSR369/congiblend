@@ -1,3 +1,5 @@
+
+import React from "react";
 import { useEffect, Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -78,6 +80,11 @@ const App = () => {
   const { initialize } = useAuthStore();
 
   useEffect(() => {
+    // Log React version to confirm React initialized (helps diagnose bundling/init issues)
+    console.log('React initialized, version:', (React as any)?.version || 'unknown');
+  }, []);
+
+  useEffect(() => {
     // Initialize auth state on app start
     initialize();
   }, [initialize]);
@@ -105,3 +112,4 @@ const App = () => {
 };
 
 export default App;
+
