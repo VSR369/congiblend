@@ -184,7 +184,16 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
     poll,
     event,
     event_data: dbPost.event_data, // Include the raw event_data
-    hashtags: extractHashtags(dbPost.content),
+    hashtags: Array.from(new Set([
+      ...(extractHashtags(dbPost.content) || []),
+      ...(
+        Array.isArray(dbPost.metadata?.tags)
+          ? dbPost.metadata.tags
+          : typeof dbPost.metadata?.tags === 'string'
+            ? dbPost.metadata.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+            : []
+      ).map((t: string) => `#${String(t).trim().replace(/^#/, '')}`)
+    ])),
     mentions: [],
     reactions,
     // Comments removed - functionality not implemented

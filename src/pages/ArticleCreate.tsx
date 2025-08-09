@@ -2,6 +2,7 @@ import * as React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { RichTextEditor, htmlToPlainText } from "@/components/knowledge-sparks/RichTextEditor";
 import { useFeedStore } from "@/stores/feedStore";
 import { toast } from "sonner";
@@ -13,6 +14,9 @@ const ArticleCreate: React.FC = () => {
   const [title, setTitle] = React.useState("");
   const [contentHtml, setContentHtml] = React.useState("");
   const [publishing, setPublishing] = React.useState(false);
+
+  const [category, setCategory] = React.useState("");
+  const [tagsInput, setTagsInput] = React.useState("");
 
   const canPublish = title.trim().length > 2 && htmlToPlainText(contentHtml).trim().length > 20 && !publishing;
 
@@ -30,6 +34,8 @@ const ArticleCreate: React.FC = () => {
         metadata: {
           article_html: contentHtml,
           title,
+          category: category.trim() || undefined,
+          tags: Array.from(new Set(tagsInput.split(",").map(t => t.trim().replace(/^#/, "")).filter(Boolean))),
         },
       });
 
@@ -62,6 +68,29 @@ const ArticleCreate: React.FC = () => {
           onChange={(e) => setTitle(e.target.value)}
           className="text-xl h-12"
         />
+
+        <Input
+          placeholder="Category (e.g., Technology)"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          aria-label="Article category"
+        />
+
+        <div>
+          <Input
+            placeholder="Tags (comma-separated: AI, Research, Startups)"
+            value={tagsInput}
+            onChange={(e) => setTagsInput(e.target.value)}
+            aria-label="Article tags"
+          />
+          {tagsInput.trim() && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {Array.from(new Set(tagsInput.split(",").map(t => t.trim()).filter(Boolean))).map((t) => (
+                <Badge key={t} variant="outline">#{t.replace(/^#/, "")}</Badge>
+              ))}
+            </div>
+          )}
+        </div>
 
         <RichTextEditor
           valueHtml={contentHtml}

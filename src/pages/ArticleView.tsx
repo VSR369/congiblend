@@ -2,6 +2,7 @@ import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 import { LikeButton } from "@/components/ui/like-button";
 import { CommentsSection } from "@/components/comments/CommentsSection";
@@ -136,6 +137,23 @@ const ArticleView: React.FC = () => {
             <div>{new Date(article.created_at).toLocaleString()}</div>
           </div>
         </div>
+
+        {(article.metadata?.category || (Array.isArray(article.metadata?.tags) && article.metadata.tags.length > 0) || typeof article.metadata?.tags === 'string') && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {typeof article.metadata?.category === 'string' && article.metadata.category.trim() && (
+              <Badge variant="secondary">{article.metadata.category.trim()}</Badge>
+            )}
+            {(
+              Array.isArray(article.metadata?.tags)
+                ? article.metadata.tags
+                : typeof article.metadata?.tags === 'string'
+                  ? article.metadata.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+                  : []
+            ).map((t: string) => (
+              <Badge key={t} variant="outline">#{String(t).trim().replace(/^#/, '')}</Badge>
+            ))}
+          </div>
+        )}
       </header>
 
       <article className="prose prose-neutral dark:prose-invert max-w-none">
