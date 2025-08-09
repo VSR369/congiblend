@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, Search, Settings, User, Menu, Sun, Moon, PanelLeft, Lightbulb } from 'lucide-react';
+import { Bell, Search, Settings, User, Menu, Sun, Moon, PanelLeft, Lightbulb, Home } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -93,6 +93,13 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false }: Head
               {APP_CONFIG.name}
             </span>
           </Link>
+
+          <Button asChild variant="secondary" size="sm" className="h-10 rounded-xl">
+            <Link to="/" aria-label="Back Home" className="flex items-center gap-2">
+              <Home className="h-4 w-4" />
+              <span>Back Home</span>
+            </Link>
+          </Button>
         </div>
 
         {/* Center Section - Enhanced Search */}
