@@ -123,8 +123,34 @@ export default {
 				'scale-in': 'scale-in 0.2s ease-out',
 				'shimmer': 'shimmer 2s infinite',
 				'pulse-glow': 'pulse-glow 2s ease-in-out infinite'
+			},
+			typography: {
+				DEFAULT: {
+					css: {
+						'--tw-prose-body': 'hsl(var(--foreground))',
+						'--tw-prose-headings': 'hsl(var(--foreground))',
+						'--tw-prose-links': 'hsl(var(--primary))',
+						'--tw-prose-bold': 'hsl(var(--foreground))',
+						'--tw-prose-quotes': 'hsl(var(--foreground))',
+						'--tw-prose-hr': 'hsl(var(--border))',
+						'--tw-prose-th-borders': 'hsl(var(--border))',
+						'--tw-prose-td-borders': 'hsl(var(--border))',
+						'h1, h2, h3': {
+							scrollMarginTop: '6rem'
+						},
+						h1: { fontWeight: '700' },
+						h2: { marginTop: '1.6em', marginBottom: '0.6em', fontWeight: '600' },
+						h3: { marginTop: '1.2em', marginBottom: '0.4em', fontWeight: '600' },
+						p: { marginTop: '0.8em', marginBottom: '0.8em' },
+						ul: { marginTop: '0.8em', marginBottom: '0.8em', paddingLeft: '1.25em' },
+						ol: { marginTop: '0.8em', marginBottom: '0.8em', paddingLeft: '1.25em' },
+						li: { marginTop: '0.25em', marginBottom: '0.25em' },
+						blockquote: { fontStyle: 'normal', borderLeftColor: 'hsl(var(--primary))' },
+						code: { backgroundColor: 'hsl(var(--muted))', padding: '0.15em 0.35em', borderRadius: '0.25rem' }
+					}
+				}
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config;

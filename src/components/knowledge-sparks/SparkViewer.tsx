@@ -462,7 +462,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
           {showPreview && (
             <div className="mt-3 rounded-md border border-border bg-muted/30 p-3">
               <div className="text-xs mb-2 text-muted-foreground">Preview</div>
-              <div className="text-sm leading-relaxed space-y-3"
+              <div className="prose prose-sm max-w-none dark:prose-invert"
                 dangerouslySetInnerHTML={{ __html: computeMergedHtml(editMode, currentHtml, contentHtmlDraft, selectedHeadingId) }}
               />
             </div>
@@ -494,7 +494,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
                   {htmlSource ? (
                     <div
                       ref={contentRef}
-                      className="text-sm leading-relaxed space-y-3"
+                      className="prose prose-base max-w-none dark:prose-invert"
                       dangerouslySetInnerHTML={{ __html: htmlWithIds }}
                     />
                   ) : (
@@ -566,7 +566,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             {showPreview && (
               <div className="mt-3 rounded-md border border-border bg-muted/30 p-3">
                 <div className="text-xs mb-2 text-muted-foreground">Preview</div>
-                <div className="text-sm leading-relaxed space-y-3"
+                <div className="prose prose-sm max-w-none dark:prose-invert"
                   dangerouslySetInnerHTML={{ __html: computeMergedHtml(editMode, currentHtml, contentHtmlDraft, selectedHeadingId) }}
                 />
               </div>
@@ -626,7 +626,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               <div className="mt-3 rounded-md border border-border bg-muted/30 p-3">
                 <div className="text-xs mb-2 text-muted-foreground">Preview</div>
                 <div
-                  className="text-sm leading-relaxed space-y-3"
+                  className="prose prose-sm max-w-none dark:prose-invert"
                   dangerouslySetInnerHTML={{
                     __html: computeMergedHtml(editMode, currentHtml, contentHtmlDraft, selectedHeadingId),
                   }}
