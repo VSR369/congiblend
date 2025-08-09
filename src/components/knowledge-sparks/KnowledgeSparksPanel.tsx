@@ -70,7 +70,7 @@ export const KnowledgeSparksPanel: React.FC<KnowledgeSparksPanelProps> = ({ init
         <Separator />
         <div className="p-4 flex-1 overflow-hidden">
           <ResizablePanelGroup direction="horizontal" className="h-[80vh] rounded-md border">
-            <ResizablePanel defaultSize={34} minSize={24}>
+            <ResizablePanel defaultSize={28} minSize={24}>
               <Card className="h-full overflow-hidden">
                 <SparksList
                   selectedId={selected?.id ?? null}
@@ -79,7 +79,7 @@ export const KnowledgeSparksPanel: React.FC<KnowledgeSparksPanelProps> = ({ init
               </Card>
             </ResizablePanel>
             <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={66} minSize={40}>
+            <ResizablePanel defaultSize={72} minSize={40}>
               <div className="h-full">
                 {selected ? (
                   <SparkViewer spark={selected} />

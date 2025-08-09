@@ -13,6 +13,7 @@ import { RichTextEditor, htmlToPlainText } from "@/components/knowledge-sparks/R
 import { useIsSparkAuthor } from "@/hooks/useIsSparkAuthor";
 import { Drawer, DrawerContent, DrawerHeader, DrawerFooter, DrawerTitle } from "@/components/ui/drawer";
 import { SparkTOC, extractHeadings } from "@/components/knowledge-sparks/SparkTOC";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 type Spark = {
   id: string;
   title: string;
@@ -75,6 +76,24 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     return (latestVersion?.version_number ?? 0) + 1;
   }, [latestVersion]);
 
+  const [articleWidth, setArticleWidth] = useLocalStorage<"narrow" | "comfortable" | "wide" | "full">(
+    "spark-article-width",
+    "comfortable"
+  );
+
+  const articleWidthCls = useMemo(() => {
+    switch (articleWidth) {
+      case "narrow":
+        return "max-w-[65ch]";
+      case "comfortable":
+        return "max-w-[80ch]";
+      case "wide":
+        return "max-w-[96ch]";
+      case "full":
+      default:
+        return "max-w-none";
+    }
+  }, [articleWidth]);
   // Log a non-blocking view analytics event when a spark is opened
   useEffect(() => {
     if (!spark?.id) return;
@@ -176,9 +195,22 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
           <h2 className="text-lg font-semibold">{spark.title}</h2>
           <div className="text-xs text-muted-foreground">/{spark.slug}</div>
         </div>
-        <Button size="sm" variant={editing ? "secondary" : "default"} onClick={() => setEditing(true)}>
-          Suggest Edit
-        </Button>
+        <div className="flex items-center gap-2">
+          <Select value={articleWidth} onValueChange={(v) => setArticleWidth(v as any)}>
+            <SelectTrigger className="h-8 w-[140px]">
+              <SelectValue placeholder="Width" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="narrow">Width: Narrow</SelectItem>
+              <SelectItem value="comfortable">Width: Comfortable</SelectItem>
+              <SelectItem value="wide">Width: Wide</SelectItem>
+              <SelectItem value="full">Width: Full</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button size="sm" variant={editing ? "secondary" : "default"} onClick={() => setEditing(true)}>
+            Suggest Edit
+          </Button>
+        </div>
       </div>
 
       {!isAuthenticated && (
@@ -205,7 +237,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               const { htmlWithIds, headings } = extractHeadings(htmlSource);
 
               return (
-                <div className="max-w-none">
+                <div className={`${articleWidthCls} mx-auto`}>
                   {htmlSource ? (
                     <div
                       className="text-sm leading-relaxed space-y-3"
@@ -233,7 +265,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
           (() => {
             const { headings } = extractHeadings(viewVersion?.content_html || latestVersion?.content_html || "");
             return (
-              <aside className="hidden xl:block sticky top-4 self-start">
+              <aside className="hidden xl:block sticky top-20 self-start">
                 <SparkTOC headings={headings} />
               </aside>
             );

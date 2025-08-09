@@ -35,7 +35,7 @@ const KnowledgeSparksPage: React.FC = () => {
   }, [slug]);
 
   return (
-    <main className="container py-6">
+    <main className="w-full max-w-screen-2xl mx-auto px-4 py-6">
       <header className="mb-4">
         <h1 className="text-2xl font-bold">Knowledge Sparks</h1>
         <p className="text-sm text-muted-foreground">Collaborative wiki-style knowledge base.</p>
