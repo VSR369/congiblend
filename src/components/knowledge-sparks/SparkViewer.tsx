@@ -198,6 +198,17 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
 
     const baseHtml = (latestVersion?.content_html || "").trim();
 
+    if (editMode === "modify-section") {
+      if (tocHeadings.length === 0) {
+        toast.error("No headings available to modify. Use Append or add a heading first.");
+        return;
+      }
+      if (!selectedHeadingId || !tocHeadings.some((h) => h.id === selectedHeadingId)) {
+        toast.error("Please choose a section to modify.");
+        return;
+      }
+    }
+
     const finalHtml = computeMergedHtml(editMode, baseHtml, newSectionHtml, selectedHeadingId);
     const finalPlain = htmlToPlainText(finalHtml).trim();
 
@@ -376,6 +387,15 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
                     toast.error("Only the author can replace content. Use Append instead.");
                     return; // keep current (append)
                   }
+                  if (v === "modify-section") {
+                    if (tocHeadings.length === 0) {
+                      toast.error("No headings available to modify. Use Append or add a heading.");
+                      return; // don't switch
+                    }
+                    if (!selectedHeadingId && tocHeadings.length > 0) {
+                      setSelectedHeadingId(tocHeadings[0].id);
+                    }
+                  }
                   setEditMode(v as "append" | "modify-section" | "replace");
                 }}
               >
@@ -393,24 +413,18 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             {editMode === "modify-section" && (
               <div className="sm:max-w-sm">
                 <Select
-                  value={selectedHeadingId ?? ""}
+                  value={selectedHeadingId ?? undefined}
                   onValueChange={(v) => setSelectedHeadingId(v)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Target section" />
                   </SelectTrigger>
                   <SelectContent>
-                    {tocHeadings.length === 0 ? (
-                      <SelectItem value="" disabled>
-                        No headings available
+                    {tocHeadings.map((h) => (
+                      <SelectItem key={h.id} value={h.id}>
+                        {h.text}
                       </SelectItem>
-                    ) : (
-                      tocHeadings.map((h) => (
-                        <SelectItem key={h.id} value={h.id}>
-                          {h.text}
-                        </SelectItem>
-                      ))
-                    )}
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
