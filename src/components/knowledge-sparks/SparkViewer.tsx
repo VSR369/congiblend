@@ -189,14 +189,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     })();
   }, [spark.id]);
 
-  // Reset fields when entering edit mode
-  useEffect(() => {
-    if (editing) {
-      setContentHtmlDraft("");
-      setChangeSummary("");
-      // Preserve current editMode to allow "Edit here" flows and drafts
-    }
-  }, [editing]);
+  // Keep draft values when opening the editor to avoid clearing prefilled content
 
   // Ensure non-authors cannot remain in "replace" mode
   useEffect(() => {
@@ -379,6 +372,13 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     }
   }, [editing, editMode, selectedHeadingId, currentHtml]);
 
+  // Safety net: when entering replace mode, prefill editor with current content if empty
+  useEffect(() => {
+    if (editing && editMode === "replace" && !contentHtmlDraft.trim()) {
+      setContentHtmlDraft(currentHtml || "");
+    }
+  }, [editing, editMode, contentHtmlDraft, currentHtml]);
+
   return (
     <Card className="p-4">
       <div className="flex items-start justify-between gap-2">
@@ -402,6 +402,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             <Button
               size="sm"
               variant="secondary"
+              disabled={isLoading}
               onClick={() => {
                 setEditing(true);
                 setEditMode("replace");
@@ -511,7 +512,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       )}
 
       {/* Content + TOC */}
-      <div className={`mt-4 ${tocHeadings.length > 0 ? "grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-6" : ""}`}>
+      <div className={`mt-4 ${tocHeadings.length > 0 ? "grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-6" : ""} ${editing && editMode === "replace" ? "hidden" : ""}`}>
         <article className="min-h-[300px]">
           {isLoading ? (
             <>
