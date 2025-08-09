@@ -8,6 +8,7 @@ interface RichTextEditorProps {
   placeholder?: string;
   className?: string;
   minHeight?: number;
+  onCtrlEnter?: () => void;
 }
 
 export const htmlToPlainText = (html: string) => {
@@ -23,6 +24,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   placeholder,
   className,
   minHeight = 180,
+  onCtrlEnter,
 }) => {
   const modules = React.useMemo(
     () => ({
@@ -53,6 +55,11 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     "code-block",
     "link",
   ];
+  const wordCount = React.useMemo(() => {
+    const text = htmlToPlainText(valueHtml);
+    return text ? text.trim().split(/\s+/).filter(Boolean).length : 0;
+  }, [valueHtml]);
+  const charCount = React.useMemo(() => htmlToPlainText(valueHtml).length, [valueHtml]);
 
   return (
     <div className={className}>
@@ -64,7 +71,16 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         formats={formats}
         placeholder={placeholder}
         style={{ minHeight }}
+        onKeyDown={(e) => {
+          if ((e.ctrlKey || (e as any).metaKey) && e.key === "Enter") {
+            onCtrlEnter?.();
+          }
+        }}
       />
+      <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+        <span>{wordCount} words • {charCount} chars</span>
+        <span>Press Ctrl/⌘ + Enter to submit</span>
+      </div>
     </div>
   );
 };

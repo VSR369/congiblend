@@ -14,6 +14,8 @@ import { useIsSparkAuthor } from "@/hooks/useIsSparkAuthor";
 import { Drawer, DrawerContent, DrawerHeader, DrawerFooter, DrawerTitle } from "@/components/ui/drawer";
 import { SparkTOC, extractHeadings } from "@/components/knowledge-sparks/SparkTOC";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAutosaveDraft } from "@/hooks/useAutosaveDraft";
 type Spark = {
   id: string;
   title: string;
@@ -69,8 +71,30 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   const [editing, setEditing] = useState(false);
   const [contentHtmlDraft, setContentHtmlDraft] = useState("");
   const [changeSummary, setChangeSummary] = useState("");
-  const [editMode, setEditMode] = useState<"append" | "replace">("append");
+  const [editMode, setEditMode] = useState<"append" | "modify-section" | "replace">("append");
+  const [selectedHeadingId, setSelectedHeadingId] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [compareVersion, setCompareVersion] = useState<any | null>(null);
   const [viewVersion, setViewVersion] = useState<any | null>(null);
+
+  const draftKey = `sparkDraft:${spark.id}`;
+  const { loadedDraft, clearDraft } = useAutosaveDraft(draftKey, {
+    contentHtmlDraft,
+    changeSummary,
+    editMode,
+    selectedHeadingId,
+  });
+
+  // Load any saved draft into state when opening editor
+  useEffect(() => {
+    if (!editing) return;
+    if (loadedDraft) {
+      if (loadedDraft.contentHtmlDraft && !contentHtmlDraft) setContentHtmlDraft(loadedDraft.contentHtmlDraft);
+      if (loadedDraft.changeSummary && !changeSummary) setChangeSummary(loadedDraft.changeSummary);
+      if (loadedDraft.editMode && editMode === "append") setEditMode(loadedDraft.editMode as any);
+      if (loadedDraft.selectedHeadingId) setSelectedHeadingId(loadedDraft.selectedHeadingId);
+    }
+  }, [editing, loadedDraft]);
 
   const nextVersionNumber = useMemo(() => {
     return (latestVersion?.version_number ?? 0) + 1;
@@ -124,6 +148,34 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     }
   }, [isAuthor, editMode]);
 
+  const computeMergedHtml = (
+    mode: "append" | "modify-section" | "replace",
+    baseHtml: string,
+    newHtml: string,
+    headingId?: string | null
+  ) => {
+    if (mode === "replace") return newHtml;
+    if (mode === "append") return baseHtml ? `${baseHtml}<p><br/></p>${newHtml}` : newHtml;
+    if (mode === "modify-section" && headingId) {
+      const container = document.createElement("div");
+      container.innerHTML = baseHtml || "";
+      try {
+        const target = container.querySelector(`#${CSS.escape(headingId)}`);
+        if (target) {
+          const spacer = document.createElement("p");
+          spacer.innerHTML = "<br/>";
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = newHtml;
+          (target as HTMLElement).insertAdjacentElement("afterend", spacer);
+          spacer.insertAdjacentElement("afterend", wrapper);
+          return container.innerHTML;
+        }
+      } catch {}
+    }
+    // Fallback: append
+    return baseHtml ? `${baseHtml}<p><br/></p>${newHtml}` : newHtml;
+  };
+
   const handleSuggestEdit = async () => {
     const { data: auth } = await supabase.auth.getUser();
     const user = auth?.user;
@@ -138,20 +190,19 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       return;
     }
 
-    const basePlain = (latestVersion?.content_plain || "").trim();
+    if (editMode === "replace" && !isAuthor) {
+      toast.error("Only the author can replace content. Use Append instead.");
+      setEditMode("append");
+      return;
+    }
+
     const baseHtml = (latestVersion?.content_html || "").trim();
 
-    const finalPlain =
-      editMode === "append"
-        ? (basePlain ? `${basePlain}\n\n${newSectionPlain}` : newSectionPlain)
-        : newSectionPlain;
+    const finalHtml = computeMergedHtml(editMode, baseHtml, newSectionHtml, selectedHeadingId);
+    const finalPlain = htmlToPlainText(finalHtml).trim();
 
-    const finalHtml =
-      editMode === "append"
-        ? (baseHtml ? `${baseHtml}<p><br/></p>${newSectionHtml}` : newSectionHtml)
-        : newSectionHtml;
-
-    const summary = changeSummary.trim() || (editMode === "append" ? "Append update" : "Replace content");
+    const summary = changeSummary.trim() ||
+      (editMode === "append" ? "Append update" : editMode === "modify-section" ? "Section update" : "Replace content");
 
     const { error } = await supabase.from("spark_content_versions").insert({
       spark_id: spark.id,
@@ -163,13 +214,12 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       edit_type: editMode === "replace" ? "replacement" : "append",
       word_count: finalPlain.split(/\s+/).filter(Boolean).length,
       character_count: finalPlain.length,
-      sections_modified: [],
+      sections_modified: editMode === "modify-section" && selectedHeadingId ? [selectedHeadingId] : [],
       edited_by: user.id,
     });
 
     if (error) {
       console.error("Insert version error:", error);
-      // Help users understand replace restriction if it occurs
       if (String(error.message || "").toLowerCase().includes("author")) {
         toast.error("Only the author can replace content. Try using Append instead.");
       } else {
@@ -179,10 +229,12 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     }
 
     toast.success("Edit submitted!");
+    clearDraft();
     setEditing(false);
     setContentHtmlDraft("");
     setChangeSummary("");
     setViewVersion(null);
+    setShowPreview(false);
     qc.invalidateQueries({ queryKey: ["spark", spark.id, "latestVersion"] });
     qc.invalidateQueries({ queryKey: ["spark", spark.id, "versions", "history"] });
     qc.invalidateQueries({ queryKey: ["knowledge-sparks", "list"] });
@@ -211,7 +263,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             </SelectContent>
           </Select>
           <Button size="sm" variant={editing ? "secondary" : "default"} onClick={() => setEditing(true)}>
-            Suggest Edit
+            Contribute
           </Button>
         </div>
       </div>
@@ -302,7 +354,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       <Drawer open={editing} onOpenChange={(open) => setEditing(open)}>
         <DrawerContent className="max-h-[85vh]">
           <DrawerHeader>
-            <DrawerTitle>Suggest Edit</DrawerTitle>
+            <DrawerTitle>Contribute</DrawerTitle>
           </DrawerHeader>
           <div className="px-4 pb-4 space-y-3">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
