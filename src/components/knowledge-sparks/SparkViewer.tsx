@@ -91,7 +91,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         return "max-w-[96ch]";
       case "full":
       default:
-        return "max-w-none";
+        return "max-w-none w-full";
     }
   }, [articleWidth]);
   // Log a non-blocking view analytics event when a spark is opened
@@ -188,6 +188,9 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     qc.invalidateQueries({ queryKey: ["knowledge-sparks", "list"] });
   };
 
+  const currentHtml = useMemo(() => (viewVersion?.content_html || latestVersion?.content_html || ""), [viewVersion?.content_html, latestVersion?.content_html]);
+  const tocHeadings = useMemo(() => extractHeadings(currentHtml).headings, [currentHtml]);
+
   return (
     <Card className="p-4 h-full overflow-y-auto">
       <div className="flex items-start justify-between gap-2">
@@ -223,7 +226,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       )}
 
       {/* Content + TOC */}
-      <div className="mt-4 grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-6">
+      <div className={`mt-4 ${tocHeadings.length > 0 ? "grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-6" : ""}`}>
         <article className="min-h-[300px]">
           {isLoading ? (
             <>
@@ -261,16 +264,12 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         </article>
 
         {/* TOC (desktop) */}
-        {(viewVersion?.content_html || latestVersion?.content_html) ? (
-          (() => {
-            const { headings } = extractHeadings(viewVersion?.content_html || latestVersion?.content_html || "");
-            return (
-              <aside className="hidden xl:block sticky top-20 self-start">
-                <SparkTOC headings={headings} />
-              </aside>
-            );
-          })()
-        ) : null}
+        {tocHeadings.length > 0 && (
+          <aside className="hidden xl:block sticky top-20 self-start">
+            <SparkTOC headings={tocHeadings} />
+          </aside>
+        )}
+
       </div>
 
       {versionHistory && (versionHistory as any[]).length > 0 && (
