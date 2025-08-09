@@ -1,6 +1,13 @@
 import { useReducer } from 'react';
 import type { PostType } from '@/types/feed';
 
+type EventSpeaker = {
+  name: string;
+  profile?: string;
+  description?: string;
+  photo_url?: string;
+};
+
 interface PostCreationState {
   activeTab: PostType;
   content: string;
@@ -19,6 +26,7 @@ interface PostCreationState {
     is_virtual: boolean;
     is_hybrid: boolean;
   };
+  eventSpeakers: EventSpeaker[];
 }
 
 type PostCreationAction =
@@ -30,7 +38,9 @@ type PostCreationAction =
   | { type: 'SET_SELECTED_FILES'; payload: File[] }
   | { type: 'SET_POLL_OPTIONS'; payload: string[] }
   | { type: 'SET_EVENT_DATA'; payload: Partial<PostCreationState['eventData']> }
-  
+  | { type: 'ADD_EVENT_SPEAKER' }
+  | { type: 'UPDATE_EVENT_SPEAKER'; index: number; payload: Partial<EventSpeaker> }
+  | { type: 'REMOVE_EVENT_SPEAKER'; index: number }
   | { type: 'RESET_FORM' };
 
 const initialState: PostCreationState = {
@@ -51,6 +61,7 @@ const initialState: PostCreationState = {
     is_virtual: false,
     is_hybrid: false
   },
+  eventSpeakers: [],
 };
 
 function postCreationReducer(state: PostCreationState, action: PostCreationAction): PostCreationState {
@@ -92,6 +103,31 @@ function postCreationReducer(state: PostCreationState, action: PostCreationActio
         eventData: { ...state.eventData, ...action.payload }
       };
       
+    case 'ADD_EVENT_SPEAKER':
+      console.log('🎤 Adding new event speaker');
+      return {
+        ...state,
+        eventSpeakers: [
+          ...state.eventSpeakers,
+          { name: '', profile: '', description: '', photo_url: '' }
+        ]
+      };
+
+    case 'UPDATE_EVENT_SPEAKER':
+      console.log('🛠️ Updating event speaker at index:', (action as any).index);
+      return {
+        ...state,
+        eventSpeakers: state.eventSpeakers.map((s, i) =>
+          i === (action as any).index ? { ...s, ...(action as any).payload } : s
+        )
+      };
+
+    case 'REMOVE_EVENT_SPEAKER':
+      console.log('🗑️ Removing event speaker at index:', (action as any).index);
+      return {
+        ...state,
+        eventSpeakers: state.eventSpeakers.filter((_, i) => i !== (action as any).index)
+      };
       
     case 'RESET_FORM':
       console.log('🧹 Resetting post creation form');

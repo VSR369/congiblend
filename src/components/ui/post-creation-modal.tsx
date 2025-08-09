@@ -4,6 +4,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter, ModalTitle } from "./modal"
 import { Button } from "./button";
 import { Input } from "./input";
 import { Textarea } from "./textarea";
+import { Avatar } from "./avatar";
 import { Badge } from "./badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 import { Progress } from "./progress";
@@ -40,7 +41,8 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
     isPosting,
     selectedFiles,
     pollOptions,
-    eventData
+    eventData,
+    eventSpeakers,
   } = state;
 
   // Local state for improved Event date/time UX (does not change global logic)
@@ -166,6 +168,37 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
     const newFiles = selectedFiles.filter((_, i) => i !== index);
     dispatch({ type: 'SET_SELECTED_FILES', payload: newFiles });
   }, [selectedFiles, dispatch]);
+
+  // Speaker photo upload handler
+  const handleSpeakerPhotoUpload = React.useCallback(async (index: number, file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Not authenticated');
+
+      const response = await fetch(`https://cmtehutbazgfjoksmkly.supabase.co/functions/v1/media`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to upload speaker photo: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      if (!data?.url) throw new Error('Upload succeeded but no URL returned');
+
+      dispatch({ type: 'UPDATE_EVENT_SPEAKER', index, payload: { photo_url: data.url } });
+      toast.success('Speaker photo uploaded');
+    } catch (e: any) {
+      console.error('Speaker photo upload error', e);
+      toast.error(e?.message || 'Failed to upload speaker photo');
+    }
+  }, [dispatch]);
 
   const handleSubmit = React.useCallback(async () => {
     // For event posts, content is not required but event fields are
