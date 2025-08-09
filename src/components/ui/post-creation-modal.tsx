@@ -557,8 +557,9 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
                 </div>
               )}
             </div>
+          </div>
           );
-
+ 
         case "image":
       case "video":
       case "audio":
