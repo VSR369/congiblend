@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
@@ -16,6 +16,8 @@ import { SparkTOC, extractHeadings } from "@/components/knowledge-sparks/SparkTO
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAutosaveDraft } from "@/hooks/useAutosaveDraft";
+import { createPortal } from "react-dom";
+
 type Spark = {
   id: string;
   title: string;
@@ -26,6 +28,52 @@ type Spark = {
 interface SparkViewerProps {
   spark: Spark;
 }
+
+const InlineAfterHeadingPortal: React.FC<{
+  containerRef: React.RefObject<HTMLElement>;
+  headingId: string;
+  children: React.ReactNode;
+}> = ({ containerRef, headingId, children }) => {
+  const [mountEl, setMountEl] = React.useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !headingId) return;
+
+    let placeholder: HTMLDivElement | null = null;
+    let targetEl: HTMLElement | null = null;
+
+    try {
+      targetEl = container.querySelector(`#${CSS.escape(headingId)}`) as HTMLElement | null;
+    } catch {
+      targetEl = null;
+    }
+
+    if (targetEl) {
+      placeholder = document.createElement("div");
+      placeholder.className = "mt-2";
+      targetEl.insertAdjacentElement("afterend", placeholder);
+      // Highlight + scroll into view
+      targetEl.classList.add("ring-1", "ring-ring", "rounded-sm");
+      try {
+        targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      } catch {}
+      setMountEl(placeholder);
+    }
+
+    return () => {
+      if (placeholder && placeholder.parentNode) {
+        placeholder.parentNode.removeChild(placeholder);
+      }
+      if (targetEl) {
+        targetEl.classList.remove("ring-1", "ring-ring", "rounded-sm");
+      }
+    };
+  }, [containerRef, headingId]);
+
+  if (!mountEl) return null;
+  return createPortal(children as any, mountEl);
+};
 
 export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   const qc = useQueryClient();
@@ -76,6 +124,8 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [compareVersion, setCompareVersion] = useState<any | null>(null);
   const [viewVersion, setViewVersion] = useState<any | null>(null);
+
+  const contentRef = React.useRef<HTMLDivElement>(null);
 
   const draftKey = `sparkDraft:${spark.id}`;
   const { loadedDraft, clearDraft } = useAutosaveDraft(draftKey, {
@@ -294,6 +344,24 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         </div>
       )}
 
+      {editing && editMode === "modify-section" && tocHeadings.length === 0 && (
+        <div className="mt-4 flex items-center justify-between rounded-lg border border-border bg-muted/40 p-3">
+          <div>
+            <div className="text-sm font-medium">No headings found</div>
+            <div className="text-xs text-muted-foreground">Modify section needs at least one H2/H3. Use “Create first section”.</div>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditMode("append");
+              setContentHtmlDraft("<h2>New section</h2><p>Start writing…</p>");
+            }}
+          >
+            Create first section
+          </Button>
+        </div>
+      )}
+
       {/* Content + TOC */}
       <div className={`mt-4 ${tocHeadings.length > 0 ? "grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-6" : ""}`}>
         <article className="min-h-[300px]">
@@ -312,6 +380,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
                 <div className={`${articleWidthCls} mx-auto`}>
                   {htmlSource ? (
                     <div
+                      ref={contentRef}
                       className="text-sm leading-relaxed space-y-3"
                       dangerouslySetInnerHTML={{ __html: htmlWithIds }}
                     />
@@ -341,7 +410,50 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
 
       </div>
 
-      {versionHistory && (versionHistory as any[]).length > 0 && (
+      {editing && editMode === "modify-section" && selectedHeadingId && tocHeadings.length > 0 && (
+        <InlineAfterHeadingPortal containerRef={contentRef} headingId={selectedHeadingId}>
+          <div className="rounded-md border border-border bg-background p-3 shadow-sm">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <Input
+                value={changeSummary}
+                onChange={(e) => setChangeSummary(e.target.value)}
+                placeholder="Change summary (optional)"
+              />
+              <Select value={selectedHeadingId ?? undefined} onValueChange={(v) => setSelectedHeadingId(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Target section" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tocHeadings.map((h) => (
+                    <SelectItem key={h.id} value={h.id}>
+                      {h.text}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Your text will appear under the selected section heading. Press Ctrl/⌘ + Enter to submit.
+            </div>
+            <div className="mt-2">
+              <RichTextEditor
+                valueHtml={contentHtmlDraft}
+                onChangeHtml={setContentHtmlDraft}
+                placeholder="Write updates for the selected section..."
+                minHeight={220}
+                onCtrlEnter={handleSuggestEdit}
+              />
+            </div>
+            <div className="mt-2 flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setShowPreview(true)}>Preview</Button>
+              <Button variant="secondary" onClick={() => setEditing(false)}>Cancel</Button>
+              <Button onClick={handleSuggestEdit}>Submit Edit</Button>
+            </div>
+          </div>
+        </InlineAfterHeadingPortal>
+      )}
+
+       {versionHistory && (versionHistory as any[]).length > 0 && (
         <div className="mt-6">
           <div className="flex items-center justify-between">
             <div className="text-sm font-medium">Version history</div>
@@ -368,7 +480,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       )}
 
       {/* Focused Edit Drawer */}
-      <Drawer open={editing} onOpenChange={(open) => setEditing(open)}>
+      <Drawer open={editing && editMode !== "modify-section"} onOpenChange={(open) => setEditing(open)}>
         <DrawerContent className="max-h-[85vh]">
           <DrawerHeader>
             <DrawerTitle>Contribute</DrawerTitle>
