@@ -1,4 +1,5 @@
 import React from "react";
+import Quill from "quill";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { Image as ImageIcon, Video as VideoIcon, AudioLines } from "lucide-react";
@@ -21,6 +22,57 @@ export const htmlToPlainText = (html: string) => {
   tmp.innerHTML = html;
   return tmp.textContent || tmp.innerText || "";
 };
+
+// Register custom media blots (video/audio) once to allow HTML5 embeds to persist
+// Avoid duplicate registration during HMR
+const g: any = globalThis as any;
+if (!g.__SPARKS_MEDIA_BLOTS_REGISTERED__) {
+  const BlockEmbed: any = Quill.import("blots/block/embed");
+
+  class Html5VideoBlot extends BlockEmbed {
+    static blotName = "html5video";
+    static tagName = "VIDEO";
+    static className = "spark-video";
+    static create(value: string) {
+      const node = super.create() as HTMLVideoElement;
+      node.setAttribute("controls", "");
+      node.setAttribute("playsinline", "");
+      node.setAttribute("src", value);
+      node.style.maxWidth = "100%";
+      node.style.height = "auto";
+      node.style.display = "block";
+      node.style.margin = "0.5rem 0";
+      return node;
+    }
+    static value(node: HTMLElement) {
+      return node.getAttribute("src");
+    }
+  }
+
+  class AudioBlot extends BlockEmbed {
+    static blotName = "audio";
+    static tagName = "AUDIO";
+    static className = "spark-audio";
+    static create(value: string) {
+      const node = super.create() as HTMLAudioElement;
+      node.setAttribute("controls", "");
+      node.setAttribute("src", value);
+      node.style.display = "block";
+      node.style.margin = "0.5rem 0";
+      return node;
+    }
+    static value(node: HTMLElement) {
+      return node.getAttribute("src");
+    }
+  }
+
+  Quill.register({
+    "formats/html5video": Html5VideoBlot,
+    "formats/audio": AudioBlot,
+  });
+
+  g.__SPARKS_MEDIA_BLOTS_REGISTERED__ = true;
+}
 
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   valueHtml,
@@ -58,6 +110,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     "blockquote",
     "code-block",
     "link",
+    // Media formats
+    "image",
+    "html5video",
+    "audio",
   ];
   const wordCount = React.useMemo(() => {
     const text = htmlToPlainText(valueHtml);
@@ -92,9 +148,11 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       editor.insertEmbed(index, "image", url, "user");
       editor.setSelection(index + 1, 0);
     } else if (type === "video") {
-      insertHtml(`<figure class="my-2"><video controls src="${url}" style="max-width:100%"></video></figure>`);
+      editor.insertEmbed(index, "html5video", url, "user");
+      editor.setSelection(index + 1, 0);
     } else {
-      insertHtml(`<figure class="my-2"><audio controls src="${url}"></audio></figure>`);
+      editor.insertEmbed(index, "audio", url, "user");
+      editor.setSelection(index + 1, 0);
     }
   };
 
