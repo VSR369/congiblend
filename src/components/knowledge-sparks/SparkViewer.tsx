@@ -11,10 +11,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { RichTextEditor, htmlToPlainText } from "@/components/knowledge-sparks/RichTextEditor";
 import { useIsSparkAuthor } from "@/hooks/useIsSparkAuthor";
-import { Drawer, DrawerContent, DrawerHeader, DrawerFooter, DrawerTitle } from "@/components/ui/drawer";
+
 import { SparkTOC, extractHeadings } from "@/components/knowledge-sparks/SparkTOC";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 import { useAutosaveDraft } from "@/hooks/useAutosaveDraft";
 import { createPortal } from "react-dom";
 
@@ -362,6 +362,71 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         </div>
       )}
 
+      {editing && editMode === "replace" && (
+        <div className={`${articleWidthCls} mx-auto mt-4 rounded-md border border-border bg-muted/40 p-3 shadow-sm`}>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <Input
+              value={changeSummary}
+              onChange={(e) => setChangeSummary(e.target.value)}
+              placeholder="Change summary (optional)"
+            />
+            <Select
+              value={editMode}
+              onValueChange={(v) => {
+                if (v === "replace" && !isAuthor) {
+                  toast.error("Only the author can replace content. Use Append instead.");
+                  return;
+                }
+                if (v === "modify-section") {
+                  if (tocHeadings.length === 0) {
+                    toast.error("No headings available to modify. Use Append or add a heading.");
+                    return;
+                  }
+                  if (!selectedHeadingId && tocHeadings.length > 0) {
+                    setSelectedHeadingId(tocHeadings[0].id);
+                  }
+                }
+                setEditMode(v as any);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Edit mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="append">Append</SelectItem>
+                <SelectItem value="modify-section">Modify section</SelectItem>
+                <SelectItem value="replace" disabled={!isAuthor}>Replace</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            Your text will replace the current content. Press Ctrl/⌘ + Enter to submit.
+          </div>
+          <div className="mt-2">
+            <RichTextEditor
+              valueHtml={contentHtmlDraft}
+              onChangeHtml={setContentHtmlDraft}
+              placeholder="Write the new content..."
+              minHeight={260}
+              onCtrlEnter={handleSuggestEdit}
+            />
+          </div>
+          {showPreview && (
+            <div className="mt-3 rounded-md border border-border bg-muted/30 p-3">
+              <div className="text-xs mb-2 text-muted-foreground">Preview</div>
+              <div className="text-sm leading-relaxed space-y-3"
+                dangerouslySetInnerHTML={{ __html: computeMergedHtml(editMode, currentHtml, contentHtmlDraft, selectedHeadingId) }}
+              />
+            </div>
+          )}
+          <div className="mt-2 flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setShowPreview((v) => !v)}>Preview</Button>
+            <Button variant="secondary" onClick={() => setEditing(false)}>Cancel</Button>
+            <Button onClick={handleSuggestEdit}>Submit Edit</Button>
+          </div>
+        </div>
+      )}
+
       {/* Content + TOC */}
       <div className={`mt-4 ${tocHeadings.length > 0 ? "grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-6" : ""}`}>
         <article className="min-h-[300px]">
@@ -400,6 +465,71 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             <div className="text-sm text-muted-foreground">No versions yet.</div>
           )}
         </article>
+
+        {editing && editMode === "append" && (
+          <div className={`${articleWidthCls} mx-auto mt-4 rounded-md border border-border bg-background p-3 shadow-sm`}>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <Input
+                value={changeSummary}
+                onChange={(e) => setChangeSummary(e.target.value)}
+                placeholder="Change summary (optional)"
+              />
+              <Select
+                value={editMode}
+                onValueChange={(v) => {
+                  if (v === "replace" && !isAuthor) {
+                    toast.error("Only the author can replace content. Use Append instead.");
+                    return;
+                  }
+                  if (v === "modify-section") {
+                    if (tocHeadings.length === 0) {
+                      toast.error("No headings available to modify. Use Append or add a heading.");
+                      return;
+                    }
+                    if (!selectedHeadingId && tocHeadings.length > 0) {
+                      setSelectedHeadingId(tocHeadings[0].id);
+                    }
+                  }
+                  setEditMode(v as any);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Edit mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="append">Append</SelectItem>
+                  <SelectItem value="modify-section">Modify section</SelectItem>
+                  <SelectItem value="replace" disabled={!isAuthor}>Replace</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Your text will be added to the end of the content. Press Ctrl/⌘ + Enter to submit.
+            </div>
+            <div className="mt-2">
+              <RichTextEditor
+                valueHtml={contentHtmlDraft}
+                onChangeHtml={setContentHtmlDraft}
+                placeholder="Write what to add..."
+                minHeight={220}
+                onCtrlEnter={handleSuggestEdit}
+              />
+            </div>
+            {showPreview && (
+              <div className="mt-3 rounded-md border border-border bg-muted/30 p-3">
+                <div className="text-xs mb-2 text-muted-foreground">Preview</div>
+                <div className="text-sm leading-relaxed space-y-3"
+                  dangerouslySetInnerHTML={{ __html: computeMergedHtml(editMode, currentHtml, contentHtmlDraft, selectedHeadingId) }}
+                />
+              </div>
+            )}
+            <div className="mt-2 flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setShowPreview((v) => !v)}>Preview</Button>
+              <Button variant="secondary" onClick={() => setEditing(false)}>Cancel</Button>
+              <Button onClick={handleSuggestEdit}>Submit Edit</Button>
+            </div>
+          </div>
+        )}
 
         {/* TOC (desktop) */}
         {tocHeadings.length > 0 && (
@@ -444,8 +574,19 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
                 onCtrlEnter={handleSuggestEdit}
               />
             </div>
+            {showPreview && (
+              <div className="mt-3 rounded-md border border-border bg-muted/30 p-3">
+                <div className="text-xs mb-2 text-muted-foreground">Preview</div>
+                <div
+                  className="text-sm leading-relaxed space-y-3"
+                  dangerouslySetInnerHTML={{
+                    __html: computeMergedHtml(editMode, currentHtml, contentHtmlDraft, selectedHeadingId),
+                  }}
+                />
+              </div>
+            )}
             <div className="mt-2 flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setShowPreview(true)}>Preview</Button>
+              <Button variant="ghost" onClick={() => setShowPreview((v) => !v)}>Preview</Button>
               <Button variant="secondary" onClick={() => setEditing(false)}>Cancel</Button>
               <Button onClick={handleSuggestEdit}>Submit Edit</Button>
             </div>
@@ -479,115 +620,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         </div>
       )}
 
-      {/* Focused Edit Drawer */}
-      <Drawer open={editing && editMode !== "modify-section"} onOpenChange={(open) => setEditing(open)}>
-        <DrawerContent className="max-h-[85vh]">
-          <DrawerHeader>
-            <DrawerTitle>Contribute</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-4 space-y-3">
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <Input
-                value={changeSummary}
-                onChange={(e) => setChangeSummary(e.target.value)}
-                placeholder="Change summary (optional)"
-              />
-              <Select
-                value={editMode}
-                onValueChange={(v) => {
-                  if (v === "replace" && !isAuthor) {
-                    toast.error("Only the author can replace content. Use Append instead.");
-                    return; // keep current (append)
-                  }
-                  if (v === "modify-section") {
-                    if (tocHeadings.length === 0) {
-                      toast.error("No headings available to modify. Use Append or add a heading.");
-                      return; // don't switch
-                    }
-                    if (!selectedHeadingId && tocHeadings.length > 0) {
-                      setSelectedHeadingId(tocHeadings[0].id);
-                    }
-                  }
-                  setEditMode(v as "append" | "modify-section" | "replace");
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Edit mode" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="append">Append</SelectItem>
-                  <SelectItem value="modify-section">Modify section</SelectItem>
-                  <SelectItem value="replace" disabled={!isAuthor}>Replace</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
-            {editMode === "modify-section" && (
-              <div className="sm:max-w-sm">
-                <Select
-                  value={selectedHeadingId ?? undefined}
-                  onValueChange={(v) => setSelectedHeadingId(v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Target section" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tocHeadings.map((h) => (
-                      <SelectItem key={h.id} value={h.id}>
-                        {h.text}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div className="text-xs text-muted-foreground">
-              {editMode === "append"
-                ? "Your text will be added to the end of the current content."
-                : editMode === "modify-section"
-                ? "Your text will appear under the selected section heading."
-                : "Your text will replace the current content."}
-              {!isAuthor ? " • Only the author can replace content." : ""}
-            </div>
-            <RichTextEditor
-              valueHtml={contentHtmlDraft}
-              onChangeHtml={setContentHtmlDraft}
-              placeholder={
-                editMode === "append"
-                  ? "Write what to add..."
-                  : editMode === "modify-section"
-                  ? "Write updates for the selected section..."
-                  : "Write the new content..."
-              }
-              minHeight={220}
-              onCtrlEnter={handleSuggestEdit}
-            />
-          </div>
-          <DrawerFooter>
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setShowPreview(true)}>Preview</Button>
-              <Button variant="secondary" onClick={() => setEditing(false)}>Cancel</Button>
-              <Button onClick={handleSuggestEdit}>Submit Edit</Button>
-            </div>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Preview merged content</DialogTitle>
-          </DialogHeader>
-          <div className="text-sm leading-relaxed space-y-3">
-            <div
-              dangerouslySetInnerHTML={{
-                __html: computeMergedHtml(editMode, currentHtml, contentHtmlDraft, selectedHeadingId),
-              }}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 };
