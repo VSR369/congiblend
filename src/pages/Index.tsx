@@ -3,24 +3,18 @@ import { ContentFeed } from '@/components/ui/content-feed';
 import { AnalyticsDashboard } from '@/components/ui/analytics-dashboard';
 import { EnhancedTabs, EnhancedTabsList, EnhancedTabsTrigger, EnhancedTabsContent } from '@/components/ui/enhanced-tabs';
 import { BarChart3, Users, MessageSquare, Sparkles, TrendingUp, Zap, Plus, ArrowRight, Target } from 'lucide-react';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { LeftSidebar } from '@/components/layout/LeftSidebar';
-import { RightSidebar } from '@/components/layout/RightSidebar';
 import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('feed');
 
   return (
-    <div className="flex min-h-screen w-full bg-gradient-to-br from-background via-muted/40 to-muted/60 relative overflow-hidden">
+    <div className="relative min-h-screen w-full bg-gradient-to-br from-background via-muted/40 to-muted/60 overflow-hidden">
       {/* Background Elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10" />
-      <div className="absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10" aria-hidden="true" />
+      <div className="pointer-events-none absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" aria-hidden="true" />
+      <div className="pointer-events-none absolute bottom-0 right-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl" aria-hidden="true" />
       
-      {/* Left Sidebar */}
-      <LeftSidebar />
-
       {/* Main Content */}
       <div className="flex-1 relative">
           {/* Main Content Tabs - Start with Your Feed */}
@@ -57,10 +51,6 @@ const Index = () => {
         </section>
       </div>
 
-      {/* Right Sidebar */}
-      <div className="hidden xl:block flex-shrink-0">
-        <RightSidebar />
-      </div>
     </div>
   );
 };
