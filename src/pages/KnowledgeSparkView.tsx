@@ -53,11 +53,14 @@ const KnowledgeSparkViewPage: React.FC = () => {
 
   useEffect(() => {
     if (spark) {
+      console.debug("KnowledgeSparkView: spark loaded", { slug, id: spark.id });
       document.title = `${spark.title} – Knowledge Sparks`;
       setMetaTag("description", spark.description || "Read and contribute to this Knowledge Spark.");
       setCanonical(window.location.href);
+    } else {
+      console.debug("KnowledgeSparkView: no spark found yet", { slug });
     }
-  }, [spark]);
+  }, [spark, slug]);
 
   if (isLoading) {
     return (

@@ -136,12 +136,9 @@ export default {
 							'--tw-prose-hr': 'hsl(var(--border))',
 							'--tw-prose-th-borders': 'hsl(var(--border))',
 							'--tw-prose-td-borders': 'hsl(var(--border))',
-							'h1, h2, h3': {   // Fixed: quoted grouped selector
-								scrollMarginTop: '6rem'
-							},
-							h1: { fontWeight: '700' },
-							h2: { marginTop: '1.6em', marginBottom: '0.6em', fontWeight: '600' },
-							h3: { marginTop: '1.2em', marginBottom: '0.4em', fontWeight: '600' },
+							h1: { fontWeight: '700', scrollMarginTop: '6rem' },
+							h2: { marginTop: '1.6em', marginBottom: '0.6em', fontWeight: '600', scrollMarginTop: '6rem' },
+							h3: { marginTop: '1.2em', marginBottom: '0.4em', fontWeight: '600', scrollMarginTop: '6rem' },
 							p: { marginTop: '0.8em', marginBottom: '0.8em' },
 							ul: { marginTop: '0.8em', marginBottom: '0.8em', paddingLeft: '1.25em' },
 							ol: { marginTop: '0.8em', marginBottom: '0.8em', paddingLeft: '1.25em' },
@@ -169,7 +166,7 @@ export default {
 							'& :where(p:last-child)': { marginBottom: '0' },
 							'& :where(h2:first-child, h3:first-child)': { marginTop: '0' },
 							'& :where(h2 + h3)': { marginTop: '0.5em' },
-							'& p:has(> br:only-child)': { display: 'none' }
+							
 						}
 					}
 				}

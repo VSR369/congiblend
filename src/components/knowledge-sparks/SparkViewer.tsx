@@ -94,7 +94,9 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         console.error("Fetch latest version error:", error);
         throw error;
       }
-      return (data && data[0]) || null;
+      const result = (data && data[0]) || null;
+      console.debug("SparkViewer: latestVersion fetched", { sparkId: spark.id, version: result?.version_number });
+      return result;
     },
   });
 
@@ -111,7 +113,9 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         console.error("Fetch versions error:", error);
         throw error;
       }
-      return data || [];
+      const list = data || [];
+      console.debug("SparkViewer: versionHistory fetched", { count: list.length });
+      return list;
     },
     staleTime: 1000 * 30,
   });
@@ -171,6 +175,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   // Log a non-blocking view analytics event when a spark is opened
   useEffect(() => {
     if (!spark?.id) return;
+    console.debug("SparkViewer mounted/updated", { sparkId: spark.id });
     (async () => {
       const { error } = await supabase
         .from("spark_analytics")
@@ -178,6 +183,8 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       if (error) {
         // Silently ignore analytics errors
         console.debug("spark_analytics insert error", error);
+      } else {
+        console.debug("spark_analytics inserted view event");
       }
     })();
   }, [spark.id]);
@@ -373,7 +380,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   }, [editing, editMode, selectedHeadingId, currentHtml]);
 
   return (
-    <Card className="p-4 h-full overflow-y-auto">
+    <Card className="p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
           <h2 className="text-lg font-semibold">{spark.title}</h2>
@@ -509,7 +516,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
                   {htmlSource ? (
                     <div
                       ref={contentRef}
-                      className="prose prose-sparks prose-base max-w-none dark:prose-invert"
+                      className="prose prose-sparks prose-base max-w-none dark:prose-invert text-foreground"
                       dangerouslySetInnerHTML={{ __html: htmlWithIds }}
                     />
                   ) : (
