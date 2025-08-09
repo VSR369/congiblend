@@ -22,16 +22,18 @@ interface SparkCardProps {
   spark: Spark;
   onClick?: () => void;
   selected?: boolean;
+  className?: string;
 }
 
-export const SparkCard: React.FC<SparkCardProps> = ({ spark, onClick, selected }) => {
+export const SparkCard: React.FC<SparkCardProps> = ({ spark, onClick, selected, className }) => {
   return (
     <Card
       role="button"
       onClick={onClick}
       className={cn(
-        "p-4 hover:bg-accent/40 transition-colors cursor-pointer",
-        selected && "ring-2 ring-primary"
+        "p-4 hover:bg-accent/40 transition-colors cursor-pointer h-full",
+        selected && "ring-2 ring-primary",
+        className
       )}
     >
       <div className="flex items-start justify-between gap-2">
