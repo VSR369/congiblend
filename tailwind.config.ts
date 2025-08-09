@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -135,7 +136,7 @@ export default {
 							'--tw-prose-hr': 'hsl(var(--border))',
 							'--tw-prose-th-borders': 'hsl(var(--border))',
 							'--tw-prose-td-borders': 'hsl(var(--border))',
-							h1, h2, h3: {
+							'h1, h2, h3': {   // Fixed: quoted grouped selector
 								scrollMarginTop: '6rem'
 							},
 							h1: { fontWeight: '700' },
@@ -176,3 +177,4 @@ export default {
 	},
 	plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config;
+
