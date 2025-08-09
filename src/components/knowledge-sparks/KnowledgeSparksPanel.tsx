@@ -6,6 +6,7 @@ import { SparkViewer } from "./SparkViewer";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 
 type Spark = {
   id: string;
@@ -67,22 +68,29 @@ export const KnowledgeSparksPanel: React.FC<KnowledgeSparksPanelProps> = ({ init
           <CreateSparkForm onCreated={(spark) => setSelected(spark as Spark)} />
         </div>
         <Separator />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 flex-1 overflow-hidden">
-          <Card className="h-[60vh] md:h-[70vh] overflow-hidden">
-            <SparksList
-              selectedId={selected?.id ?? null}
-              onSelect={(spark) => setSelected(spark as Spark)}
-            />
-          </Card>
-          <div className="h-[60vh] md:h-[70vh]">
-            {selected ? (
-              <SparkViewer spark={selected} />
-            ) : (
-              <Card className="h-full p-4 text-sm text-muted-foreground flex items-center justify-center">
-                Select a spark to view details.
+        <div className="p-4 flex-1 overflow-hidden">
+          <ResizablePanelGroup direction="horizontal" className="h-[80vh] rounded-md border">
+            <ResizablePanel defaultSize={34} minSize={24}>
+              <Card className="h-full overflow-hidden">
+                <SparksList
+                  selectedId={selected?.id ?? null}
+                  onSelect={(spark) => setSelected(spark as Spark)}
+                />
               </Card>
-            )}
-          </div>
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={66} minSize={40}>
+              <div className="h-full">
+                {selected ? (
+                  <SparkViewer spark={selected} />
+                ) : (
+                  <Card className="h-full p-4 text-sm text-muted-foreground flex items-center justify-center">
+                    Select a spark to view details.
+                  </Card>
+                )}
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
       </div>
     ),

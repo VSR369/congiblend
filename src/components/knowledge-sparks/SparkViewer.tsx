@@ -11,7 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { RichTextEditor, htmlToPlainText } from "@/components/knowledge-sparks/RichTextEditor";
 import { useIsSparkAuthor } from "@/hooks/useIsSparkAuthor";
-
+import { Drawer, DrawerContent, DrawerHeader, DrawerFooter, DrawerTitle } from "@/components/ui/drawer";
+import { SparkTOC, extractHeadings } from "@/components/knowledge-sparks/SparkTOC";
 type Spark = {
   id: string;
   title: string;
@@ -175,8 +176,8 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
           <h2 className="text-lg font-semibold">{spark.title}</h2>
           <div className="text-xs text-muted-foreground">/{spark.slug}</div>
         </div>
-        <Button size="sm" variant={editing ? "secondary" : "default"} onClick={() => setEditing((s) => !s)}>
-          {editing ? "Cancel" : "Suggest Edit"}
+        <Button size="sm" variant={editing ? "secondary" : "default"} onClick={() => setEditing(true)}>
+          Suggest Edit
         </Button>
       </div>
 
@@ -189,33 +190,55 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         </div>
       )}
 
-      <div className="mt-4">
-        {isLoading ? (
-          <>
-            <Skeleton className="h-4 w-2/3" />
-            <Skeleton className="h-4 w-1/2 mt-2" />
-            <Skeleton className="h-4 w-3/4 mt-2" />
-          </>
-        ) : (latestVersion || viewVersion) ? (
-          <div className="prose max-w-none">
-            {(viewVersion?.content_html || latestVersion?.content_html) ? (
-              <div
-                className="text-sm leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: viewVersion?.content_html || latestVersion?.content_html || "" }}
-              />
-            ) : (
-              <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                {viewVersion?.content_plain || latestVersion?.content_plain || "No content yet."}
-              </p>
-            )}
-            <div className="mt-2 text-xs text-muted-foreground">
-              v{(viewVersion?.version_number) ?? latestVersion?.version_number} • {new Date((viewVersion?.created_at) ?? (latestVersion?.created_at)).toLocaleString()}
-              {viewVersion ? " • viewing history" : ""}
-            </div>
-          </div>
-        ) : (
-          <div className="text-sm text-muted-foreground">No versions yet.</div>
-        )}
+      {/* Content + TOC */}
+      <div className="mt-4 grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-6">
+        <article className="min-h-[300px]">
+          {isLoading ? (
+            <>
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-4 w-1/2 mt-2" />
+              <Skeleton className="h-4 w-3/4 mt-2" />
+            </>
+          ) : (latestVersion || viewVersion) ? (
+            (() => {
+              const htmlSource = (viewVersion?.content_html || latestVersion?.content_html || "");
+              const { htmlWithIds, headings } = extractHeadings(htmlSource);
+
+              return (
+                <div className="max-w-none">
+                  {htmlSource ? (
+                    <div
+                      className="text-sm leading-relaxed space-y-3"
+                      dangerouslySetInnerHTML={{ __html: htmlWithIds }}
+                    />
+                  ) : (
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                      {viewVersion?.content_plain || latestVersion?.content_plain || "No content yet."}
+                    </p>
+                  )}
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    v{(viewVersion?.version_number) ?? latestVersion?.version_number} • {new Date((viewVersion?.created_at) ?? (latestVersion?.created_at)).toLocaleString()}
+                    {viewVersion ? " • viewing history" : ""}
+                  </div>
+                </div>
+              );
+            })()
+          ) : (
+            <div className="text-sm text-muted-foreground">No versions yet.</div>
+          )}
+        </article>
+
+        {/* TOC (desktop) */}
+        {(viewVersion?.content_html || latestVersion?.content_html) ? (
+          (() => {
+            const { headings } = extractHeadings(viewVersion?.content_html || latestVersion?.content_html || "");
+            return (
+              <aside className="hidden xl:block sticky top-4 self-start">
+                <SparkTOC headings={headings} />
+              </aside>
+            );
+          })()
+        ) : null}
       </div>
 
       {versionHistory && (versionHistory as any[]).length > 0 && (
@@ -244,49 +267,59 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         </div>
       )}
 
-      {editing ? (
-        <div className="mt-4 space-y-3">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <Input
-              value={changeSummary}
-              onChange={(e) => setChangeSummary(e.target.value)}
-              placeholder="Change summary (optional)"
+      {/* Focused Edit Drawer */}
+      <Drawer open={editing} onOpenChange={(open) => setEditing(open)}>
+        <DrawerContent className="max-h-[85vh]">
+          <DrawerHeader>
+            <DrawerTitle>Suggest Edit</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-4 space-y-3">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <Input
+                value={changeSummary}
+                onChange={(e) => setChangeSummary(e.target.value)}
+                placeholder="Change summary (optional)"
+              />
+              <Select
+                value={editMode}
+                onValueChange={(v) => {
+                  if (v === "replace" && !isAuthor) {
+                    toast.error("Only the author can replace content. Use Append instead.");
+                    return; // keep current (append)
+                  }
+                  setEditMode(v as "append" | "replace");
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Edit mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="append">Append</SelectItem>
+                  <SelectItem value="replace" disabled={!isAuthor}>Replace</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {editMode === "append"
+                ? "Your text will be added to the end of the current content."
+                : "Your text will replace the current content."}
+              {!isAuthor ? " • Only the author can replace content." : ""}
+            </div>
+            <RichTextEditor
+              valueHtml={contentHtmlDraft}
+              onChangeHtml={setContentHtmlDraft}
+              placeholder={editMode === "append" ? "Write what to add..." : "Write the new content..."}
+              minHeight={220}
             />
-            <Select
-              value={editMode}
-              onValueChange={(v) => {
-                if (v === "replace" && !isAuthor) {
-                  toast.error("Only the author can replace content. Use Append instead.");
-                  return; // keep current (append)
-                }
-                setEditMode(v as "append" | "replace");
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Edit mode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="append">Append</SelectItem>
-                <SelectItem value="replace" disabled={!isAuthor}>Replace</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
-          <div className="text-xs text-muted-foreground">
-            {editMode === "append"
-              ? "Your text will be added to the end of the current content."
-              : "Your text will replace the current content."}
-            {!isAuthor ? " • Only the author can replace content." : ""}
-          </div>
-          <RichTextEditor
-            valueHtml={contentHtmlDraft}
-            onChangeHtml={setContentHtmlDraft}
-            placeholder={editMode === "append" ? "Write what to add..." : "Write the new content..."}
-          />
-          <div className="flex justify-end">
-            <Button onClick={handleSuggestEdit}>Submit Edit</Button>
-          </div>
-        </div>
-      ) : null}
+          <DrawerFooter>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setEditing(false)}>Cancel</Button>
+              <Button onClick={handleSuggestEdit}>Submit Edit</Button>
+            </div>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </Card>
   );
 };
