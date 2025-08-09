@@ -398,6 +398,20 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               <SelectItem value="full">Width: Full</SelectItem>
             </SelectContent>
           </Select>
+          {isAuthor && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setEditing(true);
+                setEditMode("replace");
+                setContentHtmlDraft(currentHtml || "");
+                setShowPreview(false);
+              }}
+            >
+              Edit full content
+            </Button>
+          )}
           <Button size="sm" variant={editing ? "secondary" : "default"} onClick={() => setEditing(true)}>
             Contribute
           </Button>
@@ -613,7 +627,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       {editing && editMode === "modify-section" && selectedHeadingId && tocHeadings.length > 0 && (
         <InlineAfterHeadingPortal containerRef={contentRef} headingId={selectedHeadingId}>
           <div className="rounded-md border border-border bg-background p-3 shadow-sm">
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <Input
                 value={changeSummary}
                 onChange={(e) => setChangeSummary(e.target.value)}
@@ -629,6 +643,34 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
                       {h.text}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={editMode}
+                onValueChange={(v) => {
+                  if (v === "replace" && !isAuthor) {
+                    toast.error("Only the author can replace content. Use Append instead.");
+                    return;
+                  }
+                  if (v === "modify-section") {
+                    if (tocHeadings.length === 0) {
+                      toast.error("No headings available to modify. Use Append or add a heading.");
+                      return;
+                    }
+                    if (!selectedHeadingId && tocHeadings.length > 0) {
+                      setSelectedHeadingId(tocHeadings[0].id);
+                    }
+                  }
+                  setEditMode(v as any);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Edit mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="append">Append</SelectItem>
+                  <SelectItem value="modify-section">Modify section</SelectItem>
+                  <SelectItem value="replace" disabled={!isAuthor}>Replace</SelectItem>
                 </SelectContent>
               </Select>
             </div>
