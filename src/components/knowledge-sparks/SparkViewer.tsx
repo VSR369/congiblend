@@ -137,7 +137,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     if (editing) {
       setContentHtmlDraft("");
       setChangeSummary("");
-      setEditMode("append");
+      // Preserve current editMode to allow "Edit here" flows and drafts
     }
   }, [editing]);
 
@@ -243,6 +243,12 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   const currentHtml = useMemo(() => (viewVersion?.content_html || latestVersion?.content_html || ""), [viewVersion?.content_html, latestVersion?.content_html]);
   const tocHeadings = useMemo(() => extractHeadings(currentHtml).headings, [currentHtml]);
 
+  useEffect(() => {
+    if (editMode === "modify-section" && !selectedHeadingId && tocHeadings.length > 0) {
+      setSelectedHeadingId(tocHeadings[0].id);
+    }
+  }, [editMode, selectedHeadingId, tocHeadings]);
+
   return (
     <Card className="p-4 h-full overflow-y-auto">
       <div className="flex items-start justify-between gap-2">
@@ -318,7 +324,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         {/* TOC (desktop) */}
         {tocHeadings.length > 0 && (
           <aside className="hidden xl:block sticky top-20 self-start">
-            <SparkTOC headings={tocHeadings} />
+            <SparkTOC headings={tocHeadings} canContribute={isAuthenticated} onEditHere={(id) => { setSelectedHeadingId(id); setEditMode("modify-section"); setEditing(true); setShowPreview(false); }} />
           </aside>
         )}
 
@@ -370,7 +376,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
                     toast.error("Only the author can replace content. Use Append instead.");
                     return; // keep current (append)
                   }
-                  setEditMode(v as "append" | "replace");
+                  setEditMode(v as "append" | "modify-section" | "replace");
                 }}
               >
                 <SelectTrigger>
@@ -378,31 +384,84 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="append">Append</SelectItem>
+                  <SelectItem value="modify-section">Modify section</SelectItem>
                   <SelectItem value="replace" disabled={!isAuthor}>Replace</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {editMode === "modify-section" && (
+              <div className="sm:max-w-sm">
+                <Select
+                  value={selectedHeadingId ?? ""}
+                  onValueChange={(v) => setSelectedHeadingId(v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Target section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tocHeadings.length === 0 ? (
+                      <SelectItem value="" disabled>
+                        No headings available
+                      </SelectItem>
+                    ) : (
+                      tocHeadings.map((h) => (
+                        <SelectItem key={h.id} value={h.id}>
+                          {h.text}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="text-xs text-muted-foreground">
               {editMode === "append"
                 ? "Your text will be added to the end of the current content."
+                : editMode === "modify-section"
+                ? "Your text will appear under the selected section heading."
                 : "Your text will replace the current content."}
               {!isAuthor ? " • Only the author can replace content." : ""}
             </div>
             <RichTextEditor
               valueHtml={contentHtmlDraft}
               onChangeHtml={setContentHtmlDraft}
-              placeholder={editMode === "append" ? "Write what to add..." : "Write the new content..."}
+              placeholder={
+                editMode === "append"
+                  ? "Write what to add..."
+                  : editMode === "modify-section"
+                  ? "Write updates for the selected section..."
+                  : "Write the new content..."
+              }
               minHeight={220}
+              onCtrlEnter={handleSuggestEdit}
             />
           </div>
           <DrawerFooter>
             <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setShowPreview(true)}>Preview</Button>
               <Button variant="secondary" onClick={() => setEditing(false)}>Cancel</Button>
               <Button onClick={handleSuggestEdit}>Submit Edit</Button>
             </div>
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Preview merged content</DialogTitle>
+          </DialogHeader>
+          <div className="text-sm leading-relaxed space-y-3">
+            <div
+              dangerouslySetInnerHTML={{
+                __html: computeMergedHtml(editMode, currentHtml, contentHtmlDraft, selectedHeadingId),
+              }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

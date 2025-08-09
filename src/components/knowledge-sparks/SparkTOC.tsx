@@ -47,9 +47,11 @@ export function extractHeadings(html: string): { htmlWithIds: string; headings: 
 
 interface SparkTOCProps {
   headings: HeadingItem[];
+  canContribute?: boolean;
+  onEditHere?: (id: string, text: string) => void;
 }
 
-export const SparkTOC: React.FC<SparkTOCProps> = ({ headings }) => {
+export const SparkTOC: React.FC<SparkTOCProps> = ({ headings, canContribute, onEditHere }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -86,14 +88,26 @@ export const SparkTOC: React.FC<SparkTOCProps> = ({ headings }) => {
         {headings.map((h) => {
           const isActive = activeId === h.id;
           return (
-            <li key={h.id} className={h.level === 1 ? "pl-0" : h.level === 2 ? "pl-3" : "pl-6"}>
-              <button
-                onClick={() => handleClick(h.id)}
-                className={`transition-colors ${isActive ? "text-foreground font-medium" : "hover:text-foreground"}`}
-              >
-                {h.text}
-              </button>
-            </li>
+              <li key={h.id} className={h.level === 1 ? "pl-0" : h.level === 2 ? "pl-3" : "pl-6"}>
+                <button
+                  onClick={() => handleClick(h.id)}
+                  className={`transition-colors ${isActive ? "text-foreground font-medium" : "hover:text-foreground"}`}
+                >
+                  {h.text}
+                </button>
+                {canContribute && onEditHere && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditHere(h.id, h.text);
+                    }}
+                    className="ml-2 text-[10px] underline underline-offset-2 hover:text-foreground"
+                    aria-label={`Edit section ${h.text}`}
+                  >
+                    Edit
+                  </button>
+                )}
+              </li>
           );
         })}
       </ul>
