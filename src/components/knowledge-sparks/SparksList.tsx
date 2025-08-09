@@ -72,7 +72,7 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
           <div className="p-4 text-sm text-destructive">Failed to load sparks. Please try again.</div>
         ) : isLoading ? (
           viewMode === "card" ? (
-            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
               <Skeleton className="h-28 w-full" />
               <Skeleton className="h-28 w-full" />
               <Skeleton className="h-28 w-full" />
@@ -86,7 +86,7 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
             </>
           )
         ) : viewMode === "card" ? (
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
             {filtered.map((spark) => (
               <div key={spark.id} className="h-full">
                 <SparkCard
