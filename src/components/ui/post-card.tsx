@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import type { Post, ReactionType } from "@/types/feed";
 import { CommentsSection } from "@/components/comments/CommentsSection";
+import { Link } from "react-router-dom";
 
 interface PostCardProps {
   post: Post;
@@ -260,6 +261,9 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
                 </div>
               </div>
             )}
+            <Button asChild variant="outline" size="sm">
+              <Link to={`/articles/${post.id}`}>Read article</Link>
+            </Button>
           </div>
         );
 
