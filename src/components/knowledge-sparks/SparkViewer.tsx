@@ -6,10 +6,11 @@ import { useAuthStore } from "@/stores/authStore";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { RichTextEditor, htmlToPlainText } from "@/components/knowledge-sparks/RichTextEditor";
 
 type Spark = {
   id: string;
@@ -63,8 +64,10 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   });
 
   const [editing, setEditing] = useState(false);
-  const [contentDraft, setContentDraft] = useState("");
+  const [contentHtmlDraft, setContentHtmlDraft] = useState("");
   const [changeSummary, setChangeSummary] = useState("");
+  const [editMode, setEditMode] = useState<"append" | "replace">("append");
+  const [viewVersion, setViewVersion] = useState<any | null>(null);
 
   const nextVersionNumber = useMemo(() => {
     return (latestVersion?.version_number ?? 0) + 1;
@@ -87,8 +90,9 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   // Reset fields when entering edit mode
   useEffect(() => {
     if (editing) {
-      setContentDraft("");
+      setContentHtmlDraft("");
       setChangeSummary("");
+      setEditMode("append");
     }
   }, [editing]);
 
@@ -99,21 +103,33 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       toast.error("Please sign in to suggest an edit.");
       return;
     }
-    const newSection = contentDraft.trim();
-    if (!newSection) {
+    const newSectionHtml = contentHtmlDraft.trim();
+    const newSectionPlain = htmlToPlainText(newSectionHtml).trim();
+    if (!newSectionPlain) {
       toast.error("Please enter some content for your edit.");
       return;
     }
 
     const basePlain = (latestVersion?.content_plain || "").trim();
-    const finalPlain = basePlain ? `${basePlain}\n\n${newSection}` : newSection;
-    const summary = changeSummary.trim() || "Append update";
+    const baseHtml = (latestVersion?.content_html || "").trim();
+
+    const finalPlain =
+      editMode === "append"
+        ? (basePlain ? `${basePlain}\n\n${newSectionPlain}` : newSectionPlain)
+        : newSectionPlain;
+
+    const finalHtml =
+      editMode === "append"
+        ? (baseHtml ? `${baseHtml}<p><br/></p>${newSectionHtml}` : newSectionHtml)
+        : newSectionHtml;
+
+    const summary = changeSummary.trim() || (editMode === "append" ? "Append update" : "Replace content");
 
     const { error } = await supabase.from("spark_content_versions").insert({
       spark_id: spark.id,
       version_number: nextVersionNumber,
       content: { blocks: [] },
-      content_html: null,
+      content_html: finalHtml || null,
       content_plain: finalPlain,
       change_summary: summary,
       edit_type: "modification",
@@ -131,8 +147,9 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
 
     toast.success("Edit submitted!");
     setEditing(false);
-    setContentDraft("");
+    setContentHtmlDraft("");
     setChangeSummary("");
+    setViewVersion(null);
     qc.invalidateQueries({ queryKey: ["spark", spark.id, "latestVersion"] });
     qc.invalidateQueries({ queryKey: ["spark", spark.id, "versions", "history"] });
     qc.invalidateQueries({ queryKey: ["knowledge-sparks", "list"] });
@@ -166,13 +183,21 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             <Skeleton className="h-4 w-1/2 mt-2" />
             <Skeleton className="h-4 w-3/4 mt-2" />
           </>
-        ) : latestVersion ? (
+        ) : (latestVersion || viewVersion) ? (
           <div className="prose max-w-none">
-            <p className="whitespace-pre-wrap text-sm leading-relaxed">
-              {latestVersion.content_plain || "No content yet."}
-            </p>
+            {(viewVersion?.content_html || latestVersion?.content_html) ? (
+              <div
+                className="text-sm leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: viewVersion?.content_html || latestVersion?.content_html || "" }}
+              />
+            ) : (
+              <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                {viewVersion?.content_plain || latestVersion?.content_plain || "No content yet."}
+              </p>
+            )}
             <div className="mt-2 text-xs text-muted-foreground">
-              v{latestVersion.version_number} • {new Date(latestVersion.created_at).toLocaleString()}
+              v{(viewVersion?.version_number) ?? latestVersion?.version_number} • {new Date((viewVersion?.created_at) ?? (latestVersion?.created_at)).toLocaleString()}
+              {viewVersion ? " • viewing history" : ""}
             </div>
           </div>
         ) : (
@@ -182,12 +207,18 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
 
       {versionHistory && (versionHistory as any[]).length > 0 && (
         <div className="mt-6">
-          <div className="text-sm font-medium">Version history</div>
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-medium">Version history</div>
+            {viewVersion && (
+              <Button variant="ghost" size="sm" onClick={() => setViewVersion(null)}>View latest</Button>
+            )}
+          </div>
           <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
             {(versionHistory as any[]).map((v: any) => (
               <li
                 key={v.id}
-                className="flex items-center justify-between rounded-md border border-border px-2 py-1 bg-muted/30"
+                className={`flex items-center justify-between rounded-md border border-border px-2 py-1 bg-muted/30 cursor-pointer ${viewVersion?.id === v.id ? "ring-1 ring-ring" : ""}`}
+                onClick={() => setViewVersion(v)}
               >
                 <span>
                   v{v.version_number}
@@ -202,19 +233,31 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
 
       {editing ? (
         <div className="mt-4 space-y-3">
-          <div className="text-xs text-muted-foreground">
-            Append mode: your text will be added to the end of the current content.
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <Input
+              value={changeSummary}
+              onChange={(e) => setChangeSummary(e.target.value)}
+              placeholder="Change summary (optional)"
+            />
+            <Select value={editMode} onValueChange={(v) => setEditMode(v as "append" | "replace")}>
+              <SelectTrigger>
+                <SelectValue placeholder="Edit mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="append">Append</SelectItem>
+                <SelectItem value="replace">Replace</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Input
-            value={changeSummary}
-            onChange={(e) => setChangeSummary(e.target.value)}
-            placeholder="Change summary (optional)"
-          />
-          <Textarea
-            value={contentDraft}
-            onChange={(e) => setContentDraft(e.target.value)}
-            rows={8}
-            placeholder="Add your addition here..."
+          <div className="text-xs text-muted-foreground">
+            {editMode === "append"
+              ? "Your text will be added to the end of the current content."
+              : "Your text will replace the current content."}
+          </div>
+          <RichTextEditor
+            valueHtml={contentHtmlDraft}
+            onChangeHtml={setContentHtmlDraft}
+            placeholder={editMode === "append" ? "Write what to add..." : "Write the new content..."}
           />
           <div className="flex justify-end">
             <Button onClick={handleSuggestEdit}>Submit Edit</Button>

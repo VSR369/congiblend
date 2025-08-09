@@ -1,12 +1,12 @@
 
 import React, { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import { Link } from "react-router-dom";
+import { RichTextEditor, htmlToPlainText } from "./RichTextEditor";
 
 type Spark = {
   id: string;
@@ -34,7 +34,7 @@ export const CreateSparkForm: React.FC<CreateSparkFormProps> = ({ onCreated }) =
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [tagsCsv, setTagsCsv] = useState("");
-  const [description, setDescription] = useState("");
+  const [contentHtml, setContentHtml] = useState("");
   const { isAuthenticated } = useAuthStore();
 
   const slug = useMemo(() => (title ? slugify(title) : ""), [title]);
@@ -56,13 +56,17 @@ export const CreateSparkForm: React.FC<CreateSparkFormProps> = ({ onCreated }) =
       .map((t) => t.trim())
       .filter(Boolean);
 
+    // Derive plain text and short description from rich text
+    const descriptionPlain = htmlToPlainText(contentHtml).trim();
+    const descSnippet = descriptionPlain ? descriptionPlain.slice(0, 160) : null;
+
     // Insert spark
     const { data: spark, error } = await supabase
       .from("knowledge_sparks")
       .insert({
         title: title.trim(),
         slug: slug || `${Date.now()}`,
-        description: description.trim() || null,
+        description: descSnippet,
         category: category.trim() || null,
         tags,
         author_id: user.id,
@@ -79,12 +83,12 @@ export const CreateSparkForm: React.FC<CreateSparkFormProps> = ({ onCreated }) =
     }
 
     // Create initial version (v1). We order by version_number elsewhere, so no is_current flag required.
-    const initialContentPlain = description?.trim() || "";
+    const initialContentPlain = descriptionPlain;
     const { error: verErr } = await supabase.from("spark_content_versions").insert({
       spark_id: spark.id,
       version_number: 1,
       content: { blocks: [] },
-      content_html: null,
+      content_html: contentHtml || null,
       content_plain: initialContentPlain,
       change_summary: "Initial creation",
       edit_type: "creation",
@@ -107,7 +111,7 @@ export const CreateSparkForm: React.FC<CreateSparkFormProps> = ({ onCreated }) =
     setTitle("");
     setCategory("");
     setTagsCsv("");
-    setDescription("");
+    setContentHtml("");
   };
 
   return (
@@ -137,11 +141,10 @@ export const CreateSparkForm: React.FC<CreateSparkFormProps> = ({ onCreated }) =
         onChange={(e) => setTagsCsv(e.target.value)}
         placeholder="Tags (comma separated)"
       />
-      <Textarea
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        placeholder="Short description or initial content..."
-        rows={3}
+      <RichTextEditor
+        valueHtml={contentHtml}
+        onChangeHtml={setContentHtml}
+        placeholder="Initial content (rich text supported)..."
       />
       <div className="flex items-center justify-between">
         <div className="text-xs text-muted-foreground">
