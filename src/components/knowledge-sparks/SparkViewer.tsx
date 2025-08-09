@@ -11,12 +11,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { RichTextEditor, htmlToPlainText } from "@/components/knowledge-sparks/RichTextEditor";
 import { useIsSparkAuthor } from "@/hooks/useIsSparkAuthor";
-
 import { SparkTOC, extractHeadings } from "@/components/knowledge-sparks/SparkTOC";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-
 import { useAutosaveDraft } from "@/hooks/useAutosaveDraft";
 import { createPortal } from "react-dom";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { Info, Lock } from "lucide-react";
 
 type Spark = {
   id: string;
@@ -428,6 +428,22 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         </div>
       )}
 
+      {isAuthenticated && (
+        <div className="mt-4 rounded-lg border border-border bg-muted/30 p-3 text-xs">
+          <div className="flex items-start gap-2">
+            <Info className="h-4 w-4 mt-0.5" aria-hidden="true" />
+            <div>
+              <div className="font-medium">About contributions</div>
+              <p className="text-muted-foreground">
+                {isAuthor
+                  ? "As the author, you can append, modify sections, or replace the entire content. Others can only suggest append/modify."
+                  : "You can append new content or modify a section. Only the spark’s author can replace the full content."}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {editing && editMode === "modify-section" && tocHeadings.length === 0 && (
         <div className="mt-4 flex items-center justify-between rounded-lg border border-border bg-muted/40 p-3">
           <div>
@@ -473,13 +489,27 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
                 setEditMode(v as any);
               }}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Edit mode" />
-              </SelectTrigger>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Edit mode" />
+                    </SelectTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Choose how to contribute: Append adds at end, Modify targets a section, Replace overrides all (author only).
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <SelectContent>
                 <SelectItem value="append">Append</SelectItem>
                 <SelectItem value="modify-section">Modify section</SelectItem>
-                <SelectItem value="replace" disabled={!isAuthor}>Replace</SelectItem>
+                <SelectItem value="replace" disabled={!isAuthor}>
+                  <span className="inline-flex items-center gap-1">
+                    {!isAuthor && <Lock className="h-3.5 w-3.5" aria-hidden="true" />}
+                    Replace {!isAuthor && "(author only)"}
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -578,13 +608,27 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
                   setEditMode(v as any);
                 }}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Edit mode" />
-                </SelectTrigger>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Edit mode" />
+                      </SelectTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Choose how to contribute: Append adds at end, Modify targets a section, Replace overrides all (author only).
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <SelectContent>
                   <SelectItem value="append">Append</SelectItem>
                   <SelectItem value="modify-section">Modify section</SelectItem>
-                  <SelectItem value="replace" disabled={!isAuthor}>Replace</SelectItem>
+                  <SelectItem value="replace" disabled={!isAuthor}>
+                    <span className="inline-flex items-center gap-1">
+                      {!isAuthor && <Lock className="h-3.5 w-3.5" aria-hidden="true" />}
+                      Replace {!isAuthor && "(author only)"}
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -671,7 +715,12 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
                 <SelectContent>
                   <SelectItem value="append">Append</SelectItem>
                   <SelectItem value="modify-section">Modify section</SelectItem>
-                  <SelectItem value="replace" disabled={!isAuthor}>Replace</SelectItem>
+                  <SelectItem value="replace" disabled={!isAuthor}>
+                    <span className="inline-flex items-center gap-1">
+                      {!isAuthor && <Lock className="h-3.5 w-3.5" aria-hidden="true" />}
+                      Replace {!isAuthor && "(author only)"}
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
