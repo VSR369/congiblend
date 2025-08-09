@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -43,8 +44,27 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     },
   });
 
+  const { data: versionHistory } = useQuery({
+    queryKey: ["spark", spark.id, "versions", "history"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("spark_content_versions")
+        .select("id,version_number,change_summary,edited_by,created_at,content_plain")
+        .eq("spark_id", spark.id)
+        .order("version_number", { ascending: false })
+        .limit(5);
+      if (error) {
+        console.error("Fetch versions error:", error);
+        throw error;
+      }
+      return data || [];
+    },
+    staleTime: 1000 * 30,
+  });
+
   const [editing, setEditing] = useState(false);
   const [contentDraft, setContentDraft] = useState("");
+  const [changeSummary, setChangeSummary] = useState("");
 
   const nextVersionNumber = useMemo(() => {
     return (latestVersion?.version_number ?? 0) + 1;
@@ -64,6 +84,14 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     })();
   }, [spark.id]);
 
+  // Reset fields when entering edit mode
+  useEffect(() => {
+    if (editing) {
+      setContentDraft("");
+      setChangeSummary("");
+    }
+  }, [editing]);
+
   const handleSuggestEdit = async () => {
     const { data: auth } = await supabase.auth.getUser();
     const user = auth?.user;
@@ -71,22 +99,26 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       toast.error("Please sign in to suggest an edit.");
       return;
     }
-    const contentPlain = contentDraft.trim();
-    if (!contentPlain) {
+    const newSection = contentDraft.trim();
+    if (!newSection) {
       toast.error("Please enter some content for your edit.");
       return;
     }
+
+    const basePlain = (latestVersion?.content_plain || "").trim();
+    const finalPlain = basePlain ? `${basePlain}\n\n${newSection}` : newSection;
+    const summary = changeSummary.trim() || "Append update";
 
     const { error } = await supabase.from("spark_content_versions").insert({
       spark_id: spark.id,
       version_number: nextVersionNumber,
       content: { blocks: [] },
       content_html: null,
-      content_plain: contentPlain,
-      change_summary: "Content update",
+      content_plain: finalPlain,
+      change_summary: summary,
       edit_type: "modification",
-      word_count: contentPlain.split(/\s+/).filter(Boolean).length,
-      character_count: contentPlain.length,
+      word_count: finalPlain.split(/\s+/).filter(Boolean).length,
+      character_count: finalPlain.length,
       sections_modified: [],
       edited_by: user.id,
     });
@@ -100,7 +132,9 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     toast.success("Edit submitted!");
     setEditing(false);
     setContentDraft("");
+    setChangeSummary("");
     qc.invalidateQueries({ queryKey: ["spark", spark.id, "latestVersion"] });
+    qc.invalidateQueries({ queryKey: ["spark", spark.id, "versions", "history"] });
     qc.invalidateQueries({ queryKey: ["knowledge-sparks", "list"] });
   };
 
@@ -146,13 +180,41 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         )}
       </div>
 
+      {versionHistory && (versionHistory as any[]).length > 0 && (
+        <div className="mt-6">
+          <div className="text-sm font-medium">Version history</div>
+          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+            {(versionHistory as any[]).map((v: any) => (
+              <li
+                key={v.id}
+                className="flex items-center justify-between rounded-md border border-border px-2 py-1 bg-muted/30"
+              >
+                <span>
+                  v{v.version_number}
+                  {latestVersion?.id === v.id ? " (latest)" : ""}
+                </span>
+                <span>{new Date(v.created_at).toLocaleDateString()}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {editing ? (
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 space-y-3">
+          <div className="text-xs text-muted-foreground">
+            Append mode: your text will be added to the end of the current content.
+          </div>
+          <Input
+            value={changeSummary}
+            onChange={(e) => setChangeSummary(e.target.value)}
+            placeholder="Change summary (optional)"
+          />
           <Textarea
             value={contentDraft}
             onChange={(e) => setContentDraft(e.target.value)}
             rows={8}
-            placeholder="Propose your changes here..."
+            placeholder="Add your addition here..."
           />
           <div className="flex justify-end">
             <Button onClick={handleSuggestEdit}>Submit Edit</Button>
