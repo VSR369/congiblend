@@ -20,10 +20,12 @@ import type { PostType, CreatePostData } from "@/types/feed";
 interface PostCreationModalProps {
   open: boolean;
   onClose: () => void;
+  allowedTypes?: PostType[];
+  initialType?: PostType;
 }
 
 // Optimized post creation modal with useReducer state management
-export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModalProps) => {
+export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, initialType }: PostCreationModalProps) => {
 
   const { state, dispatch } = usePostCreationReducer();
   const { createPost } = useFeedStore();
@@ -40,7 +42,19 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
     eventData
   } = state;
 
-  const postTypes: { type: PostType; label: string; icon: React.ComponentType<any>; description: string }[] = [
+  // Ensure active tab aligns with provided initialType/allowedTypes
+  React.useEffect(() => {
+    if (!open) return;
+    if (initialType) {
+      dispatch({ type: 'SET_ACTIVE_TAB', payload: initialType });
+    } else if (allowedTypes && allowedTypes.length > 0) {
+      if (!allowedTypes.includes(state.activeTab)) {
+        dispatch({ type: 'SET_ACTIVE_TAB', payload: allowedTypes[0] as PostType });
+      }
+    }
+  }, [open, initialType, allowedTypes]);
+
+  const allPostTypes: { type: PostType; label: string; icon: React.ComponentType<any>; description: string }[] = [
     { type: "text", label: "Text", icon: FileText, description: "Share your thoughts" },
     { type: "image", label: "Photo", icon: Image, description: "Share images" },
     { type: "video", label: "Video", icon: Video, description: "Upload videos" },
@@ -49,6 +63,12 @@ export const PostCreationModal = React.memo(({ open, onClose }: PostCreationModa
     { type: "poll", label: "Poll", icon: BarChart3, description: "Ask your network" },
     { type: "event", label: "Event", icon: Calendar, description: "Announce events" },
   ];
+
+  const postTypes = React.useMemo(() => {
+    return allowedTypes && allowedTypes.length > 0
+      ? allPostTypes.filter((t) => allowedTypes.includes(t.type))
+      : allPostTypes;
+  }, [allowedTypes]);
 
   // Get file type restrictions based on active tab
   const getAcceptedFileTypes = (): string[] => {

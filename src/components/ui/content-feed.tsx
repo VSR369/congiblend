@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Plus, TrendingUp } from "lucide-react";
+import { Plus, TrendingUp, MessageSquare, FileText, BarChart3, Calendar } from "lucide-react";
 import { PostCard } from "./post-card";
 import { PostCreationModal } from "./post-creation-modal";
 import { FeedSkeleton } from "./loading-skeleton";
@@ -9,6 +9,8 @@ import { FeedErrorBoundary } from "./feed-error-boundary";
 import { useFeedStore } from "@/stores/feedStore";
 import { useAdvancedIntersectionObserver } from "@/hooks/useAdvancedIntersectionObserver";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
+import type { PostType } from "@/types/feed";
 
 interface ContentFeedProps {
   className?: string;
@@ -16,6 +18,10 @@ interface ContentFeedProps {
 
 export const ContentFeed = ({ className }: ContentFeedProps) => {
   const [showCreateModal, setShowCreateModal] = React.useState(false);
+  const [showChooser, setShowChooser] = React.useState(false);
+  const [modalAllowedTypes, setModalAllowedTypes] = React.useState<PostType[] | undefined>(undefined);
+  const [modalInitialType, setModalInitialType] = React.useState<PostType | undefined>(undefined);
+  const navigate = useNavigate();
   const { posts, loading, hasMore, loadPosts, filters } = useFeedStore();
 
   // Simple list rendering - no virtual scrolling complexity
@@ -79,13 +85,76 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
         {/* Create Post Button */}
         <div className="bg-card border rounded-lg p-4 mb-6">
           <Button
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => setShowChooser((v) => !v)}
             className="w-full justify-start text-muted-foreground"
             variant="ghost"
           >
             <Plus className="h-5 w-5 mr-2" />
             What would you like to share today?
           </Button>
+
+          {showChooser && (
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setModalAllowedTypes(["text","image","video","audio"] as PostType[]);
+                  setModalInitialType("text");
+                  setShowCreateModal(true);
+                  setShowChooser(false);
+                }}
+                className="h-20 flex flex-col items-center justify-center"
+                title="Share messages: Text, Image, Video, Audio"
+              >
+                <MessageSquare className="h-5 w-5 mb-1" />
+                <span className="text-xs">Messages</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowChooser(false);
+                  navigate("/articles/new");
+                }}
+                className="h-20 flex flex-col items-center justify-center"
+                title="Write a long-form article"
+              >
+                <FileText className="h-5 w-5 mb-1" />
+                <span className="text-xs">Articles</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setModalAllowedTypes(["poll"] as PostType[]);
+                  setModalInitialType("poll");
+                  setShowCreateModal(true);
+                  setShowChooser(false);
+                }}
+                className="h-20 flex flex-col items-center justify-center"
+                title="Create a poll"
+              >
+                <BarChart3 className="h-5 w-5 mb-1" />
+                <span className="text-xs">Polls</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setModalAllowedTypes(["event"] as PostType[]);
+                  setModalInitialType("event");
+                  setShowCreateModal(true);
+                  setShowChooser(false);
+                }}
+                className="h-20 flex flex-col items-center justify-center"
+                title="Announce an event"
+              >
+                <Calendar className="h-5 w-5 mb-1" />
+                <span className="text-xs">Events</span>
+              </Button>
+            </div>
+          )}
+
         </div>
 
         {/* LinkedIn-Style Feed - Clean List */}
@@ -122,6 +191,8 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
         <PostCreationModal
           open={showCreateModal}
           onClose={() => setShowCreateModal(false)}
+          allowedTypes={modalAllowedTypes}
+          initialType={modalInitialType}
         />
       </div>
     </FeedErrorBoundary>
