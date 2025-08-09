@@ -5,6 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import SparkViewer from "@/components/knowledge-sparks/SparkViewer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { 
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator
+} from "@/components/ui/breadcrumb";
 
 const setMetaTag = (name: string, content: string) => {
   let tag = document.querySelector(`meta[name="${name}"]`);
@@ -91,6 +100,27 @@ const KnowledgeSparkViewPage: React.FC = () => {
   return (
     <main className="w-full max-w-screen-xl mx-auto px-4 py-6">
       <header className="mb-4">
+        <div className="mb-2">
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/knowledge-sparks" aria-label="Back to all Knowledge Sparks">
+              <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
+              Back to all sparks
+            </Link>
+          </Button>
+        </div>
+        <Breadcrumb className="mb-2">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/knowledge-sparks">Knowledge Sparks</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{spark.title}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
         <h1 className="text-2xl font-bold">{spark.title}</h1>
         {spark.description ? (
           <p className="text-sm text-muted-foreground">{spark.description}</p>
