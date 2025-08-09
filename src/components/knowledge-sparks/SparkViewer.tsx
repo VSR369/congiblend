@@ -207,23 +207,63 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     if (mode === "replace") return newHtml;
     if (mode === "append") return baseHtml ? `${baseHtml}<p><br/></p>${newHtml}` : newHtml;
     if (mode === "modify-section" && headingId) {
+      // Ensure headings have stable IDs before manipulating
+      const { htmlWithIds } = extractHeadings(baseHtml || "");
       const container = document.createElement("div");
-      container.innerHTML = baseHtml || "";
+      container.innerHTML = htmlWithIds;
       try {
-        const target = container.querySelector(`#${CSS.escape(headingId)}`);
+        const target = container.querySelector(`#${CSS.escape(headingId)}`) as HTMLElement | null;
         if (target) {
-          const spacer = document.createElement("p");
-          spacer.innerHTML = "<br/>";
+          const level = parseInt(target.tagName.replace("H", ""), 10) || 2;
+          // Remove existing section content until the next heading of same or higher level
+          let cursor: Node | null = target.nextSibling;
+          while (
+            cursor && !(
+              cursor.nodeType === Node.ELEMENT_NODE &&
+              /^H[1-6]$/.test((cursor as HTMLElement).tagName) &&
+              parseInt((cursor as HTMLElement).tagName.replace("H", ""), 10) <= level
+            )
+          ) {
+            const toRemove = cursor;
+            cursor = cursor.nextSibling;
+            toRemove.parentNode?.removeChild(toRemove);
+          }
+          // Insert the new HTML right after the heading
           const wrapper = document.createElement("div");
           wrapper.innerHTML = newHtml;
-          (target as HTMLElement).insertAdjacentElement("afterend", spacer);
-          spacer.insertAdjacentElement("afterend", wrapper);
+          target.insertAdjacentElement("afterend", wrapper);
           return container.innerHTML;
         }
       } catch {}
     }
     // Fallback: append
     return baseHtml ? `${baseHtml}<p><br/></p>${newHtml}` : newHtml;
+  };
+
+  const getSectionHtml = (baseHtml: string, headingId: string): string => {
+    const { htmlWithIds } = extractHeadings(baseHtml || "");
+    const container = document.createElement("div");
+    container.innerHTML = htmlWithIds;
+    try {
+      const target = container.querySelector(`#${CSS.escape(headingId)}`) as HTMLElement | null;
+      if (!target) return "";
+      const level = parseInt(target.tagName.replace("H", ""), 10) || 2;
+      const temp = document.createElement("div");
+      let cursor: Node | null = target.nextSibling;
+      while (
+        cursor && !(
+          cursor.nodeType === Node.ELEMENT_NODE &&
+          /^H[1-6]$/.test((cursor as HTMLElement).tagName) &&
+          parseInt((cursor as HTMLElement).tagName.replace("H", ""), 10) <= level
+        )
+      ) {
+        temp.appendChild(cursor.cloneNode(true));
+        cursor = cursor.nextSibling;
+      }
+      return temp.innerHTML.trim();
+    } catch {
+      return "";
+    }
   };
 
   const handleSuggestEdit = async () => {
@@ -309,6 +349,14 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       setSelectedHeadingId(tocHeadings[0].id);
     }
   }, [editMode, selectedHeadingId, tocHeadings]);
+
+  useEffect(() => {
+    if (!editing || editMode !== "modify-section" || !selectedHeadingId) return;
+    const existing = getSectionHtml(currentHtml, selectedHeadingId);
+    if (existing && !contentHtmlDraft.trim()) {
+      setContentHtmlDraft(existing);
+    }
+  }, [editing, editMode, selectedHeadingId, currentHtml]);
 
   return (
     <Card className="p-4 h-full overflow-y-auto">
@@ -563,7 +611,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               </Select>
             </div>
             <div className="mt-1 text-xs text-muted-foreground">
-              Your text will appear under the selected section heading. Press Ctrl/⌘ + Enter to submit.
+              Editing this section. Your changes will replace the content under the selected heading. Press Ctrl/⌘ + Enter to submit.
             </div>
             <div className="mt-2">
               <RichTextEditor
