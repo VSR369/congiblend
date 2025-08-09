@@ -198,17 +198,32 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     }
   }, [isAuthor, editMode]);
 
+  const cleanHtml = (html: string) => {
+    if (!html) return "";
+    let result = html;
+    // Remove empty paragraphs that only contain a <br>
+    result = result.replace(/<p>\s*(<br\s*\/?\>)\s*<\/p>/gi, "");
+    // Collapse multiple <br> into a single
+    result = result.replace(/(<br\s*\/?\>\s*){2,}/gi, "<br/>");
+    // Trim whitespace between tags
+    result = result.replace(/>\s+</g, "><");
+    return result.trim();
+  };
+
   const computeMergedHtml = (
     mode: "append" | "modify-section" | "replace",
     baseHtml: string,
     newHtml: string,
     headingId?: string | null
   ) => {
-    if (mode === "replace") return newHtml;
-    if (mode === "append") return baseHtml ? `${baseHtml}<p><br/></p>${newHtml}` : newHtml;
+    const base = cleanHtml(baseHtml);
+    const addition = cleanHtml(newHtml);
+
+    if (mode === "replace") return addition;
+    if (mode === "append") return cleanHtml(base ? `${base}${addition}` : addition);
     if (mode === "modify-section" && headingId) {
       // Ensure headings have stable IDs before manipulating
-      const { htmlWithIds } = extractHeadings(baseHtml || "");
+      const { htmlWithIds } = extractHeadings(base || "");
       const container = document.createElement("div");
       container.innerHTML = htmlWithIds;
       try {
@@ -229,16 +244,15 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             toRemove.parentNode?.removeChild(toRemove);
           }
           // Insert the new HTML right after the heading
-          const wrapper = document.createElement("div");
-          wrapper.innerHTML = newHtml;
-          target.insertAdjacentElement("afterend", wrapper);
-          return container.innerHTML;
+          target.insertAdjacentHTML("afterend", addition);
+          return cleanHtml(container.innerHTML);
         }
       } catch {}
     }
     // Fallback: append
-    return baseHtml ? `${baseHtml}<p><br/></p>${newHtml}` : newHtml;
+    return cleanHtml(base ? `${base}${addition}` : addition);
   };
+
 
   const getSectionHtml = (baseHtml: string, headingId: string): string => {
     const { htmlWithIds } = extractHeadings(baseHtml || "");
@@ -260,7 +274,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         temp.appendChild(cursor.cloneNode(true));
         cursor = cursor.nextSibling;
       }
-      return temp.innerHTML.trim();
+      return cleanHtml(temp.innerHTML.trim());
     } catch {
       return "";
     }
@@ -354,7 +368,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     if (!editing || editMode !== "modify-section" || !selectedHeadingId) return;
     const existing = getSectionHtml(currentHtml, selectedHeadingId);
     if (existing && !contentHtmlDraft.trim()) {
-      setContentHtmlDraft(existing);
+      setContentHtmlDraft(cleanHtml(existing));
     }
   }, [editing, editMode, selectedHeadingId, currentHtml]);
 
@@ -462,7 +476,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
           {showPreview && (
             <div className="mt-3 rounded-md border border-border bg-muted/30 p-3">
               <div className="text-xs mb-2 text-muted-foreground">Preview</div>
-              <div className="prose prose-sm max-w-none dark:prose-invert"
+              <div className="prose prose-sparks prose-sm max-w-none dark:prose-invert"
                 dangerouslySetInnerHTML={{ __html: computeMergedHtml(editMode, currentHtml, contentHtmlDraft, selectedHeadingId) }}
               />
             </div>
@@ -487,14 +501,15 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
           ) : (latestVersion || viewVersion) ? (
             (() => {
               const htmlSource = (viewVersion?.content_html || latestVersion?.content_html || "");
-              const { htmlWithIds, headings } = extractHeadings(htmlSource);
+              const cleaned = cleanHtml(htmlSource);
+              const { htmlWithIds, headings } = extractHeadings(cleaned);
 
               return (
                 <div className={`${articleWidthCls} mx-auto`}>
                   {htmlSource ? (
                     <div
                       ref={contentRef}
-                      className="prose prose-base max-w-none dark:prose-invert"
+                      className="prose prose-sparks prose-base max-w-none dark:prose-invert"
                       dangerouslySetInnerHTML={{ __html: htmlWithIds }}
                     />
                   ) : (
@@ -566,7 +581,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             {showPreview && (
               <div className="mt-3 rounded-md border border-border bg-muted/30 p-3">
                 <div className="text-xs mb-2 text-muted-foreground">Preview</div>
-                <div className="prose prose-sm max-w-none dark:prose-invert"
+                <div className="prose prose-sparks prose-sm max-w-none dark:prose-invert"
                   dangerouslySetInnerHTML={{ __html: computeMergedHtml(editMode, currentHtml, contentHtmlDraft, selectedHeadingId) }}
                 />
               </div>
@@ -626,7 +641,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               <div className="mt-3 rounded-md border border-border bg-muted/30 p-3">
                 <div className="text-xs mb-2 text-muted-foreground">Preview</div>
                 <div
-                  className="prose prose-sm max-w-none dark:prose-invert"
+                  className="prose prose-sparks prose-sm max-w-none dark:prose-invert"
                   dangerouslySetInnerHTML={{
                     __html: computeMergedHtml(editMode, currentHtml, contentHtmlDraft, selectedHeadingId),
                   }}

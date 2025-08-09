@@ -124,32 +124,54 @@ export default {
 				'shimmer': 'shimmer 2s infinite',
 				'pulse-glow': 'pulse-glow 2s ease-in-out infinite'
 			},
-			typography: {
-				DEFAULT: {
-					css: {
-						'--tw-prose-body': 'hsl(var(--foreground))',
-						'--tw-prose-headings': 'hsl(var(--foreground))',
-						'--tw-prose-links': 'hsl(var(--primary))',
-						'--tw-prose-bold': 'hsl(var(--foreground))',
-						'--tw-prose-quotes': 'hsl(var(--foreground))',
-						'--tw-prose-hr': 'hsl(var(--border))',
-						'--tw-prose-th-borders': 'hsl(var(--border))',
-						'--tw-prose-td-borders': 'hsl(var(--border))',
-						'h1, h2, h3': {
-							scrollMarginTop: '6rem'
-						},
-						h1: { fontWeight: '700' },
-						h2: { marginTop: '1.6em', marginBottom: '0.6em', fontWeight: '600' },
-						h3: { marginTop: '1.2em', marginBottom: '0.4em', fontWeight: '600' },
-						p: { marginTop: '0.8em', marginBottom: '0.8em' },
-						ul: { marginTop: '0.8em', marginBottom: '0.8em', paddingLeft: '1.25em' },
-						ol: { marginTop: '0.8em', marginBottom: '0.8em', paddingLeft: '1.25em' },
-						li: { marginTop: '0.25em', marginBottom: '0.25em' },
-						blockquote: { fontStyle: 'normal', borderLeftColor: 'hsl(var(--primary))' },
-						code: { backgroundColor: 'hsl(var(--muted))', padding: '0.15em 0.35em', borderRadius: '0.25rem' }
+				typography: {
+					DEFAULT: {
+						css: {
+							'--tw-prose-body': 'hsl(var(--foreground))',
+							'--tw-prose-headings': 'hsl(var(--foreground))',
+							'--tw-prose-links': 'hsl(var(--primary))',
+							'--tw-prose-bold': 'hsl(var(--foreground))',
+							'--tw-prose-quotes': 'hsl(var(--foreground))',
+							'--tw-prose-hr': 'hsl(var(--border))',
+							'--tw-prose-th-borders': 'hsl(var(--border))',
+							'--tw-prose-td-borders': 'hsl(var(--border))',
+							h1, h2, h3: {
+								scrollMarginTop: '6rem'
+							},
+							h1: { fontWeight: '700' },
+							h2: { marginTop: '1.6em', marginBottom: '0.6em', fontWeight: '600' },
+							h3: { marginTop: '1.2em', marginBottom: '0.4em', fontWeight: '600' },
+							p: { marginTop: '0.8em', marginBottom: '0.8em' },
+							ul: { marginTop: '0.8em', marginBottom: '0.8em', paddingLeft: '1.25em' },
+							ol: { marginTop: '0.8em', marginBottom: '0.8em', paddingLeft: '1.25em' },
+							li: { marginTop: '0.25em', marginBottom: '0.25em' },
+							blockquote: { fontStyle: 'normal', borderLeftColor: 'hsl(var(--primary))' },
+							code: { backgroundColor: 'hsl(var(--muted))', padding: '0.15em 0.35em', borderRadius: '0.25rem' }
+						}
+					},
+					sparks: {
+						css: {
+							maxWidth: 'none',
+							h1: { marginTop: '1.2em', marginBottom: '0.4em', fontWeight: '700' },
+							h2: { marginTop: '1em', marginBottom: '0.35em', fontWeight: '600' },
+							h3: { marginTop: '0.8em', marginBottom: '0.3em', fontWeight: '600' },
+							p: { marginTop: '0.45em', marginBottom: '0.45em' },
+							'ul, ol': { marginTop: '0.5em', marginBottom: '0.5em', paddingLeft: '1rem' },
+							li: { marginTop: '0.15em', marginBottom: '0.15em' },
+							blockquote: { fontStyle: 'normal', borderLeftColor: 'hsl(var(--primary))', marginTop: '0.8em', marginBottom: '0.8em' },
+							code: { backgroundColor: 'hsl(var(--muted))', padding: '0.15em 0.35em', borderRadius: '0.25rem' },
+							'img, video': { marginTop: '0.75em', marginBottom: '0.75em' },
+							table: { marginTop: '0.75em', marginBottom: '0.75em' },
+							hr: { marginTop: '1em', marginBottom: '1em', borderColor: 'hsl(var(--border))' },
+							'h2 + p, h3 + p': { marginTop: '0.3em' },
+							'& :where(p:first-child)': { marginTop: '0' },
+							'& :where(p:last-child)': { marginBottom: '0' },
+							'& :where(h2:first-child, h3:first-child)': { marginTop: '0' },
+							'& :where(h2 + h3)': { marginTop: '0.5em' },
+							'& p:has(> br:only-child)': { display: 'none' }
+						}
 					}
 				}
-			}
 		}
 	},
 	plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
