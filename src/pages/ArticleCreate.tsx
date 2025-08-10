@@ -3,10 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { RichTextEditor, htmlToPlainText } from "@/components/knowledge-sparks/RichTextEditor";
+import { htmlToPlainText } from "@/utils/html";
 import { useFeedStore } from "@/stores/feedStore";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
+const RichTextEditor = React.lazy(() =>
+  import("@/components/knowledge-sparks/RichTextEditor").then((m) => ({ default: m.RichTextEditor }))
+);
 const ArticleCreate: React.FC = () => {
   const navigate = useNavigate();
   const { createPost } = useFeedStore();
@@ -92,12 +96,14 @@ const ArticleCreate: React.FC = () => {
           )}
         </div>
 
-        <RichTextEditor
-          valueHtml={contentHtml}
-          onChangeHtml={setContentHtml}
-          placeholder="Start writing your article..."
-          minHeight={320}
-        />
+        <React.Suspense fallback={<Skeleton className="h-40 w-full" />}>
+          <RichTextEditor
+            valueHtml={contentHtml}
+            onChangeHtml={setContentHtml}
+            placeholder="Start writing your article..."
+            minHeight={320}
+          />
+        </React.Suspense>
       </section>
     </main>
   );

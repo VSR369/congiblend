@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { RichTextEditor, htmlToPlainText } from "@/components/knowledge-sparks/RichTextEditor";
+import { htmlToPlainText } from "@/utils/html";
 import { useIsSparkAuthor } from "@/hooks/useIsSparkAuthor";
 import { SparkTOC, extractHeadings } from "@/components/knowledge-sparks/SparkTOC";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -17,6 +17,10 @@ import { useAutosaveDraft } from "@/hooks/useAutosaveDraft";
 import { createPortal } from "react-dom";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Info, Lock } from "lucide-react";
+
+const RichTextEditor = React.lazy(() =>
+  import("@/components/knowledge-sparks/RichTextEditor").then((m) => ({ default: m.RichTextEditor }))
+);
 
 type Spark = {
   id: string;
@@ -517,13 +521,15 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             Your text will replace the current content. Press Ctrl/⌘ + Enter to submit.
           </div>
           <div className="mt-2">
-            <RichTextEditor
-              valueHtml={contentHtmlDraft}
-              onChangeHtml={setContentHtmlDraft}
-              placeholder="Write the new content..."
-              minHeight={260}
-              onCtrlEnter={handleSuggestEdit}
-            />
+            <React.Suspense fallback={<Skeleton className="h-40 w-full" />}>
+              <RichTextEditor
+                valueHtml={contentHtmlDraft}
+                onChangeHtml={setContentHtmlDraft}
+                placeholder="Write the new content..."
+                minHeight={260}
+                onCtrlEnter={handleSuggestEdit}
+              />
+            </React.Suspense>
           </div>
           {showPreview && (
             <div className="mt-3 rounded-md border border-border bg-muted/30 p-3">
@@ -636,13 +642,15 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               Your text will be added to the end of the content. Press Ctrl/⌘ + Enter to submit.
             </div>
             <div className="mt-2">
-              <RichTextEditor
-                valueHtml={contentHtmlDraft}
-                onChangeHtml={setContentHtmlDraft}
-                placeholder="Write what to add..."
-                minHeight={220}
-                onCtrlEnter={handleSuggestEdit}
-              />
+              <React.Suspense fallback={<Skeleton className="h-40 w-full" />}>
+                <RichTextEditor
+                  valueHtml={contentHtmlDraft}
+                  onChangeHtml={setContentHtmlDraft}
+                  placeholder="Write what to add..."
+                  minHeight={220}
+                  onCtrlEnter={handleSuggestEdit}
+                />
+              </React.Suspense>
             </div>
             {showPreview && (
               <div className="mt-3 rounded-md border border-border bg-muted/30 p-3">
@@ -728,13 +736,15 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               Editing this section. Your changes will replace the content under the selected heading. Press Ctrl/⌘ + Enter to submit.
             </div>
             <div className="mt-2">
-              <RichTextEditor
-                valueHtml={contentHtmlDraft}
-                onChangeHtml={setContentHtmlDraft}
-                placeholder="Write updates for the selected section..."
-                minHeight={220}
-                onCtrlEnter={handleSuggestEdit}
-              />
+              <React.Suspense fallback={<Skeleton className="h-40 w-full" />}>
+                <RichTextEditor
+                  valueHtml={contentHtmlDraft}
+                  onChangeHtml={setContentHtmlDraft}
+                  placeholder="Write updates for the selected section..."
+                  minHeight={220}
+                  onCtrlEnter={handleSuggestEdit}
+                />
+              </React.Suspense>
             </div>
             {showPreview && (
               <div className="mt-3 rounded-md border border-border bg-muted/30 p-3">

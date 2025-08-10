@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import SparkCard from "./SparkCard";
 import { Input } from "@/components/ui/input";
@@ -64,6 +64,24 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
   const { parentRef, visibleItems, shouldVirtualize, totalSize } =
     useVirtualScroll({ items: filtered, threshold: 30, estimateSize: () => 120, overscan: 8 });
 
+  const qc = useQueryClient();
+  const prefetchSpark = (id: string) => {
+    qc.prefetchQuery({
+      queryKey: ["spark", id, "latestVersion"],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from("spark_content_versions")
+          .select("id,version_number,content_html")
+          .eq("spark_id", id)
+          .order("version_number", { ascending: false })
+          .limit(1);
+        if (error) throw error;
+        return (data && data[0]) || null;
+      },
+      staleTime: 1000 * 60 * 5,
+    });
+  };
+
   return (
     <div className="flex h-full flex-col">
       <div className="p-2">
@@ -94,7 +112,7 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
         ) : viewMode === "card" ? (
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
             {filtered.map((spark) => (
-              <div key={spark.id} className="h-full">
+              <div key={spark.id} className="h-full" onMouseEnter={() => prefetchSpark(spark.id)}>
                 <SparkCard
                   spark={spark}
                   selected={selectedId === spark.id}
@@ -118,6 +136,7 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
                     selected={selectedId === item.id}
                     onClick={() => onSelect(item)}
                     showActions={false}
+                    className="h-full"
                   />
                 </div>
               ))}
@@ -125,13 +144,14 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
           ) : (
             <div className="space-y-2">
               {filtered.map((spark) => (
-                <SparkCard
-                  key={spark.id}
-                  spark={spark}
-                  selected={selectedId === spark.id}
-                  onClick={() => onSelect(spark)}
-                  showActions={false}
-                />
+                <div key={spark.id} onMouseEnter={() => prefetchSpark(spark.id)}>
+                  <SparkCard
+                    spark={spark}
+                    selected={selectedId === spark.id}
+                    onClick={() => onSelect(spark)}
+                    showActions={false}
+                  />
+                </div>
               ))}
             </div>
           )

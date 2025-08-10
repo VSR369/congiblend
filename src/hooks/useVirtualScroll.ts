@@ -35,7 +35,7 @@ export function useVirtualScroll<T>({
   // Memoize visible items for performance
   const visibleItems = useMemo(() => {
     if (!shouldVirtualize) {
-      return items.map((item, index) => ({ item, index }));
+      return items.map((item, index) => ({ item, index, virtualItem: undefined }));
     }
 
     return virtualItems.map(virtualItem => ({

@@ -4,9 +4,19 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-import { LikeButton } from "@/components/ui/like-button";
-import { CommentsSection } from "@/components/comments/CommentsSection";
+// Lazy-loaded below
+// import { LikeButton } from "@/components/ui/like-button";
+// import { CommentsSection } from "@/components/comments/CommentsSection";
 import { supabase } from "@/integrations/supabase/client";
+import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const LikeButtonLazy = React.lazy(() =>
+  import("@/components/ui/like-button").then((m) => ({ default: m.LikeButton }))
+);
+const CommentsSectionLazy = React.lazy(() =>
+  import("@/components/comments/CommentsSection").then((m) => ({ default: m.CommentsSection }))
+);
 
 interface ArticleRecord {
   id: string;
@@ -118,6 +128,9 @@ const ArticleView: React.FC = () => {
   const author = article.profiles;
   const html = article.metadata?.article_html || "";
 
+  const { ref: likeRef, isIntersecting: likeInView } = useIntersectionObserver({ rootMargin: "200px" });
+  const { ref: commentsRef, isIntersecting: commentsInView } = useIntersectionObserver({ rootMargin: "400px" });
+
   return (
     <main className="max-w-3xl mx-auto px-4 py-6">
       <header className="mb-6">
@@ -162,11 +175,23 @@ const ArticleView: React.FC = () => {
       </article>
 
       <section className="mt-8">
-        <div className="border-t pt-4">
-          <LikeButton targetId={article.id} targetType="post" reactions={[]} />
+        <div className="border-t pt-4" ref={likeRef as any}>
+          {likeInView ? (
+            <React.Suspense fallback={<Skeleton className="h-8 w-32" />}>
+              <LikeButtonLazy targetId={article.id} targetType="post" reactions={[]} />
+            </React.Suspense>
+          ) : (
+            <Skeleton className="h-8 w-32" />
+          )}
         </div>
-        <div className="mt-6">
-          <CommentsSection postId={article.id} />
+        <div className="mt-6" ref={commentsRef as any}>
+          {commentsInView ? (
+            <React.Suspense fallback={<Skeleton className="h-20 w-full" />}>
+              <CommentsSectionLazy postId={article.id} />
+            </React.Suspense>
+          ) : (
+            <Skeleton className="h-20 w-full" />
+          )}
         </div>
       </section>
     </main>
