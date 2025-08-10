@@ -1,7 +1,7 @@
 import type { PostType } from "@/types/feed";
 // App Configuration
 export const APP_CONFIG = {
-  name: 'Synapse Platform',
+  name: 'CogiBlend',
   version: '1.0.0',
   description: 'Modern React 18 Application',
   author: 'Lovable',
