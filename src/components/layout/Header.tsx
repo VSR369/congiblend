@@ -67,19 +67,13 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false }: Head
       <div className="container flex h-20 items-center justify-between">
         {/* Left Section */}
         <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="md:hidden h-10 w-10 rounded-xl hover-glow transition-all duration-300 glass-card border-0"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
           {showMenuButton && (
             <Button
               variant="ghost"
               size="sm"
               onClick={onMenuToggle}
-              className="md:hidden"
+              className="md:hidden h-10 w-10 rounded-xl hover-glow transition-all duration-300 glass-card border-0"
+              aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
             </Button>
@@ -103,7 +97,7 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false }: Head
         </div>
 
         {/* Center Section - Enhanced Search */}
-        <div className="flex-1 max-w-lg mx-6">
+        <div className="flex-1 min-w-0 max-w-lg mx-6">
           <form onSubmit={handleSearch} className="relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
