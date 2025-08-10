@@ -60,7 +60,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
     }
     try {
       await rsvpEvent(post.id, status);
-      const title = status === 'attending' ? 'You’re going' : status === 'interested' ? 'Marked interested' : 'RSVP removed';
+      const title = status === 'attending' ? 'You’re going' : status === 'interested' ? 'Marked interested' : 'Marked can’t go';
       toast({ title });
     } catch (error) {
       console.error('RSVP error:', error);
@@ -293,7 +293,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
                       variant="outline"
                       disabled={isTempPost}
                     >
-                      {isTempPost ? 'Publishing…' : post.event.userRSVP === 'attending' ? 'Going' : post.event.userRSVP === 'interested' ? 'Interested' : 'RSVP'}
+                      {isTempPost ? 'Publishing…' : post.event.userRSVP === 'attending' ? 'Going' : post.event.userRSVP === 'interested' ? 'Interested' : post.event.userRSVP === 'not_attending' ? 'Can’t go' : 'RSVP'}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="z-50">
@@ -304,7 +304,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
                 </DropdownMenu>
                 {post.event.userRSVP && (
                   <p className="text-xs text-muted-foreground text-center mt-2">
-                    You’re {post.event.userRSVP === 'attending' ? 'going' : post.event.userRSVP === 'interested' ? 'interested' : 'not going'}
+                    {post.event.userRSVP === 'not_attending' ? "You can’t go" : `You’re ${post.event.userRSVP === 'attending' ? 'going' : 'interested'}`}
                   </p>
                 )}
               </div>
