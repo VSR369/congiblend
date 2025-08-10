@@ -33,6 +33,15 @@ function buildThread(comments: Comment[]): Comment[] {
       roots.push(c);
     }
   });
+  // Sort newest first for both top-level comments and replies
+  const sortDesc = (a: Comment, b: Comment) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  const sortTree = (nodes: Comment[]) => {
+    nodes.sort(sortDesc);
+    nodes.forEach((n) => {
+      if (n.children && n.children.length > 0) sortTree(n.children);
+    });
+  };
+  sortTree(roots);
   return roots;
 }
 
