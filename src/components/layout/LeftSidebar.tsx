@@ -6,7 +6,7 @@ import { UserStatsCard } from '@/components/ui/user-stats-card';
 
 const navigationItems = [
   { title: 'Mission Control', url: '/', icon: Home },
-  { title: 'Articles', url: '/articles', icon: FileText },
+  { title: 'Articles', url: '/articles/new', activeMatch: '/articles', icon: FileText },
   { title: 'Messages', url: '/messages', icon: MessageCircle },
   { title: 'Knowledge Sparks', url: '/knowledge-sparks', icon: Lightbulb },
 ];
@@ -32,7 +32,9 @@ export const LeftSidebar = () => {
               to={item.url}
               className={`
                 flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 
-                ${(item.url === '/' ? location.pathname === item.url : location.pathname.startsWith(item.url)) 
+                ${((item.activeMatch ?? item.url) === '/' 
+                  ? location.pathname === (item.activeMatch ?? item.url)
+                  : location.pathname.startsWith(item.activeMatch ?? item.url))
                   ? 'bg-primary/10 text-primary border border-primary/30' 
                   : 'text-foreground hover:bg-muted hover:text-primary'
                 }
