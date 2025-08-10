@@ -5,7 +5,7 @@ import { LikeButton } from "./like-button";
 import { PostErrorBoundary } from "./post-error-boundary";
 
 import { Button } from "./button";
-import { Avatar } from "./avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "./avatar";
 import { Badge } from "./badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./dropdown-menu";
 import { useFeedStore } from "@/stores/feedStore";
@@ -50,7 +50,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
   }, [post.id, votePoll]);
 
   const isTempPost = post.id.startsWith('post-');
-  const handleRSVP = React.useCallback(async () => {
+  const handleRSVPChoice = React.useCallback(async (status: 'attending' | 'interested' | 'not_attending') => {
     if (isTempPost) {
       toast({
         title: 'Please wait',
@@ -59,8 +59,9 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
       return;
     }
     try {
-      await rsvpEvent(post.id, 'attending');
-      toast({ title: 'RSVP updated' });
+      await rsvpEvent(post.id, status);
+      const title = status === 'attending' ? 'You’re going' : status === 'interested' ? 'Marked interested' : 'RSVP removed';
+      toast({ title });
     } catch (error) {
       console.error('RSVP error:', error);
       toast({ title: 'RSVP failed', description: 'Please try again.', variant: 'destructive' });
@@ -257,18 +258,15 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
                     <div className="space-y-2">
                       {post.event_data.speakers.map((sp, idx) => (
                         <div key={idx} className="flex items-start gap-3">
-                          <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center relative">
-                            <span className="text-xs font-medium">{(sp.name || 'S').slice(0,2).toUpperCase()}</span>
-                            {(((sp as any).photo_url) || ((sp as any).photoUrl)) && (
-                              <img 
-                                src={(sp as any).photo_url || (sp as any).photoUrl} 
-                                alt={`${sp.name || 'Speaker'} photo`} 
-                                className="w-full h-full object-cover absolute inset-0" 
-                                loading="lazy"
-                                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                              />
-                            )}
-                          </div>
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage
+                              src={(sp as any).photo_url || (sp as any).photoUrl || undefined}
+                              alt={`${sp.name || 'Speaker'} photo`}
+                            />
+                            <AvatarFallback className="text-xs font-medium">
+                              {(sp.name || 'S').slice(0,2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium">{sp.name}</span>
@@ -288,14 +286,27 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
                   </div>
                 )}
 
-                <Button
-                  className="w-full"
-                  variant="outline"
-                  onClick={handleRSVP}
-                  disabled={isTempPost}
-                >
-                  {post.event.userRSVP === 'attending' ? 'Going' : (isTempPost ? 'Publishing…' : 'RSVP')}
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      className="w-full"
+                      variant="outline"
+                      disabled={isTempPost}
+                    >
+                      {isTempPost ? 'Publishing…' : post.event.userRSVP === 'attending' ? 'Going' : post.event.userRSVP === 'interested' ? 'Interested' : 'RSVP'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="z-50">
+                    <DropdownMenuItem onClick={() => handleRSVPChoice('attending')}>Going</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleRSVPChoice('interested')}>Interested</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleRSVPChoice('not_attending')}>Can’t go</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {post.event.userRSVP && (
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    You’re {post.event.userRSVP === 'attending' ? 'going' : post.event.userRSVP === 'interested' ? 'interested' : 'not going'}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -346,13 +357,12 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
         {/* Post Header */}
         <div className="flex items-start justify-between p-4">
           <div className="flex items-start space-x-3">
-            <div className="w-12 h-12 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-              {post.author.avatar ? (
-                <img src={post.author.avatar} alt={post.author.name} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-sm font-medium">{post.author.name.charAt(0)}</span>
-              )}
-            </div>
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={post.author.avatar || undefined} alt={post.author.name} />
+              <AvatarFallback className="text-sm font-medium">
+                {post.author.name?.slice(0,2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
             <div>
               <div className="flex items-center space-x-2">
                 <h3 className="font-semibold">{post.author.name}</h3>
