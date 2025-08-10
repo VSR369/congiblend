@@ -91,7 +91,7 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
           placeholder="Search sparks by title, tag, or category..."
         />
       </div>
-      <div className="flex-1 overflow-y-auto p-2" ref={viewMode === "list" ? (parentRef as any) : undefined}>
+      <div className={`flex-1 overflow-y-auto p-2 ${viewMode === "list" && shouldVirtualize ? 'is-virtualized' : ''}`} ref={viewMode === "list" ? (parentRef as any) : undefined}>
         {isError ? (
           <div className="p-4 text-sm text-destructive">Failed to load sparks. Please try again.</div>
         ) : isLoading ? (
@@ -136,7 +136,7 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
                     left: 0,
                     width: '100%',
                     height: virtualItem ? `${virtualItem.size}px` : 'auto',
-                    transform: `translateY(${virtualItem?.start ?? 0}px)`,
+                    transform: `translate3d(0, ${virtualItem?.start ?? 0}px, 0)`,
                   }}
                 >
                   <div ref={measureElement as any} data-index={virtualItem?.index ?? index}>

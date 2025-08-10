@@ -290,6 +290,10 @@
 }
 
 /* Virtualized feed overrides */
+.is-virtualized {
+  /* Prevent browser scroll anchoring from shifting the viewport */
+  overflow-anchor: none;
+}
 .is-virtualized .linkedin-post-card {
   content-visibility: visible !important;
   contain-intrinsic-size: auto !important;

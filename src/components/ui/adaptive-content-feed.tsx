@@ -99,7 +99,7 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
   } = useVirtualScroll({
     items: posts,
     estimateSize: estimatePostSize,
-    overscan: 3,
+    overscan: 8,
     enabled: true,
     threshold: 15, // Start virtualizing with fewer items for better performance
   });
@@ -267,12 +267,12 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
                   left: 0,
                   width: '100%',
                   height: virtualItem ? `${virtualItem.size}px` : 'auto',
-                  transform: `translateY(${virtualItem ? virtualItem.start : index * 350}px)`,
+                  transform: `translate3d(0, ${virtualItem ? virtualItem.start : index * 350}px, 0)`,
                 }}
               >
                 <div
                   ref={measureElement as any}
-                  data-index={index}
+                  data-index={virtualItem ? virtualItem.index : index}
                   className="px-4 pb-4"
                 >
                   <PostCard 

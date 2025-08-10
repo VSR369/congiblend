@@ -36,7 +36,11 @@ export function useVirtualScroll<T>({
 
   const measureRef = useCallback((el: Element | null) => {
     if (!shouldVirtualize || !el) return;
-    virtualizer.measureElement(el);
+    // Batch measurements to next frame to reduce layout thrash
+    const node = el as Element;
+    requestAnimationFrame(() => {
+      virtualizer.measureElement(node);
+    });
   }, [shouldVirtualize, virtualizer]);
   // Memoize visible items for performance
   const visibleItems = useMemo(() => {
@@ -83,6 +87,7 @@ export function useVirtualInfiniteScroll<T>({
   const { ref: loadMoreTriggerRef } = useIntersectionObserver({
     threshold: 0.1,
     rootMargin: '200px',
+    root: parentRef.current,
   });
 
   // Attach load more trigger
