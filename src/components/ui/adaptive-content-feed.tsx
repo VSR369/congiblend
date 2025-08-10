@@ -16,7 +16,7 @@ interface AdaptiveContentFeedProps {
 }
 
 export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ className }) => {
-  const { posts, loading, loadPosts, hasMore, filters } = useFeedStore();
+  const { posts, loading, loadPosts, hasMore, filters, setScrolling } = useFeedStore();
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
@@ -96,17 +96,17 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
     shouldVirtualize,
     totalSize,
     measureElement,
+    isScrolling,
   } = useVirtualScroll({
     items: posts,
     estimateSize: estimatePostSize,
-    overscan: 8,
+    overscan: 12,
     enabled: true,
     threshold: 15, // Start virtualizing with fewer items for better performance
   });
-
   useEffect(() => {
-    loadPosts(true);
-  }, [loadPosts]);
+    setScrolling?.(isScrolling);
+  }, [isScrolling, setScrolling]);
 
   // Handle text expansion state
   const handlePostExpansion = (postId: string, expanded: boolean) => {

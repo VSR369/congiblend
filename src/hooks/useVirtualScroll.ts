@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useRef, useMemo, useCallback } from 'react';
+import { useRef, useMemo, useCallback, useState, useEffect } from 'react';
 
 interface VirtualScrollOptions<T> {
   items: T[];
@@ -18,8 +18,27 @@ export function useVirtualScroll<T>({
 }: VirtualScrollOptions<T>) {
   const parentRef = useRef<HTMLDivElement>(null);
   
+  const resizeObservers = useRef(new WeakMap<Element, ResizeObserver>());
+  
   // Only enable virtualization for large lists
   const shouldVirtualize = enabled && items.length > threshold;
+
+  const [isScrolling, setIsScrolling] = useState(false);
+  useEffect(() => {
+    const el = parentRef.current;
+    if (!el) return;
+    let timeoutId: number | undefined;
+    const onScroll = () => {
+      if (!isScrolling) setIsScrolling(true);
+      if (timeoutId) window.clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(() => setIsScrolling(false), 150);
+    };
+    el.addEventListener('scroll', onScroll, { passive: true } as any);
+    return () => {
+      el.removeEventListener('scroll', onScroll as any);
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [shouldVirtualize, parentRef.current]);
 
   const virtualizer = useVirtualizer({
     count: shouldVirtualize ? items.length : 0,
@@ -36,11 +55,22 @@ export function useVirtualScroll<T>({
 
   const measureRef = useCallback((el: Element | null) => {
     if (!shouldVirtualize || !el) return;
-    // Batch measurements to next frame to reduce layout thrash
-    const node = el as Element;
+    const node = el as HTMLElement;
+    // Initial measurement in next frame to reduce layout thrash
     requestAnimationFrame(() => {
       virtualizer.measureElement(node);
     });
+    // Observe size changes for dynamic content
+    if ('ResizeObserver' in window) {
+      let ro = resizeObservers.current.get(node);
+      if (!ro) {
+        ro = new ResizeObserver(() => {
+          requestAnimationFrame(() => virtualizer.measureElement(node));
+        });
+        resizeObservers.current.set(node, ro);
+      }
+      ro.observe(node);
+    }
   }, [shouldVirtualize, virtualizer]);
   // Memoize visible items for performance
   const visibleItems = useMemo(() => {
@@ -62,6 +92,7 @@ export function useVirtualScroll<T>({
     shouldVirtualize,
     totalSize: shouldVirtualize ? virtualizer.getTotalSize() : 'auto',
     measureElement: measureRef,
+    isScrolling,
   };
 }
 
@@ -77,7 +108,7 @@ export function useVirtualInfiniteScroll<T>({
   loading: boolean;
   onLoadMore: () => void;
 }) {
-  const { parentRef, virtualizer, visibleItems, shouldVirtualize, totalSize, measureElement } = 
+  const { parentRef, virtualizer, visibleItems, shouldVirtualize, totalSize, measureElement, isScrolling } = 
     useVirtualScroll({ items, ...virtualOptions });
 
   // Load more when scrolled near bottom
@@ -108,6 +139,7 @@ export function useVirtualInfiniteScroll<T>({
     totalSize,
     loadMoreRef: enhancedLoadMoreRef,
     measureElement,
+    isScrolling,
   };
 }
 

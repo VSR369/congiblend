@@ -17,6 +17,7 @@ interface FeedState {
   feedSettings: FeedSettings;
   filters: FeedFilters;
   users: User[];
+  isScrolling: boolean;
   
   // Actions
   loadPosts: (reset?: boolean) => Promise<void>;
@@ -40,6 +41,7 @@ interface FeedState {
   // Settings
   updateFeedSettings: (settings: Partial<FeedSettings>) => void;
   updateFilters: (filters: Partial<FeedFilters>) => void;
+  setScrolling: (scrolling: boolean) => void;
 }
 
 // Helper function to transform database post to our Post type
@@ -302,6 +304,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
       contentTypes: ALL_POST_TYPES,
       timeRange: 'all'
     },
+    isScrolling: false,
 
     loadPosts: async (reset = false) => {
       const state = get();
@@ -1170,18 +1173,16 @@ export const useFeedStore = create<FeedState>((set, get) => {
     },
 
 
-    updateFeedSettings: (settings: Partial<FeedSettings>) => {
-      set(state => ({
-        feedSettings: { ...state.feedSettings, ...settings }
-      }));
-    },
-
     updateFilters: (newFilters: Partial<FeedFilters>) => {
       set(state => ({
         filters: { ...state.filters, ...newFilters }
       }));
       // Reload posts with new filters
       get().loadPosts(true);
+    },
+
+    setScrolling: (scrolling: boolean) => {
+      set({ isScrolling: scrolling });
     },
 
     // Comment reaction function removed - comments functionality not implemented
