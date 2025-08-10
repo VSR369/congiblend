@@ -16,21 +16,21 @@ export class PerformanceMonitor {
       // CLS - Cumulative Layout Shift
       new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          console.log('CLS:', entry);
+          if (import.meta.env.DEV) console.log('CLS:', entry);
         }
       }).observe({ type: 'layout-shift', buffered: true });
 
       // LCP - Largest Contentful Paint
       new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          console.log('LCP:', entry);
+          if (import.meta.env.DEV) console.log('LCP:', entry);
         }
       }).observe({ type: 'largest-contentful-paint', buffered: true });
 
       // FID - First Input Delay
       new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          console.log('FID:', entry);
+          if (import.meta.env.DEV) console.log('FID:', entry);
         }
       }).observe({ type: 'first-input', buffered: true });
     }
@@ -50,7 +50,7 @@ export class PerformanceMonitor {
     }
     
     const measure = performance.getEntriesByName(name, 'measure')[0];
-    console.log(`${name}: ${measure.duration}ms`);
+    if (import.meta.env.DEV) console.log(`${name}: ${measure.duration}ms`);
     return measure.duration;
   }
 
@@ -58,11 +58,13 @@ export class PerformanceMonitor {
   analyzeBundleSize() {
     if ('navigator' in window && 'connection' in navigator) {
       const connection = (navigator as any).connection;
-      console.log('Network info:', {
-        effectiveType: connection.effectiveType,
-        downlink: connection.downlink,
-        rtt: connection.rtt,
-      });
+      if (import.meta.env.DEV) {
+        console.log('Network info:', {
+          effectiveType: connection.effectiveType,
+          downlink: connection.downlink,
+          rtt: connection.rtt,
+        });
+      }
     }
   }
 
@@ -70,11 +72,13 @@ export class PerformanceMonitor {
   monitorMemory() {
     if ('memory' in performance) {
       const memory = (performance as any).memory;
-      console.log('Memory usage:', {
-        used: Math.round(memory.usedJSHeapSize / 1048576) + ' MB',
-        total: Math.round(memory.totalJSHeapSize / 1048576) + ' MB',
-        limit: Math.round(memory.jsHeapSizeLimit / 1048576) + ' MB',
-      });
+      if (import.meta.env.DEV) {
+        console.log('Memory usage:', {
+          used: Math.round(memory.usedJSHeapSize / 1048576) + ' MB',
+          total: Math.round(memory.totalJSHeapSize / 1048576) + ' MB',
+          limit: Math.round(memory.jsHeapSizeLimit / 1048576) + ' MB',
+        });
+      }
     }
   }
 }

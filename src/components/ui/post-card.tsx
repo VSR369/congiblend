@@ -17,6 +17,7 @@ import { CommentsSection } from "@/components/comments/CommentsSection";
 import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { useAuthStore } from "@/stores/authStore";
+import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 
 interface PostCardProps {
   post: Post;
@@ -28,10 +29,14 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
   const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
 
+  const { ref: commentsRef, isIntersecting: showComments } = useIntersectionObserver({
+    rootMargin: '400px 0px',
+    threshold: 0,
+  });
+
   const handleSaveToggle = React.useCallback(() => {
     toggleSave(post.id);
   }, [post.id, toggleSave]);
-
 
 
   // PHASE 3: Memoized poll vote handler
@@ -372,7 +377,7 @@ const isTempPost = post.id.startsWith('post-');
 
   return (
     <PostErrorBoundary>
-      <article className="linkedin-post-card">
+      <article className="linkedin-post-card [content-visibility:auto] [contain-intrinsic-size:600px]">
         {/* Post Header */}
         <div className="flex items-start justify-between p-4">
           <div className="flex items-start space-x-3">
@@ -475,7 +480,12 @@ const isTempPost = post.id.startsWith('post-');
           </div>
         </div>
 
-        <CommentsSection postId={post.id} />
+        <div ref={commentsRef as any} />
+        {showComments ? (
+          <CommentsSection postId={post.id} />
+        ) : (
+          <div className="px-4 pb-4 text-xs text-muted-foreground">Comments will load when in view</div>
+        )}
       </article>
     </PostErrorBoundary>
   );

@@ -445,76 +445,89 @@ export const useFeedStore = create<FeedState>((set, get) => {
         // Get current user for reactions
         const { data: { user } } = await supabase.auth.getUser();
         
-        // Transform posts to our format with reactions loaded separately
-        const transformedPosts = await Promise.all(
-          (postsData || []).map(async (dbPost) => {
-            try {
-              // Load reactions for this post
-              const { data: reactions } = await supabase
-                .from('reactions')
-                .select(`
-                  id,
-                  reaction_type,
-                  user_id,
-                  created_at,
-                  profiles (
-                    id,
-                    username,
-                    display_name,
-                    avatar_url
-                  )
-                `)
-                .eq('target_type', 'post')
-                .eq('target_id', dbPost.id);
+        // Batch load engagement data
+        const postIds = (postsData || []).map((p: any) => p.id);
 
-              // Add reactions and poll vote data
-              let postWithData: any = {
-                ...dbPost,
-                reactions: reactions || []
-              };
+        // Reactions by post (single query)
+        const reactionsByPost: Record<string, any[]> = {};
+        if (postIds.length > 0) {
+          const { data: allReactions } = await supabase
+            .from('reactions')
+            .select(`
+              id,
+              reaction_type,
+              user_id,
+              created_at,
+              target_id,
+              profiles (
+                id,
+                username,
+                display_name,
+                avatar_url
+              )
+            `)
+            .eq('target_type', 'post')
+            .in('target_id', postIds);
+          (allReactions || []).forEach((r: any) => {
+            const pid = r.target_id;
+            (reactionsByPost[pid] ||= []).push(r);
+          });
+        }
 
-              // If this is a poll post, compute vote counts and current user's vote
-              const pollData: any = (dbPost as any).poll_data;
-              if (pollData && Array.isArray(pollData.options)) {
-                const { data: votesData } = await supabase
-                  .from('votes')
-                  .select('option_index, user_id')
-                  .eq('post_id', dbPost.id);
+        // Votes by post for poll posts (single query)
+        const pollPostIds = (postsData || [])
+          .filter((p: any) => p.poll_data && Array.isArray(p.poll_data.options))
+          .map((p: any) => p.id);
+        const votesByPost: Record<string, any[]> = {};
+        if (pollPostIds.length > 0) {
+          const { data: allVotes } = await supabase
+            .from('votes')
+            .select('post_id, option_index, user_id')
+            .in('post_id', pollPostIds);
+          (allVotes || []).forEach((v: any) => {
+            (votesByPost[v.post_id] ||= []).push(v);
+          });
+        }
 
-                const voteCounts: Record<number, number> = {};
-                let userVoteIndices: string[] | undefined = undefined;
+        // Transform posts using batched data
+        const transformedPosts = (postsData || []).map((dbPost: any) => {
+          const reactions = reactionsByPost[dbPost.id] || [];
+          let postWithData: any = {
+            ...dbPost,
+            reactions
+          };
 
-                (votesData || []).forEach(v => {
-                  voteCounts[v.option_index] = (voteCounts[v.option_index] || 0) + 1;
-                  if (user?.id && v.user_id === user.id) {
-                    userVoteIndices = [String(v.option_index)];
-                  }
-                });
+          const pollData: any = (dbPost as any).poll_data;
+          if (pollData && Array.isArray(pollData.options)) {
+            const votes = votesByPost[dbPost.id] || [];
+            const voteCounts: Record<number, number> = {};
+            let userVoteIndices: string[] | undefined = undefined;
 
-                const updatedOptions = pollData.options.map((opt: any, idx: number) => ({
-                  text: opt.text,
-                  votes: voteCounts[idx] || 0
-                }));
-
-                postWithData = {
-                  ...postWithData,
-                  poll_data: {
-                    options: updatedOptions,
-                    multiple_choice: pollData.multiple_choice ?? false,
-                    expires_at: pollData.expires_at ?? null,
-                  },
-                    userVoteIndices
-                };
+            votes.forEach((v: any) => {
+              voteCounts[v.option_index] = (voteCounts[v.option_index] || 0) + 1;
+              if (user?.id && v.user_id === user.id) {
+                userVoteIndices = [String(v.option_index)];
               }
+            });
 
-              return transformDbPost(postWithData, dbPost.profiles, user?.id);
-            } catch (error) {
-              console.error('Error loading post data:', error);
-              // Return post without reactions if there's an error
-              return transformDbPost({ ...dbPost, reactions: [] }, dbPost.profiles, user?.id);
-            }
-          })
-        );
+            const updatedOptions = pollData.options.map((opt: any, idx: number) => ({
+              text: opt.text,
+              votes: voteCounts[idx] || 0
+            }));
+
+            postWithData = {
+              ...postWithData,
+              poll_data: {
+                options: updatedOptions,
+                multiple_choice: pollData.multiple_choice ?? false,
+                expires_at: pollData.expires_at ?? null,
+              },
+              userVoteIndices,
+            };
+          }
+
+          return transformDbPost(postWithData, dbPost.profiles, user?.id);
+        });
 
         set((state) => {
           let merged = reset ? transformedPosts : [...state.posts, ...transformedPosts];
