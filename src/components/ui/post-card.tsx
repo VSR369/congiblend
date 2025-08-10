@@ -11,10 +11,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useFeedStore } from "@/stores/feedStore";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import type { Post, ReactionType } from "@/types/feed";
 import { CommentsSection } from "@/components/comments/CommentsSection";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import { useAuthStore } from "@/stores/authStore";
 
 interface PostCardProps {
   post: Post;
@@ -23,6 +25,8 @@ interface PostCardProps {
 
 export const PostCard = React.memo(({ post, className }: PostCardProps) => {
   const { toggleSave, votePoll, rsvpEvent } = useFeedStore();
+  const { isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
 
   const handleSaveToggle = React.useCallback(() => {
     toggleSave(post.id);
@@ -49,7 +53,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
     }
   }, [post.id, votePoll]);
 
-  const isTempPost = post.id.startsWith('post-');
+const isTempPost = post.id.startsWith('post-');
   const handleRSVPChoice = React.useCallback(async (status: 'attending' | 'interested' | 'not_attending') => {
     if (isTempPost) {
       toast({
@@ -58,6 +62,21 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
       });
       return;
     }
+
+    // Require authentication before RSVP
+    if (!isAuthenticated) {
+      toast({
+        title: 'Sign in required',
+        description: 'Please sign in to RSVP to events.',
+        action: (
+          <ToastAction altText="Sign in" onClick={() => navigate('/login')}>
+            Sign in
+          </ToastAction>
+        ),
+      });
+      return;
+    }
+
     try {
       await rsvpEvent(post.id, status);
       const title = status === 'attending' ? 'You’re going' : status === 'interested' ? 'Marked interested' : 'Marked can’t go';
@@ -66,7 +85,7 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
       console.error('RSVP error:', error);
       toast({ title: 'RSVP failed', description: 'Please try again.', variant: 'destructive' });
     }
-  }, [isTempPost, post.id, rsvpEvent]);
+  }, [isTempPost, post.id, rsvpEvent, isAuthenticated, navigate]);
 
   const totalReactions = post.reactions.length;
   const topReactions = React.useMemo(() => {
