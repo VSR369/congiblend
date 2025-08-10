@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useCallback } from 'react';
 
 interface VirtualScrollOptions<T> {
   items: T[];
@@ -26,12 +26,16 @@ export function useVirtualScroll<T>({
     getScrollElement: () => parentRef.current,
     estimateSize,
     overscan,
-    // Performance optimization: measure items only when necessary
-    measureElement: shouldVirtualize ? undefined : () => 0,
+    // Provide a measurement function for dynamic heights
+    measureElement: shouldVirtualize ? (el) => (el as HTMLElement).getBoundingClientRect().height : undefined,
   });
 
   const virtualItems = shouldVirtualize ? virtualizer.getVirtualItems() : [];
 
+  const measureRef = useCallback((el: Element | null) => {
+    if (!shouldVirtualize || !el) return;
+    virtualizer.measureElement(el);
+  }, [shouldVirtualize, virtualizer]);
   // Memoize visible items for performance
   const visibleItems = useMemo(() => {
     if (!shouldVirtualize) {
@@ -51,6 +55,7 @@ export function useVirtualScroll<T>({
     visibleItems,
     shouldVirtualize,
     totalSize: shouldVirtualize ? virtualizer.getTotalSize() : 'auto',
+    measureElement: measureRef,
   };
 }
 
@@ -66,7 +71,7 @@ export function useVirtualInfiniteScroll<T>({
   loading: boolean;
   onLoadMore: () => void;
 }) {
-  const { parentRef, virtualizer, visibleItems, shouldVirtualize, totalSize } = 
+  const { parentRef, virtualizer, visibleItems, shouldVirtualize, totalSize, measureElement } = 
     useVirtualScroll({ items, ...virtualOptions });
 
   // Load more when scrolled near bottom
@@ -95,6 +100,7 @@ export function useVirtualInfiniteScroll<T>({
     shouldVirtualize,
     totalSize,
     loadMoreRef: enhancedLoadMoreRef,
+    measureElement,
   };
 }
 

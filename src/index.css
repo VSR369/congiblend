@@ -288,3 +288,9 @@
 #modal-portal-root > * {
   pointer-events: auto;
 }
+
+/* Virtualized feed overrides */
+.is-virtualized .linkedin-post-card {
+  content-visibility: visible !important;
+  contain-intrinsic-size: auto !important;
+}

@@ -50,7 +50,7 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
   // Smart size estimation based on post content
   const estimatePostSize = useMemo(() => (index: number) => {
     const post = posts[index];
-    if (!post) return 350; // fallback
+    if (!post) return 300; // fallback
     
     const isExpanded = expandedPosts.has(post.id);
     let height = 120; // base (header + actions + padding)
@@ -86,7 +86,7 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
       height += 40;
     }
     
-    return Math.max(height, 250);
+    return Math.max(height, 280);
   }, [posts, expandedPosts]);
 
   const {
@@ -95,6 +95,7 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
     visibleItems,
     shouldVirtualize,
     totalSize,
+    measureElement,
   } = useVirtualScroll({
     items: posts,
     estimateSize: estimatePostSize,
@@ -237,7 +238,7 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
       <div
         ref={parentRef}
         className={cn(
-          "h-screen overflow-auto",
+          "max-h-[calc(100vh-180px)] overflow-auto is-virtualized",
           showCreateModal ? "virtual-scroll-modal-open" : ""
         )}
         style={{
@@ -259,6 +260,7 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
             return (
               <div
                 key={post.id}
+                className="will-change-transform overflow-hidden"
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -268,9 +270,10 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
                   transform: `translateY(${virtualItem ? virtualItem.start : index * 350}px)`,
                 }}
               >
-                <div className="px-4 pb-4">
+                <div ref={measureElement as any} className="px-4 pb-4">
                   <PostCard 
                     post={post}
+                    virtualized
                   />
                 </div>
               </div>

@@ -22,9 +22,10 @@ import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 interface PostCardProps {
   post: Post;
   className?: string;
+  virtualized?: boolean;
 }
 
-export const PostCard = React.memo(({ post, className }: PostCardProps) => {
+export const PostCard = React.memo(({ post, className, virtualized = false }: PostCardProps) => {
   const { toggleSave, votePoll, rsvpEvent } = useFeedStore();
   const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
@@ -377,7 +378,7 @@ const isTempPost = post.id.startsWith('post-');
 
   return (
     <PostErrorBoundary>
-      <article className="linkedin-post-card [content-visibility:auto] [contain-intrinsic-size:600px]">
+      <article className={cn("linkedin-post-card", virtualized ? "" : "[content-visibility:auto] [contain-intrinsic-size:600px]", className)}>
         {/* Post Header */}
         <div className="flex items-start justify-between p-4">
           <div className="flex items-start space-x-3">
