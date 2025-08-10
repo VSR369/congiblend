@@ -517,7 +517,11 @@ export const useFeedStore = create<FeedState>((set, get) => {
         );
 
         set((state) => {
-          const merged = reset ? transformedPosts : [...state.posts, ...transformedPosts];
+          let merged = reset ? transformedPosts : [...state.posts, ...transformedPosts];
+          if (reset) {
+            // Purge any stale optimistic posts to avoid stuck "Publishing..." UI
+            merged = merged.filter(p => !String(p.id).startsWith('post-'));
+          }
           const unique = Array.from(new Map(merged.map(p => [p.id, p])).values());
           return {
             posts: unique,
@@ -834,7 +838,22 @@ export const useFeedStore = create<FeedState>((set, get) => {
         }
 
         console.log('Post created successfully:', newPost);
-        // Real post will replace optimistic one via real-time subscription
+        try {
+          // Fallback: immediately replace optimistic post with the real post
+          const transformed = transformDbPost(
+            { ...newPost, reactions: [] },
+            newPost.author,
+            user?.id
+          );
+          set(state => ({
+            posts: state.posts.map(p => p.id === optimisticPost.id ? transformed : p)
+          }));
+        } catch (e) {
+          console.warn('Fallback replacement failed, attempting ID swap only:', e);
+          set(state => ({
+            posts: state.posts.map(p => p.id === optimisticPost.id ? { ...p, id: newPost.id } : p)
+          }));
+        }
         
       } catch (error) {
         console.error('Error creating post:', error);
