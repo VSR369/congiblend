@@ -1068,6 +1068,13 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.access_token) throw new Error('User not authenticated');
 
+        // Guard against optimistic (temporary) IDs
+        const isUuid = /^[0-9a-fA-F-]{36}$/.test(postId);
+        if (!isUuid) {
+          console.warn('RSVP attempted on temporary post ID:', postId);
+          throw new Error('Post is still publishing. Please try again in a moment.');
+        }
+
         const prev = get().posts.find(p => p.id === postId)?.event?.userRSVP;
 
         const response = await fetch(`https://cmtehutbazgfjoksmkly.supabase.co/functions/v1/posts/posts/${postId}/rsvp`, {

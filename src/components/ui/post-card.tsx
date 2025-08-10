@@ -49,6 +49,24 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
     }
   }, [post.id, votePoll]);
 
+  const isTempPost = post.id.startsWith('post-');
+  const handleRSVP = React.useCallback(async () => {
+    if (isTempPost) {
+      toast({
+        title: 'Please wait',
+        description: 'Your post is still publishing. Try again in a moment.',
+      });
+      return;
+    }
+    try {
+      await rsvpEvent(post.id, 'attending');
+      toast({ title: 'RSVP updated' });
+    } catch (error) {
+      console.error('RSVP error:', error);
+      toast({ title: 'RSVP failed', description: 'Please try again.', variant: 'destructive' });
+    }
+  }, [isTempPost, post.id, rsvpEvent]);
+
   const totalReactions = post.reactions.length;
   const topReactions = React.useMemo(() => {
     const reactionCounts: Record<ReactionType, number> = {
@@ -239,11 +257,16 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
                     <div className="space-y-2">
                       {post.event_data.speakers.map((sp, idx) => (
                         <div key={idx} className="flex items-start gap-3">
-                          <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-                            {sp.photo_url ? (
-                              <img src={sp.photo_url} alt={`${sp.name} photo`} className="w-full h-full object-cover" loading="lazy" />
-                            ) : (
-                              <span className="text-xs font-medium">{(sp.name || 'S').slice(0,2).toUpperCase()}</span>
+                          <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center relative">
+                            <span className="text-xs font-medium">{(sp.name || 'S').slice(0,2).toUpperCase()}</span>
+                            {(((sp as any).photo_url) || ((sp as any).photoUrl)) && (
+                              <img 
+                                src={(sp as any).photo_url || (sp as any).photoUrl} 
+                                alt={`${sp.name || 'Speaker'} photo`} 
+                                className="w-full h-full object-cover absolute inset-0" 
+                                loading="lazy"
+                                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                              />
                             )}
                           </div>
                           <div className="flex-1">
@@ -268,9 +291,10 @@ export const PostCard = React.memo(({ post, className }: PostCardProps) => {
                 <Button
                   className="w-full"
                   variant="outline"
-                  onClick={() => rsvpEvent(post.id, 'attending')}
+                  onClick={handleRSVP}
+                  disabled={isTempPost}
                 >
-                  {post.event.userRSVP === 'attending' ? 'Going' : 'RSVP'}
+                  {post.event.userRSVP === 'attending' ? 'Going' : (isTempPost ? 'Publishing…' : 'RSVP')}
                 </Button>
               </div>
             )}
