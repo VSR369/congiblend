@@ -253,13 +253,13 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
           }}
         >
           {visibleItems.map((item) => {
-            const virtualItem = 'virtualItem' in item ? item.virtualItem as any : null;
+            const virtualItem = 'virtualItem' in item ? (item.virtualItem as any) : null;
             const post = item.item;
             const index = item.index;
             
             return (
               <div
-                key={post.id}
+                key={virtualItem ? virtualItem.key : post.id}
                 className="will-change-transform overflow-hidden"
                 style={{
                   position: 'absolute',
@@ -270,7 +270,11 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
                   transform: `translateY(${virtualItem ? virtualItem.start : index * 350}px)`,
                 }}
               >
-                <div ref={measureElement as any} className="px-4 pb-4">
+                <div
+                  ref={measureElement as any}
+                  data-index={index}
+                  className="px-4 pb-4"
+                >
                   <PostCard 
                     post={post}
                     virtualized

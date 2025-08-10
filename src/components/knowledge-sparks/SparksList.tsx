@@ -61,7 +61,7 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
     );
   }, [data, query]);
 
-  const { parentRef, visibleItems, shouldVirtualize, totalSize } =
+  const { parentRef, visibleItems, shouldVirtualize, totalSize, measureElement } =
     useVirtualScroll({ items: filtered, threshold: 30, estimateSize: () => 120, overscan: 8 });
 
   const qc = useQueryClient();
@@ -125,19 +125,29 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
           </div>
         ) : (
           shouldVirtualize ? (
-            <div style={{ height: typeof totalSize === 'number' ? `${totalSize}px` : totalSize, position: 'relative' }}>
-              {visibleItems.map(({ item, virtualItem }) => (
+            <div style={{ height: typeof totalSize === 'number' ? `${totalSize}px` : totalSize, position: 'relative', width: '100%' }}>
+              {visibleItems.map(({ item, virtualItem, index }) => (
                 <div
-                  key={item.id}
-                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${virtualItem?.start ?? 0}px)` }}
+                  key={virtualItem?.key ?? item.id}
+                  className="will-change-transform overflow-hidden"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: virtualItem ? `${virtualItem.size}px` : 'auto',
+                    transform: `translateY(${virtualItem?.start ?? 0}px)`,
+                  }}
                 >
-                  <SparkCard
-                    spark={item}
-                    selected={selectedId === item.id}
-                    onClick={() => onSelect(item)}
-                    showActions={false}
-                    className="h-full"
-                  />
+                  <div ref={measureElement as any} data-index={virtualItem?.index ?? index}>
+                    <SparkCard
+                      spark={item}
+                      selected={selectedId === item.id}
+                      onClick={() => onSelect(item)}
+                      showActions={false}
+                      className="h-full"
+                    />
+                  </div>
                 </div>
               ))}
             </div>

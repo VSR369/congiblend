@@ -28,6 +28,8 @@ export function useVirtualScroll<T>({
     overscan,
     // Provide a measurement function for dynamic heights
     measureElement: shouldVirtualize ? (el) => (el as HTMLElement).getBoundingClientRect().height : undefined,
+    // Stable keys prevent measurement mismatches when list order changes
+    getItemKey: (index) => (items[index] as any)?.id ?? index,
   });
 
   const virtualItems = shouldVirtualize ? virtualizer.getVirtualItems() : [];
