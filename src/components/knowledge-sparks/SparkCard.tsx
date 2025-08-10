@@ -32,11 +32,12 @@ interface SparkCardProps {
   onClick?: () => void;
   selected?: boolean;
   className?: string;
+  showActions?: boolean;
 }
 
-export const SparkCard: React.FC<SparkCardProps> = ({ spark, onClick, selected, className }) => {
-  const { isAuthor } = useIsSparkAuthor(spark.id);
-  const { canDelete } = useCanDeleteSpark(isAuthor ? spark.id : null);
+export const SparkCard: React.FC<SparkCardProps> = ({ spark, onClick, selected, className, showActions = true }) => {
+  const { isAuthor } = useIsSparkAuthor(showActions ? spark.id : null);
+  const { canDelete } = useCanDeleteSpark(isAuthor && showActions ? spark.id : null);
   const queryClient = useQueryClient();
 
   const handleDelete = async (e?: React.MouseEvent) => {

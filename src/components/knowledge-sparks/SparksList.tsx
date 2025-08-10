@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import SparkCard from "./SparkCard";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-
+import { useVirtualScroll } from "@/hooks/useVirtualScroll";
 type Spark = {
   id: string;
   title: string;
@@ -29,7 +29,7 @@ interface SparksListProps {
 export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, viewMode = "list" }) => {
   const [query, setQuery] = useState("");
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["knowledge-sparks", "list"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -44,6 +44,9 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
       }
       return data as Spark[] | null;
     },
+    staleTime: 1000 * 60 * 3,
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
   });
 
   const filtered = useMemo(() => {
@@ -58,6 +61,9 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
     );
   }, [data, query]);
 
+  const { parentRef, visibleItems, shouldVirtualize, totalSize } =
+    useVirtualScroll({ items: filtered, threshold: 30, estimateSize: () => 120, overscan: 8 });
+
   return (
     <div className="flex h-full flex-col">
       <div className="p-2">
@@ -67,7 +73,7 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
           placeholder="Search sparks by title, tag, or category..."
         />
       </div>
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto p-2" ref={viewMode === "list" ? (parentRef as any) : undefined}>
         {isError ? (
           <div className="p-4 text-sm text-destructive">Failed to load sparks. Please try again.</div>
         ) : isLoading ? (
@@ -94,21 +100,41 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
                   selected={selectedId === spark.id}
                   onClick={() => onSelect(spark)}
                   className="h-full"
+                  showActions={false}
                 />
               </div>
             ))}
           </div>
         ) : (
-          <div className="space-y-2">
-            {filtered.map((spark) => (
-              <SparkCard
-                key={spark.id}
-                spark={spark}
-                selected={selectedId === spark.id}
-                onClick={() => onSelect(spark)}
-              />
-            ))}
-          </div>
+          shouldVirtualize ? (
+            <div style={{ height: typeof totalSize === 'number' ? `${totalSize}px` : totalSize, position: 'relative' }}>
+              {visibleItems.map(({ item, virtualItem }) => (
+                <div
+                  key={item.id}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${virtualItem?.start ?? 0}px)` }}
+                >
+                  <SparkCard
+                    spark={item}
+                    selected={selectedId === item.id}
+                    onClick={() => onSelect(item)}
+                    showActions={false}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filtered.map((spark) => (
+                <SparkCard
+                  key={spark.id}
+                  spark={spark}
+                  selected={selectedId === spark.id}
+                  onClick={() => onSelect(spark)}
+                  showActions={false}
+                />
+              ))}
+            </div>
+          )
         )}
         {!isLoading && !isError && filtered.length === 0 ? (
           <div className="p-4 text-sm text-muted-foreground">No sparks found. Create one using the form above.</div>
