@@ -168,6 +168,47 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
             </div>
           </div>
         </div>
+
+        {(() => {
+          const raw = (eventInfo as any).speakers ?? (post as any).event?.speakers ?? [];
+          const speakers = Array.isArray(raw) ? raw.map((s: any) => ({
+            name: s.name || s.fullName || s.title || 'Speaker',
+            profile: s.profile || s.profile_url || s.link || undefined,
+            photo: s.photo_url || s.photoUrl || s.photo || s.avatar_url || undefined,
+            description: s.description || s.bio || s.role || s.position || undefined,
+          })) : [];
+          if (!speakers.length) return null;
+          return (
+            <div className="mt-3">
+              <h5 className="text-sm font-medium">Speakers</h5>
+              <div className="mt-2 space-y-2">
+                {speakers.map((sp, idx) => (
+                  <div key={idx} className="flex items-start gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={sp.photo} alt={`${sp.name} photo`} loading="lazy" />
+                      <AvatarFallback className="text-xs font-medium">
+                        {String(sp.name || 'S').slice(0,2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{sp.name}</span>
+                        {sp.profile && (
+                          <a href={sp.profile} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                            Profile
+                          </a>
+                        )}
+                      </div>
+                      {sp.description && (
+                        <p className="text-xs text-muted-foreground">{sp.description}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
   };
