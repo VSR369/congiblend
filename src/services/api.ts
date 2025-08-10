@@ -1,4 +1,6 @@
+
 import type { ApiResponse } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 class ApiClient {
   private baseURL: string;
@@ -11,15 +13,23 @@ class ApiClient {
     };
   }
 
+  // Retrieve the current Supabase access token for authenticated requests
+  private async getAccessToken(): Promise<string | null> {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token || null;
+
+    // Fallback to legacy custom token if present (avoids breaking existing flows)
+    const legacy = token ?? localStorage.getItem('auth-token') ?? null;
+    return legacy;
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
-    
-    // Get auth token from storage
-    const token = localStorage.getItem('auth-token');
-    
+    const token = await this.getAccessToken();
+
     const config: RequestInit = {
       ...options,
       headers: {
@@ -29,25 +39,24 @@ class ApiClient {
       },
     };
 
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+    console.debug('[api] →', options.method || 'GET', url, { hasAuth: Boolean(token) });
 
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('API request failed:', error);
-      throw error;
+    const response = await fetch(url, config);
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      console.error('[api] ✖', response.status, url, text);
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+
+    const data = await response.json();
+    console.debug('[api] ✓', url);
+    return data;
   }
 
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<ApiResponse<T>> {
     const queryString = params ? new URLSearchParams(params).toString() : '';
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
-    
     return this.request<T>(url, { method: 'GET' });
   }
 
@@ -84,22 +93,36 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     if (additionalData) {
       Object.keys(additionalData).forEach(key => {
-        formData.append(key, additionalData[key]);
+        formData.append(key, String(additionalData[key]));
       });
     }
 
-    const token = localStorage.getItem('auth-token');
-    
-    return fetch(`${this.baseURL}${endpoint}`, {
+    const token = await this.getAccessToken();
+    const url = `${this.baseURL}${endpoint}`;
+
+    console.debug('[api upload] → POST', url, { hasAuth: Boolean(token) });
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         ...(token && { Authorization: `Bearer ${token}` }),
+        // Do not set Content-Type for FormData; browser will set with boundary
       },
       body: formData,
-    }).then(response => response.json());
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      console.error('[api upload] ✖', response.status, url, text);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.debug('[api upload] ✓', url);
+    return data;
   }
 }
 
