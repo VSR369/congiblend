@@ -39,18 +39,26 @@ class ApiClient {
       },
     };
 
-    console.debug('[api] →', options.method || 'GET', url, { hasAuth: Boolean(token) });
+    if (import.meta.env.DEV) {
+      console.debug('[api] →', options.method || 'GET', url, { hasAuth: Boolean(token) });
+    }
 
-    const response = await fetch(url, config);
+    const start = performance.now();
+    const response = await fetch(url, { ...config, keepalive: true });
 
     if (!response.ok) {
       const text = await response.text().catch(() => '');
-      console.error('[api] ✖', response.status, url, text);
+      if (import.meta.env.DEV) {
+        console.error('[api] ✖', response.status, url, text);
+      }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
-    console.debug('[api] ✓', url);
+    if (import.meta.env.DEV) {
+      const ms = Math.round(performance.now() - start);
+      console.debug('[api] ✓', url, `${ms}ms`);
+    }
     return data;
   }
 
@@ -103,8 +111,11 @@ class ApiClient {
     const token = await this.getAccessToken();
     const url = `${this.baseURL}${endpoint}`;
 
-    console.debug('[api upload] → POST', url, { hasAuth: Boolean(token) });
+    if (import.meta.env.DEV) {
+      console.debug('[api upload] → POST', url, { hasAuth: Boolean(token) });
+    }
 
+    const start = performance.now();
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -112,16 +123,22 @@ class ApiClient {
         // Do not set Content-Type for FormData; browser will set with boundary
       },
       body: formData,
+      keepalive: true,
     });
 
     if (!response.ok) {
       const text = await response.text().catch(() => '');
-      console.error('[api upload] ✖', response.status, url, text);
+      if (import.meta.env.DEV) {
+        console.error('[api upload] ✖', response.status, url, text);
+      }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
-    console.debug('[api upload] ✓', url);
+    if (import.meta.env.DEV) {
+      const ms = Math.round(performance.now() - start);
+      console.debug('[api upload] ✓', url, `${ms}ms`);
+    }
     return data;
   }
 }
