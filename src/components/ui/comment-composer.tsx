@@ -129,7 +129,7 @@ export const CommentComposer: React.FC<CommentComposerProps> = ({
         </Avatar>
         
         <div className="flex-1 space-y-3">
-          <Popover open={open} onOpenChange={setOpen}>
+          <Popover open={open && mentionQuery.length > 0} onOpenChange={(next) => setOpen(next && mentionQuery.length > 0)}>
             <PopoverTrigger asChild>
               <Textarea
                 ref={textareaRef}
@@ -144,6 +144,7 @@ export const CommentComposer: React.FC<CommentComposerProps> = ({
                     handleSubmit();
                   }
                 }}
+                onBlur={() => setOpen(false)}
               />
             </PopoverTrigger>
             <PopoverContent align="start" className="p-0 w-80">
