@@ -144,10 +144,10 @@ export const CommentComposer: React.FC<CommentComposerProps> = ({
                     handleSubmit();
                   }
                 }}
-                onBlur={() => setOpen(false)}
+                
               />
             </PopoverTrigger>
-            <PopoverContent align="start" className="p-0 w-80">
+            <PopoverContent align="start" className="p-0 w-80" onOpenAutoFocus={(e) => e.preventDefault()}>
               <Command>
                 <CommandInput placeholder="Search users..." value={mentionQuery} onValueChange={setMentionQuery} />
                 <CommandList>

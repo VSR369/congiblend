@@ -144,9 +144,13 @@ export const useCommentsStore = create<CommentsStore>((set, get) => ({
       throw error;
     }
 
-    // reconcile temp id
-    const reconciledFlat = get().byPostId[postId].flat.map((c) => (c.id === tempId ? (data as any) : c));
-    set({ byPostId: { ...get().byPostId, [postId]: { ...get().byPostId[postId], flat: reconciledFlat, comments: buildThread(reconciledFlat) } } });
+    // reconcile temp id and preserve author
+    const stateAfterInsert = get().byPostId[postId];
+    const tempItem = stateAfterInsert.flat.find((c) => c.id === tempId);
+    const reconciledFlat = stateAfterInsert.flat.map((c) => (
+      c.id === tempId ? { ...(data as any), author: tempItem?.author || null } : c
+    ));
+    set({ byPostId: { ...get().byPostId, [postId]: { ...stateAfterInsert, flat: reconciledFlat, comments: buildThread(reconciledFlat) } } });
 
     // Parse and insert @mentions (support both UUIDs and @usernames)
     try {
@@ -206,15 +210,30 @@ export const useCommentsStore = create<CommentsStore>((set, get) => ({
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'comments', filter: `post_id=eq.${postId}` },
-        (payload) => {
+        async (payload) => {
           const current = get().byPostId[postId] || { comments: [], flat: [], loading: false };
           let flat = current.flat.slice();
-          if (payload.eventType === 'INSERT') {
-            flat = [...flat, payload.new as any];
-          } else if (payload.eventType === 'UPDATE') {
-            flat = flat.map((c) => (c.id === (payload.new as any).id ? (payload.new as any) : c));
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const row = payload.new as CommentRecord;
+            const exists = flat.find((c) => c.id === row.id);
+            let author = exists?.author || null;
+            if (!author) {
+              const map = await enrichAuthors([row]);
+              author = map[row.user_id] || null;
+            }
+            const updated = { ...(row as any), author } as Comment;
+            if (payload.eventType === 'INSERT') {
+              if (exists) {
+                flat = flat.map((c) => (c.id === row.id ? updated : c));
+              } else {
+                flat = [...flat, updated];
+              }
+            } else {
+              flat = flat.map((c) => (c.id === row.id ? updated : c));
+            }
           } else if (payload.eventType === 'DELETE') {
-            flat = flat.filter((c) => c.id !== (payload.old as any).id);
+            const row = payload.old as CommentRecord;
+            flat = flat.filter((c) => c.id !== row.id);
           }
           set({ byPostId: { ...get().byPostId, [postId]: { ...current, flat, comments: buildThread(flat) } } });
         }
