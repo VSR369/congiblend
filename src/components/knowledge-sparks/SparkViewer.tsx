@@ -23,6 +23,7 @@ import { persistSparkBookmarkToggle } from "@/services/sparkBookmarks";
 import { SparkContributors } from "@/components/knowledge-sparks/SparkContributors";
 import { SparkComments } from "@/components/knowledge-sparks/SparkComments";
 import { SparkAnalyticsMini } from "@/components/knowledge-sparks/SparkAnalyticsMini";
+import { SparkStatsRow } from "@/components/knowledge-sparks/SparkStatsRow";
 const RichTextEditor = React.lazy(() =>
   import("@/components/knowledge-sparks/RichTextEditor").then((m) => ({ default: m.RichTextEditor }))
 );
@@ -708,6 +709,9 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             Contribute
           </Button>
         </div>
+      </div>
+      <div className="mt-3 xl:hidden">
+        <SparkStatsRow sparkId={spark.id} />
       </div>
 
       {/* Mobile TOC */}
