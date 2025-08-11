@@ -131,6 +131,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       return list;
     },
     staleTime: 1000 * 30,
+    refetchInterval,
   });
 
   const [editing, setEditing] = useState(false);
