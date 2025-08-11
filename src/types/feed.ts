@@ -129,10 +129,12 @@ export interface Post {
   isPinned?: boolean;
   visibility: 'public' | 'connections' | 'private';
   userReaction?: ReactionType;
+  userLiked?: boolean;
   userSaved?: boolean;
   isSaved?: boolean;
   isOptimistic?: boolean;
 }
+
 
 export interface FeedSettings {
   showRecentFirst: boolean;

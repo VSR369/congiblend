@@ -8,24 +8,25 @@ import { ThumbsUp } from 'lucide-react';
 interface LikeButtonProps {
   targetId: string;
   targetType: 'post';
+  likesCount?: number;
+  userLiked?: boolean;
   currentReaction?: ReactionType | null;
   reactions?: Reaction[];
   className?: string;
-  // postId removed - comment reactions not implemented
 }
 
 export const LikeButton: React.FC<LikeButtonProps> = ({
   targetId,
   targetType,
+  likesCount = 0,
+  userLiked = false,
   currentReaction,
   reactions = [],
   className
 }) => {
   const [showPicker, setShowPicker] = useState(false);
-  const [simpleLikeDisplay, setSimpleLikeDisplay] = useState(false);
-  const [showReactionDetails, setShowReactionDetails] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout>();
-  const { toggleReaction } = useFeedStore();
+  const { toggleReaction, toggleLike } = useFeedStore();
 
   // Calculate reaction counts from reactions array
   const reactionCounts = getReactionCounts(reactions);
@@ -59,32 +60,15 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
   };
 
   const handleClick = async () => {
-    // LinkedIn behavior: click toggles between Like and no reaction
-    const reactionToToggle = currentReaction === 'innovative' ? null : 'innovative';
-    await toggleReaction(targetId, reactionToToggle);
-    // UI-only: when setting default reaction via click, keep displaying 'Like' and hide detail pill
-    if (reactionToToggle === 'innovative') {
-      setSimpleLikeDisplay(true);
-      setShowReactionDetails(false);
-    } else {
-      setSimpleLikeDisplay(false);
-      setShowReactionDetails(false);
-    }
+    await toggleLike(targetId);
   };
 
   const handleReactionSelect = async (reactionType: ReactionType) => {
     setShowPicker(false);
-    // Selecting from picker should keep Like visible and show reaction detail pill
-    setSimpleLikeDisplay(true);
-    setShowReactionDetails(true);
     await toggleReaction(targetId, reactionType);
   };
 
-  // Determine button appearance based on current reaction
-  const currentConfig = currentReaction ? REACTION_CONFIG[currentReaction] : REACTION_CONFIG.innovative;
-  const isActive = !!currentReaction;
-  const DetailIcon = currentReaction && currentReaction !== 'innovative' ? REACTION_CONFIG[currentReaction].icon : null;
-  const detailLabel = currentReaction && currentReaction !== 'innovative' ? REACTION_CONFIG[currentReaction].label : null;
+  const isLiked = !!userLiked;
 
   return (
     <div 
@@ -95,39 +79,44 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
       <button
         type="button"
         onClick={handleClick}
-        aria-pressed={isActive}
-        aria-label={(isActive && simpleLikeDisplay) ? 'Like' : (isActive ? currentConfig.label : 'Like')}
+        aria-pressed={isLiked}
+        aria-label={isLiked ? 'Unlike' : 'Like'}
         className={cn(
           "flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200",
           "hover:bg-muted",
-          isActive 
-            ? `${currentConfig.color} font-medium`
+          isLiked 
+            ? "text-primary font-medium"
             : "text-muted-foreground hover:text-foreground",
           className
         )}
       >
-        {isActive && simpleLikeDisplay ? (
-          <ThumbsUp className="h-5 w-5" />
-        ) : isActive ? (
-          <currentConfig.icon className="h-5 w-5" />
-        ) : (
-          <ThumbsUp className="h-5 w-5" />
-        )}
+        <ThumbsUp className="h-5 w-5" />
         <span className="text-sm">
-          {(isActive && simpleLikeDisplay) ? 'Like' : (isActive ? currentConfig.label : 'Like')}
-          {totalReactions > 0 && (
+          Like
+          {likesCount > 0 && (
             <span className="ml-1 text-xs opacity-70">
-              {totalReactions}
+              {likesCount}
             </span>
           )}
         </span>
       </button>
 
-      {showReactionDetails && DetailIcon && detailLabel && (
-        <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-1 text-xs text-muted-foreground">
-          <DetailIcon className="h-3.5 w-3.5" />
-          <span>{detailLabel}</span>
-        </span>
+      {/* Reaction counts displayed separately */}
+      {(reactionCounts.innovative || reactionCounts.practical || reactionCounts.well_researched) && (
+        <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+          {(['innovative','practical','well_researched'] as ReactionType[]).map((t) => {
+            const count = (reactionCounts as any)[t] || 0;
+            if (!count) return null;
+            const Cfg = REACTION_CONFIG[t];
+            const Icon = Cfg.icon;
+            return (
+              <span key={t} className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-0.5">
+                <Icon className="h-3.5 w-3.5" />
+                <span>{count}</span>
+              </span>
+            );
+          })}
+        </div>
       )}
 
       {/* PHASE 1: Pure CSS animation for picker */}

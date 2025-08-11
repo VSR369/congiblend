@@ -31,6 +31,7 @@ interface FeedState {
   deletePost: (postId: string) => void;
   
   // Engagement actions
+  toggleLike: (postId: string) => Promise<void>;
   toggleReaction: (postId: string, reaction: ReactionType | null) => Promise<void>;
   // Comment functions removed - comments functionality not implemented
   toggleSave: (postId: string) => void;
@@ -339,6 +340,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
             poll_data,
             event_data,
             reactions_count,
+            likes_count,
             shares_count,
             created_at,
             updated_at,
@@ -484,6 +486,16 @@ export const useFeedStore = create<FeedState>((set, get) => {
             (reactionsByPost[pid] ||= []).push(r);
           });
         }
+        // Likes set for current user
+        let likedSet = new Set<string>();
+        if (postIds.length > 0 && user?.id) {
+          const { data: userLikes } = await supabase
+            .from('post_likes')
+            .select('post_id')
+            .eq('user_id', user.id)
+            .in('post_id', postIds);
+          (userLikes || []).forEach((l: any) => likedSet.add(l.post_id));
+        }
 
         // Votes by post for poll posts (single query)
         const pollPostIds = (postsData || [])
@@ -540,20 +552,20 @@ export const useFeedStore = create<FeedState>((set, get) => {
           return transformDbPost(postWithData, dbPost.profiles, user?.id);
         });
 
-        // NEW: mark saved posts for current user
+        // NEW: annotate saved and liked states for current user
         let annotatedPosts = transformedPosts;
         try {
           const postIds = (transformedPosts || []).map(p => p.id).filter(Boolean);
           const savedSet = await fetchSavedPostIds(postIds);
-          if (savedSet.size > 0) {
-            annotatedPosts = transformedPosts.map(p => ({
-              ...p,
-              isSaved: savedSet.has(p.id),
-              userSaved: savedSet.has(p.id),
-            }));
-          }
+          annotatedPosts = transformedPosts.map(p => ({
+            ...p,
+            isSaved: savedSet.has(p.id) || p.isSaved,
+            userSaved: savedSet.has(p.id) || p.userSaved,
+            userLiked: (typeof (p as any).userLiked === 'boolean' ? (p as any).userLiked : undefined) ?? (typeof p.userLiked === 'boolean' ? p.userLiked : undefined) ?? likedSet.has(p.id),
+          }));
         } catch (e) {
-          console.warn('Failed to annotate saved posts:', e);
+          console.warn('Failed to annotate saved/liked posts:', e);
+          annotatedPosts = transformedPosts.map(p => ({ ...p, userLiked: likedSet.has(p.id) }));
         }
 
         set((state) => {
@@ -924,6 +936,69 @@ export const useFeedStore = create<FeedState>((set, get) => {
       }
     },
 
+    toggleLike: async (postId: string) => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        const state = get();
+        const post = state.posts.find(p => p.id === postId);
+        if (!post) throw new Error('Post not found');
+
+        const wasLiked = Boolean(post.userLiked);
+        // Optimistic update
+        set(s => ({
+          posts: s.posts.map(p => {
+            if (p.id !== postId) return p;
+            const nextLiked = !wasLiked;
+            const nextLikes = typeof p.likes === 'number'
+              ? (nextLiked ? p.likes + 1 : Math.max(0, p.likes - 1))
+              : p.likes;
+            return { ...p, userLiked: nextLiked, likes: nextLikes };
+          })
+        }));
+
+        // Toggle in DB
+        const { data: existing } = await supabase
+          .from('post_likes')
+          .select('id')
+          .eq('post_id', postId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (existing?.id) {
+          const { error: delErr } = await supabase.from('post_likes').delete().eq('id', existing.id);
+          if (delErr) throw delErr;
+        } else {
+          const { error: insErr } = await supabase.from('post_likes').insert({ post_id: postId, user_id: user.id });
+          if (insErr) throw insErr;
+        }
+
+        // Reconcile with server count
+        const { data: refreshed } = await supabase
+          .from('posts')
+          .select('likes_count')
+          .eq('id', postId)
+          .maybeSingle();
+
+        if (refreshed?.likes_count !== undefined) {
+          set(s => ({
+            posts: s.posts.map(p => p.id === postId ? { ...p, likes: refreshed.likes_count } : p)
+          }));
+        }
+      } catch (error) {
+        console.error('Error toggling like:', error);
+        // Roll back optimistic update
+        set(s => ({
+          posts: s.posts.map(p => {
+            if (p.id !== postId) return p;
+            return { ...p, userLiked: !p.userLiked, likes: typeof p.likes === 'number' ? Math.max(0, p.likes + (p.userLiked ? -1 : 1)) : p.likes };
+          })
+        }));
+        throw error;
+      }
+    },
+
     toggleReaction: async (postId: string, reaction: ReactionType | null) => {
       console.log('Toggling reaction:', { postId, reaction });
       
@@ -979,18 +1054,8 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
         if (error) throw error;
 
-        // Update with real data from backend if available
         if (data) {
-          set(state => ({
-            posts: state.posts.map(p => {
-              if (p.id !== postId) return p;
-              return {
-                ...p,
-                // Update reactions count if returned from backend
-                likes: data.reactions_count || p.likes
-              };
-            })
-          }));
+          // Reaction persisted; state already optimistically updated.
         }
 
       } catch (error) {
