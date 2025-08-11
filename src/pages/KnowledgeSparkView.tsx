@@ -14,6 +14,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
+import { Badge } from "@/components/ui/badge";
 
 const setMetaTag = (name: string, content: string) => {
   let tag = document.querySelector(`meta[name="${name}"]`);
@@ -40,6 +41,7 @@ interface Spark {
   title: string;
   slug: string;
   description?: string | null;
+  status?: string | null;
 }
 
 const KnowledgeSparkViewPage: React.FC = () => {
@@ -51,7 +53,7 @@ const KnowledgeSparkViewPage: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("knowledge_sparks")
-        .select("id,title,slug,description")
+        .select("id,title,slug,description,status")
         .eq("slug", slug)
         .eq("is_active", true)
         .maybeSingle();
@@ -141,7 +143,12 @@ const KnowledgeSparkViewPage: React.FC = () => {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <h1 className="text-2xl font-bold">{spark.title}</h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          {spark.title}
+          {spark.status === 'collaborative' ? (
+            <Badge variant="secondary" aria-label="Collaborative spark">Collaborative</Badge>
+          ) : null}
+        </h1>
         {spark.description ? (
           <p className="text-sm text-muted-foreground">{spark.description}</p>
         ) : null}

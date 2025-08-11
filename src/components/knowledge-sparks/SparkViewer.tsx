@@ -132,6 +132,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [compareVersion, setCompareVersion] = useState<any | null>(null);
   const [viewVersion, setViewVersion] = useState<any | null>(null);
+  const [baseVersionNumber, setBaseVersionNumber] = useState<number | null>(null);
 
   const contentRef = React.useRef<HTMLDivElement>(null);
 
@@ -205,6 +206,13 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       setEditMode("append");
     }
   }, [isAuthor, editMode]);
+
+  // Capture base version when editing starts
+  useEffect(() => {
+    if (editing) {
+      setBaseVersionNumber(latestVersion?.version_number ?? null);
+    }
+  }, [editing, latestVersion?.version_number]);
 
   const cleanHtml = (html: string) => {
     if (!html) return "";
@@ -321,6 +329,24 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       }
     }
 
+    // Conflict check: fetch latest version just before submit
+    let currentLatest: number | null = latestVersion?.version_number ?? null;
+    try {
+      const { data: latestNow } = await supabase
+        .from("spark_content_versions")
+        .select("version_number")
+        .eq("spark_id", spark.id)
+        .order("version_number", { ascending: false })
+        .limit(1);
+      currentLatest = (latestNow && latestNow[0]?.version_number) ?? currentLatest;
+    } catch {}
+
+    if (baseVersionNumber != null && currentLatest != null && currentLatest !== baseVersionNumber) {
+      const proceed = confirm(`A newer version (v${currentLatest}) was published while you were editing. Continue anyway?`);
+      if (!proceed) return;
+    }
+    const effectiveNext = ((currentLatest ?? (latestVersion?.version_number ?? 0)) + 1);
+
     const finalHtml = computeMergedHtml(editMode, baseHtml, newSectionHtml, selectedHeadingId);
     const finalPlain = htmlToPlainText(finalHtml).trim();
 
@@ -329,7 +355,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
 
     const { error } = await supabase.from("spark_content_versions").insert({
       spark_id: spark.id,
-      version_number: nextVersionNumber,
+      version_number: effectiveNext,
       content: { blocks: [] },
       content_html: finalHtml || null,
       content_plain: finalPlain,
@@ -360,7 +386,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             contentHtml: newSectionHtml,
             contentPlain: newSectionPlain,
             summary,
-            versionNumber: nextVersionNumber,
+            versionNumber: effectiveNext,
           });
         } catch (e) {
           console.debug("record_section_edit error:", e);
