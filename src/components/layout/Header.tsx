@@ -18,6 +18,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { APP_CONFIG } from '@/utils/constants';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
+import { supabase } from '@/integrations/supabase/client';
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -45,6 +46,42 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false }: Head
   const { user, isAuthenticated, signOut } = useAuthStore();
   const { unreadCount } = useNotificationStore();
   const { markAllAsRead } = useRealtimeNotifications();
+
+  // Notifications dropdown state and data
+  type NotificationRow = {
+    id: string;
+    type: string | null;
+    payload: any;
+    read: boolean;
+    created_at: string;
+  };
+  const [notifOpen, setNotifOpen] = React.useState(false);
+  const [loadingNotifs, setLoadingNotifs] = React.useState(false);
+  const [notifications, setNotifications] = React.useState<NotificationRow[]>([]);
+
+  const fetchNotifications = React.useCallback(async () => {
+    if (!user) return;
+    setLoadingNotifs(true);
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('id,type,payload,read,created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    if (!error) setNotifications(data as NotificationRow[]);
+    setLoadingNotifs(false);
+  }, [user]);
+
+  React.useEffect(() => {
+    if (notifOpen && isAuthenticated) {
+      fetchNotifications();
+    }
+  }, [notifOpen, isAuthenticated, fetchNotifications]);
+
+  const handleMarkOneAsRead = React.useCallback(async (id: string) => {
+    await supabase.from('notifications').update({ read: true }).eq('id', id);
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  }, []);
 
   const handleSearch = React.useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -129,7 +166,7 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false }: Head
           </Button>
 
           {/* Notifications */}
-          <DropdownMenu>
+          <DropdownMenu open={notifOpen} onOpenChange={setNotifOpen}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="relative h-12 w-12 rounded-xl hover-glow transition-all duration-300 glass-card border-0">
                 <Bell className="h-5 w-5" />
@@ -146,19 +183,54 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false }: Head
             <DropdownMenuContent align="end" className="w-80 glass-card border-glass-border">
               <DropdownMenuLabel className="text-lg font-semibold">Notifications</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {unreadCount === 0 ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No new notifications</p>
+              <div className="p-3 space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span>{unreadCount} unread</span>
+                  <Button size="sm" variant="secondary" onClick={markAllAsRead}>Mark all as read</Button>
                 </div>
-              ) : (
-                <div className="p-3 space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>You have {unreadCount} unread</span>
-                    <Button size="sm" variant="secondary" onClick={markAllAsRead}>Mark all as read</Button>
+                {loadingNotifs ? (
+                  <div className="space-y-2">
+                    <div className="h-4 w-5/6 rounded-md bg-muted/50" />
+                    <div className="h-4 w-4/6 rounded-md bg-muted/50" />
+                    <div className="h-4 w-3/6 rounded-md bg-muted/50" />
                   </div>
-                </div>
-              )}
+                ) : notifications.length === 0 ? (
+                  <div className="py-6 text-center text-muted-foreground">No notifications yet</div>
+                ) : (
+                  <ul className="space-y-2 max-h-80 overflow-auto pr-1">
+                    {notifications.map((n) => {
+                      const link = (n as any)?.payload?.link as string | undefined;
+                      const excerpt = (n as any)?.payload?.excerpt as string | undefined;
+                      const version = (n as any)?.payload?.version_number as number | undefined;
+                      const label = n.type === 'mention'
+                        ? 'You were mentioned'
+                        : n.type === 'spark_edit'
+                          ? `Spark updated${version ? ` to v${version}` : ''}`
+                          : (n.type || 'Notification');
+                      return (
+                        <li key={n.id}>
+                          <button
+                            onClick={async () => {
+                              await handleMarkOneAsRead(n.id);
+                              if (link) window.location.href = link;
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded-md transition-colors ${n.read ? 'bg-transparent hover:bg-muted/30' : 'bg-primary/10 hover:bg-primary/20'}`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-medium">{label}</span>
+                              {!n.read && <Badge variant="secondary" className="text-[10px]">New</Badge>}
+                            </div>
+                            {excerpt && (
+                              <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{excerpt}</p>
+                            )}
+                            <p className="mt-1 text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleString()}</p>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
 
