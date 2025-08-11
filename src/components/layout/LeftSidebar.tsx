@@ -30,6 +30,8 @@ export const LeftSidebar = () => {
           >
             <Link 
               to={item.url}
+              onMouseEnter={() => { if (item.url === '/knowledge-sparks') import("../../pages/KnowledgeSparks"); }}
+              onFocus={() => { if (item.url === '/knowledge-sparks') import("../../pages/KnowledgeSparks"); }}
               className={`
                 flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 
                 ${((item.activeMatch ?? item.url) === '/' 

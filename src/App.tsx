@@ -30,16 +30,40 @@ const ArticleView = lazy(() => import("./pages/ArticleView"));
 const queryClient = new QueryClient();
 
 // Loading component for Suspense
-const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-  </div>
-);
-
+const PageLoader: React.FC = () => {
+  const [showHint, setShowHint] = React.useState(false);
+  React.useEffect(() => {
+    const t = window.setTimeout(() => setShowHint(true), 6000);
+    return () => window.clearTimeout(t);
+  }, []);
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" aria-label="Loading" />
+        {showHint && (
+          <div className="text-xs text-muted-foreground">
+            Still loading… <button onClick={() => window.location.reload()} className="underline">Reload</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 // App content component that uses context
 const AppContent = () => {
   // Minimal performance monitoring for development only
   useSimplePerformance(process.env.NODE_ENV === 'development');
+
+  // Warm up critical routes to avoid long Suspense hangs on first navigation
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      Promise.allSettled([
+        import("./pages/KnowledgeSparks"),
+        import("./pages/KnowledgeSparkView"),
+      ]);
+    }, 800);
+    return () => window.clearTimeout(id);
+  }, []);
 
   return (
     <TooltipProvider>

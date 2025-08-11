@@ -286,7 +286,12 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false }: Head
                    </Link>
                  </DropdownMenuItem>
                   <DropdownMenuItem asChild className="p-3">
-                    <Link to="/knowledge-sparks" className="flex items-center">
+                    <Link
+                      to="/knowledge-sparks"
+                      className="flex items-center"
+                      onMouseEnter={() => { import("../../pages/KnowledgeSparks"); }}
+                      onFocus={() => { import("../../pages/KnowledgeSparks"); }}
+                    >
                       <Lightbulb className="mr-3 h-5 w-5" />
                       Knowledge Sparks
                     </Link>
