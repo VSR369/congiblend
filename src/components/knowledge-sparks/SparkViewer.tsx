@@ -34,6 +34,8 @@ type Spark = {
   title: string;
   slug: string;
   description?: string | null;
+  is_archived?: boolean | null;
+  archived_at?: string | null;
 };
 
 interface SparkViewerProps {
@@ -699,7 +701,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             <Button
               size="sm"
               variant="secondary"
-              disabled={isLoading}
+              disabled={isLoading || !!spark.is_archived}
               onClick={() => {
                 setEditing(true);
                 setEditMode("replace");
@@ -710,11 +712,17 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               Edit full content
             </Button>
           )}
-          <Button size="sm" variant={editing ? "secondary" : "default"} onClick={() => setEditing(true)}>
+          <Button size="sm" variant={editing ? "secondary" : "default"} disabled={!!spark.is_archived} onClick={() => setEditing(true)}>
             Contribute
           </Button>
         </div>
       </div>
+      {spark.is_archived && (
+        <div className="mt-3 rounded-md border border-border bg-muted p-3 text-sm flex items-center gap-2" role="status" aria-live="polite">
+          <Lock className="h-4 w-4" aria-hidden="true" />
+          <span>This spark is archived. New edits and contributions are disabled.</span>
+        </div>
+      )}
       <div className="mt-3 xl:hidden flex items-center justify-between">
         <SparkStatsRow sparkId={spark.id} />
         <SparkContributorsStrip sparkId={spark.id} />
@@ -730,8 +738,11 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             <div className="mt-2 rounded-md border border-border bg-muted/30 p-2">
               <SparkTOC
                 headings={tocHeadings}
-                canContribute={isAuthenticated}
-                onEditHere={(id) => { setSelectedHeadingId(id); setEditMode("modify-section"); setEditing(true); setShowPreview(false); setShowMobileTOC(false); }}
+                canContribute={isAuthenticated && !spark.is_archived}
+                onEditHere={(id) => { 
+                  if (spark.is_archived) { toast.error("This spark is archived and cannot be edited."); return; }
+                  setSelectedHeadingId(id); setEditMode("modify-section"); setEditing(true); setShowPreview(false); setShowMobileTOC(false); 
+                }}
                 sections={sections}
                 currentUserId={user?.id}
                 onDeleteSection={(id, text) => requestDeleteSection(id, text)}
@@ -744,7 +755,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       {!isAuthenticated && (
         <div className="mt-4 p-3 rounded-lg bg-muted text-sm flex items-center justify-between">
           <span>Sign in to contribute to Knowledge Sparks.</span>
-          <Button asChild size="sm" variant="secondary">
+          <Button asChild size="sm" variant="secondary" disabled={!!spark.is_archived}>
             <Link to="/login">Sign in</Link>
           </Button>
         </div>
@@ -1027,8 +1038,8 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
           <aside className="hidden xl:block sticky top-20 self-start">
             <SparkTOC
               headings={tocHeadings}
-              canContribute={isAuthenticated}
-              onEditHere={(id) => { setSelectedHeadingId(id); setEditMode("modify-section"); setEditing(true); setShowPreview(false); }}
+              canContribute={isAuthenticated && !spark.is_archived}
+              onEditHere={(id) => { if (spark.is_archived) { toast.error("This spark is archived and cannot be edited."); return; } setSelectedHeadingId(id); setEditMode("modify-section"); setEditing(true); setShowPreview(false); }}
               sections={sections}
               currentUserId={user?.id}
               onDeleteSection={(id, text) => requestDeleteSection(id, text)}

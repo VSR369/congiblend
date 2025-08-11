@@ -45,6 +45,8 @@ interface Spark {
   slug: string;
   description?: string | null;
   status?: string | null;
+  is_archived?: boolean | null;
+  archived_at?: string | null;
 }
 
 const KnowledgeSparkViewPage: React.FC = () => {
@@ -56,7 +58,7 @@ const KnowledgeSparkViewPage: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("knowledge_sparks")
-        .select("id,title,slug,description,status")
+        .select("id,title,slug,description,status,is_archived,archived_at")
         .eq("slug", slug)
         .eq("is_active", true)
         .maybeSingle();
