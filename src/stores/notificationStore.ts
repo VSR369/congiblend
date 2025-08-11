@@ -7,6 +7,8 @@ interface NotificationState {
   removeNotification: (id: string) => void;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
+  setUnreadCount: (count: number) => void;
+  incrementUnread: (delta?: number) => void;
   clearAll: () => void;
   unreadCount: number;
 }
@@ -70,6 +72,14 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       notifications: state.notifications.map(n => ({ ...n, read: true })),
       unreadCount: 0,
     }));
+  },
+
+  setUnreadCount: (count) => {
+    set({ unreadCount: Math.max(0, count) });
+  },
+
+  incrementUnread: (delta = 1) => {
+    set((state) => ({ unreadCount: Math.max(0, state.unreadCount + delta) }));
   },
 
   clearAll: () => {

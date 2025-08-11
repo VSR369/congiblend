@@ -17,6 +17,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { APP_CONFIG } from '@/utils/constants';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -43,6 +44,7 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false }: Head
   const { theme, toggleTheme } = useThemeStore();
   const { user, isAuthenticated, signOut } = useAuthStore();
   const { unreadCount } = useNotificationStore();
+  useRealtimeNotifications();
 
   const handleSearch = React.useCallback((e: React.FormEvent) => {
     e.preventDefault();
