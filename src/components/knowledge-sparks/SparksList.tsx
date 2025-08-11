@@ -39,6 +39,7 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
         .from("knowledge_sparks")
         .select("id,title,slug,description,category,tags,view_count,contributor_count,total_edits,updated_at,is_featured")
         .eq("is_active", true)
+        .eq("is_archived", false)
         .order("updated_at", { ascending: false })
         .limit(50);
       if (error) {

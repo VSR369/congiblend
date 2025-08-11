@@ -6,6 +6,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LayoutGrid, List as ListIcon } from "lucide-react";
 import SparksList from "@/components/knowledge-sparks/SparksList";
 import { Switch } from "@/components/ui/switch";
+import { FeedErrorBoundary } from "@/components/ui/feed-error-boundary";
 
 const setMetaTag = (name: string, content: string) => {
   let tag = document.querySelector(`meta[name="${name}"]`);
@@ -78,41 +79,43 @@ const KnowledgeSparksBrowsePage: React.FC = () => {
 
 
   return (
-    <main className="w-full max-w-screen-2xl mx-auto px-4 py-6">
-      <header className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Knowledge Sparks</h1>
-          <p className="text-sm text-muted-foreground">Browse and search sparks. Click a card to read and contribute.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as any)} aria-label="View mode">
-              <ToggleGroupItem value="card" aria-label="Card view" title="Card view">
-                <LayoutGrid className="h-4 w-4" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="list" aria-label="List view" title="List view">
-                <ListIcon className="h-4 w-4" />
-              </ToggleGroupItem>
-            </ToggleGroup>
+    <FeedErrorBoundary>
+      <main className="w-full max-w-screen-2xl mx-auto px-4 py-6">
+        <header className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Knowledge Sparks</h1>
+            <p className="text-sm text-muted-foreground">Browse and search sparks. Click a card to read and contribute.</p>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-muted-foreground" htmlFor="saved-only">Saved only</label>
-            <Switch id="saved-only" checked={savedOnly} onCheckedChange={setSavedOnly} aria-label="Show saved sparks only" />
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as any)} aria-label="View mode">
+                <ToggleGroupItem value="card" aria-label="Card view" title="Card view">
+                  <LayoutGrid className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="list" aria-label="List view" title="List view">
+                  <ListIcon className="h-4 w-4" />
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-muted-foreground" htmlFor="saved-only">Saved only</label>
+              <Switch id="saved-only" checked={savedOnly} onCheckedChange={setSavedOnly} aria-label="Show saved sparks only" />
+            </div>
+            <Button asChild>
+              <Link to="/knowledge-sparks/new">Create Spark</Link>
+            </Button>
           </div>
-          <Button asChild>
-            <Link to="/knowledge-sparks/new">Create Spark</Link>
-          </Button>
-        </div>
-      </header>
-      {showWatchdog && (
-        <div className="mb-4 text-xs text-muted-foreground flex items-center gap-2">
-          Having trouble loading? <button className="underline" onClick={() => window.location.reload()}>Reload</button>
-        </div>
-      )}
-      <section aria-label="Sparks list">
-        <SparksList viewMode={viewMode} onSelect={(spark) => navigate(`/knowledge-sparks/${spark.slug}`)} selectedId={null} savedOnly={savedOnly} />
-      </section>
-    </main>
+        </header>
+        {showWatchdog && (
+          <div className="mb-4 text-xs text-muted-foreground flex items-center gap-2">
+            Having trouble loading? <button className="underline" onClick={() => window.location.reload()}>Reload</button>
+          </div>
+        )}
+        <section aria-label="Sparks list">
+          <SparksList viewMode={viewMode} onSelect={(spark) => navigate(`/knowledge-sparks/${spark.slug}`)} selectedId={null} savedOnly={savedOnly} />
+        </section>
+      </main>
+    </FeedErrorBoundary>
   );
 };
 
