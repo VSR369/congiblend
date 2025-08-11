@@ -14,7 +14,7 @@ const navigationItems = [
 export const LeftSidebar = () => {
   const location = useLocation();
   return (
-    <div className="w-80 h-screen overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-background to-muted/30">
+    <div className="w-full sm:w-80 h-screen overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-background to-muted/30">
       {/* User Stats Card */}
       <div className="animate-fade-in">
         <UserStatsCard />

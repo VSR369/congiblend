@@ -115,7 +115,7 @@ export const RightSidebar = () => {
   }, []);
 
   return (
-    <div className="w-80 h-screen overflow-y-auto p-4 space-y-6">
+    <div className="w-full sm:w-80 h-screen overflow-y-auto p-4 space-y-6">
       {/* Top Articles */}
       <div className="glass-card p-4 rounded-xl border border-white/10 animate-fade-in">
         <div className="flex items-center justify-between mb-3">

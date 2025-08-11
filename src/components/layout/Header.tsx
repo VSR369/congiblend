@@ -103,9 +103,9 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false, onDisc
   }, [signOut]);
 
   return (
-    <header className="sticky top-0 z-50 w-full glass border-b border-glass-border animate-slide-down">
+    <header className="sticky top-0 z-50 w-full glass border-b border-glass-border animate-slide-down pt-safe px-safe">
       
-      <div className="container flex h-20 items-center justify-between">
+      <div className="container flex items-center justify-between h-14 md:h-20 gap-2">
         {/* Left Section */}
         <div className="flex items-center space-x-4">
           {showMenuButton && (
@@ -129,7 +129,7 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false, onDisc
             </span>
           </Link>
 
-          <Button asChild variant="secondary" size="sm" className="h-10 rounded-xl">
+          <Button asChild variant="secondary" size="sm" className="hidden md:inline-flex h-10 md:h-12 rounded-xl"> 
             <Link to="/" aria-label="Back Home" className="flex items-center gap-2">
               <Home className="h-4 w-4" />
               <span>Back Home</span>
@@ -138,7 +138,7 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false, onDisc
         </div>
 
         {/* Center Section - Enhanced Search */}
-        <div className="flex-1 min-w-0 max-w-lg mx-6">
+        <div className="flex-1 min-w-0 max-w-[56vw] sm:max-w-lg mx-2 sm:mx-6">
           <form onSubmit={handleSearch} className="relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
@@ -146,20 +146,20 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false, onDisc
               placeholder="Search posts, people, topics..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 pr-4 h-12 w-full glass-card border-0 text-lg placeholder:text-muted-foreground/70 focus:shadow-glow transition-all duration-300"
+              className="pl-12 pr-4 h-10 md:h-12 w-full glass-card border-0 text-sm md:text-base placeholder:text-muted-foreground/70 focus:shadow-glow transition-all duration-300"
             />
           </form>
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 md:space-x-3">
           {/* Discover (mobile) */}
           {showDiscoverButton && (
             <Button
               variant="ghost"
               size="sm"
               onClick={onDiscoverToggle}
-              className="md:hidden h-12 w-12 rounded-xl hover-glow transition-all duration-300 glass-card border-0"
+              className="md:hidden h-10 w-10 md:h-12 md:w-12 rounded-xl hover-glow transition-all duration-300 glass-card border-0"
               aria-label="Open Discover"
             >
               <Sparkles className="h-5 w-5" />
@@ -171,7 +171,7 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false, onDisc
             variant="ghost"
             size="sm"
             onClick={handleThemeToggle}
-            className="h-12 w-12 rounded-xl hover-glow transition-all duration-300 glass-card border-0"
+            className="h-10 w-10 md:h-12 md:w-12 rounded-xl hover-glow transition-all duration-300 glass-card border-0"
           >
             {theme === 'light' ? (
               <Moon className="h-5 w-5" />
@@ -183,7 +183,7 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false, onDisc
           {/* Notifications */}
           <DropdownMenu open={notifOpen} onOpenChange={setNotifOpen}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="relative h-12 w-12 rounded-xl hover-glow transition-all duration-300 glass-card border-0">
+              <Button variant="ghost" size="sm" className="relative h-10 w-10 md:h-12 md:w-12 rounded-xl hover-glow transition-all duration-300 glass-card border-0">
                 <Bell className="h-5 w-5" />
                 {unreadCount > 0 && (
                   <Badge
@@ -253,7 +253,7 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false, onDisc
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-12 w-12 rounded-xl hover-glow transition-all duration-300 glass-card border-0 p-0">
+                <Button variant="ghost" size="sm" className="h-10 w-10 md:h-12 md:w-12 rounded-xl hover-glow transition-all duration-300 glass-card border-0 p-0">
                    {user.user_metadata?.avatar_url ? (
                      <img
                        src={user.user_metadata.avatar_url}
@@ -319,10 +319,10 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false, onDisc
             </DropdownMenu>
           ) : (
             <div className="flex items-center space-x-3">
-              <Button variant="ghost" size="sm" asChild className="h-12 px-6 rounded-xl button-glass">
+              <Button variant="ghost" size="sm" asChild className="h-10 md:h-12 px-4 md:px-6 rounded-xl button-glass">
                 <Link to="/login">Sign in</Link>
               </Button>
-              <Button size="sm" asChild className="h-12 px-6 rounded-xl button-elegant">
+              <Button size="sm" asChild className="h-10 md:h-12 px-4 md:px-6 rounded-xl button-elegant">
                 <Link to="/register">Sign up</Link>
               </Button>
             </div>
