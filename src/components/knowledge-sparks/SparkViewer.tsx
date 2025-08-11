@@ -390,6 +390,26 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     return map;
   }, [sections]);
 
+  const handleDeleteSection = async (anchorId: string, title?: string) => {
+    try {
+      const sec = sectionByAnchor.get(anchorId);
+      if (!sec) {
+        toast.error("Section not found");
+        return;
+      }
+      if (!user?.id || user.id !== sec.creator_id) {
+        toast.error("Only the section creator can delete this section.");
+        return;
+      }
+      if (!confirm(`Delete section "${title || anchorId}"?`)) return;
+      await deleteSection(sec.id);
+      toast.success("Section deleted");
+    } catch (e) {
+      console.debug("deleteSection error:", e);
+      toast.error("Failed to delete section");
+    }
+  };
+
   // Ensure a section record exists for each heading (for attribution & permissions)
   useEffect(() => {
     if (!spark?.id || tocHeadings.length === 0) return;
@@ -706,7 +726,14 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         {/* TOC (desktop) */}
         {tocHeadings.length > 0 && (
           <aside className="hidden xl:block sticky top-20 self-start">
-            <SparkTOC headings={tocHeadings} canContribute={isAuthenticated} onEditHere={(id) => { setSelectedHeadingId(id); setEditMode("modify-section"); setEditing(true); setShowPreview(false); }} />
+            <SparkTOC
+              headings={tocHeadings}
+              canContribute={isAuthenticated}
+              onEditHere={(id) => { setSelectedHeadingId(id); setEditMode("modify-section"); setEditing(true); setShowPreview(false); }}
+              sections={sections}
+              currentUserId={user?.id}
+              onDeleteSection={(id, text) => handleDeleteSection(id, text)}
+            />
           </aside>
         )}
 

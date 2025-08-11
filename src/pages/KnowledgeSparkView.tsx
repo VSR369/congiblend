@@ -69,6 +69,23 @@ const KnowledgeSparkViewPage: React.FC = () => {
       document.title = `${spark.title} – Knowledge Sparks`;
       setMetaTag("description", spark.description || "Read and contribute to this Knowledge Spark.");
       setCanonical(window.location.href);
+
+      // Add structured data (JSON-LD)
+      const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        headline: spark.title,
+        description: spark.description || "Knowledge Spark article",
+        url: window.location.href,
+      } as const;
+      let script = document.getElementById("spark-jsonld") as HTMLScriptElement | null;
+      if (!script) {
+        script = document.createElement("script");
+        script.type = "application/ld+json";
+        script.id = "spark-jsonld";
+        document.head.appendChild(script);
+      }
+      script.text = JSON.stringify(jsonLd);
     } else {
       console.debug("KnowledgeSparkView: no spark found yet", { slug });
     }

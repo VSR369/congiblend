@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import type { SparkSection } from "@/hooks/useSparkSections";
 
 export type HeadingItem = {
   id: string;
@@ -49,10 +50,20 @@ interface SparkTOCProps {
   headings: HeadingItem[];
   canContribute?: boolean;
   onEditHere?: (id: string, text: string) => void;
+  sections?: SparkSection[];
+  currentUserId?: string;
+  onDeleteSection?: (id: string, text: string) => void;
 }
 
-export const SparkTOC: React.FC<SparkTOCProps> = ({ headings, canContribute, onEditHere }) => {
+export const SparkTOC: React.FC<SparkTOCProps> = ({ headings, canContribute, onEditHere, sections, currentUserId, onDeleteSection }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const sectionMap = useMemo(() => {
+    const m = new Map<string, SparkSection>();
+    (sections || []).forEach((s) => {
+      if (s.anchor_id && !s.is_deleted) m.set(s.anchor_id, s);
+    });
+    return m;
+  }, [sections]);
 
   useEffect(() => {
     if (!headings.length) return;
@@ -87,6 +98,8 @@ export const SparkTOC: React.FC<SparkTOCProps> = ({ headings, canContribute, onE
       <ul className="space-y-1">
         {headings.map((h) => {
           const isActive = activeId === h.id;
+          const sec = sectionMap.get(h.id);
+          const isOwner = !!(sec && currentUserId && sec.creator_id === currentUserId);
           return (
               <li key={h.id} className={h.level === 1 ? "pl-0" : h.level === 2 ? "pl-3" : "pl-6"}>
                 <button
@@ -95,6 +108,11 @@ export const SparkTOC: React.FC<SparkTOCProps> = ({ headings, canContribute, onE
                 >
                   {h.text}
                 </button>
+                {sec && (
+                  <span className="ml-2 text-[10px] text-muted-foreground">
+                    {isOwner ? "(yours)" : ""}
+                  </span>
+                )}
                 {canContribute && onEditHere && (
                   <button
                     onClick={(e) => {
@@ -105,6 +123,18 @@ export const SparkTOC: React.FC<SparkTOCProps> = ({ headings, canContribute, onE
                     aria-label={`Edit section ${h.text}`}
                   >
                     Edit
+                  </button>
+                )}
+                {sec && onDeleteSection && isOwner && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteSection(h.id, h.text);
+                    }}
+                    className="ml-2 text-[10px] underline underline-offset-2 text-destructive/80 hover:text-destructive"
+                    aria-label={`Delete section ${h.text}`}
+                  >
+                    Delete
                   </button>
                 )}
               </li>
