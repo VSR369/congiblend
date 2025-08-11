@@ -510,6 +510,7 @@ export type Database = {
           last_edited_by: string | null
           reactions_count: number
           slug: string
+          status: Database["public"]["Enums"]["spark_status"]
           tags: string[]
           title: string
           total_edits: number
@@ -532,6 +533,7 @@ export type Database = {
           last_edited_by?: string | null
           reactions_count?: number
           slug: string
+          status?: Database["public"]["Enums"]["spark_status"]
           tags?: string[]
           title: string
           total_edits?: number
@@ -554,6 +556,7 @@ export type Database = {
           last_edited_by?: string | null
           reactions_count?: number
           slug?: string
+          status?: Database["public"]["Enums"]["spark_status"]
           tags?: string[]
           title?: string
           total_edits?: number
@@ -2704,6 +2707,110 @@ export type Database = {
           },
         ]
       }
+      spark_section_edits: {
+        Row: {
+          content_html: string | null
+          content_plain: string | null
+          created_at: string
+          edit_type: string
+          editor_id: string
+          id: string
+          section_id: string
+          spark_id: string
+          summary: string | null
+          version_number: number | null
+        }
+        Insert: {
+          content_html?: string | null
+          content_plain?: string | null
+          created_at?: string
+          edit_type?: string
+          editor_id: string
+          id?: string
+          section_id: string
+          spark_id: string
+          summary?: string | null
+          version_number?: number | null
+        }
+        Update: {
+          content_html?: string | null
+          content_plain?: string | null
+          created_at?: string
+          edit_type?: string
+          editor_id?: string
+          id?: string
+          section_id?: string
+          spark_id?: string
+          summary?: string | null
+          version_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spark_section_edits_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "spark_sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spark_section_edits_spark_id_fkey"
+            columns: ["spark_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_sparks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spark_sections: {
+        Row: {
+          anchor_id: string | null
+          content_html: string | null
+          created_at: string
+          creator_id: string
+          id: string
+          is_deleted: boolean
+          last_modified_at: string
+          last_modified_by: string | null
+          section_type: string
+          spark_id: string
+          title: string | null
+        }
+        Insert: {
+          anchor_id?: string | null
+          content_html?: string | null
+          created_at?: string
+          creator_id: string
+          id?: string
+          is_deleted?: boolean
+          last_modified_at?: string
+          last_modified_by?: string | null
+          section_type?: string
+          spark_id: string
+          title?: string | null
+        }
+        Update: {
+          anchor_id?: string | null
+          content_html?: string | null
+          created_at?: string
+          creator_id?: string
+          id?: string
+          is_deleted?: boolean
+          last_modified_at?: string
+          last_modified_by?: string | null
+          section_type?: string
+          spark_id?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spark_sections_spark_id_fkey"
+            columns: ["spark_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_sparks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tier_engagement_model_restrictions: {
         Row: {
           created_at: string
@@ -2974,6 +3081,10 @@ export type Database = {
           author_profile: Json
         }[]
       }
+      delete_spark_section: {
+        Args: { p_section_id: string }
+        Returns: boolean
+      }
       generate_organization_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -3040,6 +3151,32 @@ export type Database = {
         Args: { p_spark_id: string; p_user_id?: string }
         Returns: boolean
       }
+      mark_section_created: {
+        Args: {
+          p_spark_id: string
+          p_anchor_id: string
+          p_title: string
+          p_content_html: string
+          p_section_type?: string
+        }
+        Returns: string
+      }
+      recalc_spark_collaboration: {
+        Args: { p_spark_id: string }
+        Returns: undefined
+      }
+      record_section_edit: {
+        Args: {
+          p_section_id: string
+          p_spark_id: string
+          p_content_html: string
+          p_content_plain: string
+          p_summary: string
+          p_edit_type?: string
+          p_version_number?: number
+        }
+        Returns: string
+      }
       safe_delete_fee_component: {
         Args: { component_id: string; cascade_delete?: boolean }
         Returns: Json
@@ -3059,6 +3196,7 @@ export type Database = {
     }
     Enums: {
       app_role: "user" | "creator" | "business" | "admin"
+      spark_status: "draft" | "published" | "collaborative"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3187,6 +3325,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["user", "creator", "business", "admin"],
+      spark_status: ["draft", "published", "collaborative"],
     },
   },
 } as const

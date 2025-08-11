@@ -17,11 +17,11 @@ import { useAutosaveDraft } from "@/hooks/useAutosaveDraft";
 import { createPortal } from "react-dom";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Info, Lock } from "lucide-react";
+import { useSparkSections } from "@/hooks/useSparkSections";
 
 const RichTextEditor = React.lazy(() =>
   import("@/components/knowledge-sparks/RichTextEditor").then((m) => ({ default: m.RichTextEditor }))
 );
-
 type Spark = {
   id: string;
   title: string;
@@ -81,7 +81,7 @@ const InlineAfterHeadingPortal: React.FC<{
 
 export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   const qc = useQueryClient();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { isAuthor } = useIsSparkAuthor(spark?.id);
 
   const { data: latestVersion, isLoading } = useQuery({
@@ -134,6 +134,10 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   const [viewVersion, setViewVersion] = useState<any | null>(null);
 
   const contentRef = React.useRef<HTMLDivElement>(null);
+
+  // Section metadata helpers
+  const { sections, ensureSectionsForHeadings, recordSectionEdit, deleteSection } = useSparkSections(spark.id);
+
 
   const draftKey = `sparkDraft:${spark.id}`;
   const { loadedDraft, clearDraft } = useAutosaveDraft(draftKey, {
@@ -346,6 +350,23 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       }
       return;
     }
+    // Record per-section edit attribution
+    if (editMode === "modify-section" && selectedHeadingId) {
+      const sec = sectionByAnchor.get(selectedHeadingId);
+      if (sec) {
+        try {
+          await recordSectionEdit({
+            sectionId: sec.id,
+            contentHtml: newSectionHtml,
+            contentPlain: newSectionPlain,
+            summary,
+            versionNumber: nextVersionNumber,
+          });
+        } catch (e) {
+          console.debug("record_section_edit error:", e);
+        }
+      }
+    }
 
     toast.success("Edit submitted!");
     clearDraft();
@@ -361,6 +382,20 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
 
   const currentHtml = useMemo(() => (viewVersion?.content_html || latestVersion?.content_html || ""), [viewVersion?.content_html, latestVersion?.content_html]);
   const tocHeadings = useMemo(() => extractHeadings(currentHtml).headings, [currentHtml]);
+
+  // Map sections by anchor for quick lookup
+  const sectionByAnchor = useMemo(() => {
+    const map = new Map<string, any>();
+    (sections || []).forEach((s) => { if (s.anchor_id) map.set(s.anchor_id, s); });
+    return map;
+  }, [sections]);
+
+  // Ensure a section record exists for each heading (for attribution & permissions)
+  useEffect(() => {
+    if (!spark?.id || tocHeadings.length === 0) return;
+    ensureSectionsForHeadings(tocHeadings.map((h) => ({ id: h.id, text: h.text })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spark?.id, currentHtml]);
 
   useEffect(() => {
     if (editMode === "modify-section" && !selectedHeadingId && tocHeadings.length > 0) {
