@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { persistSparkBookmarkToggle } from "@/services/sparkBookmarks";
 import { SparkContributors } from "@/components/knowledge-sparks/SparkContributors";
 import { SparkComments } from "@/components/knowledge-sparks/SparkComments";
+import { SparkAnalyticsMini } from "@/components/knowledge-sparks/SparkAnalyticsMini";
 const RichTextEditor = React.lazy(() =>
   import("@/components/knowledge-sparks/RichTextEditor").then((m) => ({ default: m.RichTextEditor }))
 );
@@ -1023,6 +1024,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               onDeleteSection={(id, text) => requestDeleteSection(id, text)}
             />
             <SparkContributors sparkId={spark.id} />
+            <SparkAnalyticsMini sparkId={spark.id} />
           </aside>
         )}
 
