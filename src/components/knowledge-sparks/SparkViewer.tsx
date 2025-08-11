@@ -18,6 +18,7 @@ import { createPortal } from "react-dom";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Info, Lock } from "lucide-react";
 import { useSparkSections } from "@/hooks/useSparkSections";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 const RichTextEditor = React.lazy(() =>
   import("@/components/knowledge-sparks/RichTextEditor").then((m) => ({ default: m.RichTextEditor }))
