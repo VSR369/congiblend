@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -29,13 +29,22 @@ const setCanonical = (href: string) => {
 
 const KnowledgeSparksBrowsePage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const urlView = (searchParams.get("view") as "card" | "list" | null) ?? null;
+  const urlSaved = searchParams.get("saved");
 
   const [viewMode, setViewMode] = useState<"card" | "list">(() => {
-    const saved = localStorage.getItem("spark-view-mode") as "card" | "list" | null;
+    const saved = urlView || (localStorage.getItem("spark-view-mode") as "card" | "list" | null);
     return saved === "list" ? "list" : "card"; // default to card
   });
 
-  const [savedOnly, setSavedOnly] = useState<boolean>(() => localStorage.getItem("spark-saved-only") === "1");
+  const [savedOnly, setSavedOnly] = useState<boolean>(() => {
+    if (urlSaved != null) return urlSaved === "1";
+    return localStorage.getItem("spark-saved-only") === "1";
+  });
+
+  const [showWatchdog, setShowWatchdog] = useState(false);
 
   useEffect(() => {
     document.title = "Knowledge Sparks – Browse and Search";
@@ -45,11 +54,28 @@ const KnowledgeSparksBrowsePage: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem("spark-view-mode", viewMode);
-  }, [viewMode]);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("view", viewMode);
+      return next;
+    }, { replace: true });
+  }, [viewMode, setSearchParams]);
 
   useEffect(() => {
     localStorage.setItem("spark-saved-only", savedOnly ? "1" : "0");
-  }, [savedOnly]);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("saved", savedOnly ? "1" : "0");
+      return next;
+    }, { replace: true });
+  }, [savedOnly, setSearchParams]);
+
+  // Loading watchdog: if nothing happens for 6s, show retry helper
+  useEffect(() => {
+    const t = window.setTimeout(() => setShowWatchdog(true), 6000);
+    return () => window.clearTimeout(t);
+  }, []);
+
 
   return (
     <main className="w-full max-w-screen-2xl mx-auto px-4 py-6">
@@ -78,6 +104,11 @@ const KnowledgeSparksBrowsePage: React.FC = () => {
           </Button>
         </div>
       </header>
+      {showWatchdog && (
+        <div className="mb-4 text-xs text-muted-foreground flex items-center gap-2">
+          Having trouble loading? <button className="underline" onClick={() => window.location.reload()}>Reload</button>
+        </div>
+      )}
       <section aria-label="Sparks list">
         <SparksList viewMode={viewMode} onSelect={(spark) => navigate(`/knowledge-sparks/${spark.slug}`)} selectedId={null} savedOnly={savedOnly} />
       </section>

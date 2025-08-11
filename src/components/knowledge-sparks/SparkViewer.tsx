@@ -25,6 +25,7 @@ import { SparkComments } from "@/components/knowledge-sparks/SparkComments";
 import { SparkAnalyticsMini } from "@/components/knowledge-sparks/SparkAnalyticsMini";
 import { SparkStatsRow } from "@/components/knowledge-sparks/SparkStatsRow";
 import { SparkContributorsStrip } from "@/components/knowledge-sparks/SparkContributorsStrip";
+import { useRealtimeStatus } from "@/hooks/useRealtimeStatus";
 const RichTextEditor = React.lazy(() =>
   import("@/components/knowledge-sparks/RichTextEditor").then((m) => ({ default: m.RichTextEditor }))
 );
@@ -89,6 +90,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   const qc = useQueryClient();
   const { isAuthenticated, user } = useAuthStore();
   const { isAuthor } = useIsSparkAuthor(spark?.id);
+  const { status: realtimeStatus, refetchInterval } = useRealtimeStatus();
 
   const { data: latestVersion, isLoading } = useQuery({
     queryKey: ["spark", spark.id, "latestVersion"],
@@ -108,6 +110,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       console.debug("SparkViewer: latestVersion fetched", { sparkId: spark.id, version: result?.version_number });
       return result;
     },
+    refetchInterval,
   });
 
   const { data: versionHistory } = useQuery({

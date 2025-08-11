@@ -15,6 +15,8 @@ import {
   BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
 import { Badge } from "@/components/ui/badge";
+import { SparkAuthorControls } from "@/components/knowledge-sparks/SparkAuthorControls";
+import { useRealtimeStatus } from "@/hooks/useRealtimeStatus";
 
 const setMetaTag = (name: string, content: string) => {
   let tag = document.querySelector(`meta[name="${name}"]`);
@@ -140,16 +142,21 @@ const KnowledgeSparkViewPage: React.FC = () => {
     );
   }
 
+  const { status: realtimeStatus } = useRealtimeStatus();
+
   return (
     <main className="w-full max-w-screen-xl mx-auto px-4 py-6">
       <header className="mb-4">
-        <div className="mb-2">
+        <div className="mb-2 flex items-center justify-between">
           <Button asChild variant="ghost" size="sm">
             <Link to="/knowledge-sparks" aria-label="Back to all Knowledge Sparks">
               <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
               Back to all sparks
             </Link>
           </Button>
+          <div className="text-xs text-muted-foreground" aria-live="polite">
+            Realtime: {realtimeStatus}
+          </div>
         </div>
         <Breadcrumb className="mb-2">
           <BreadcrumbList>
@@ -173,6 +180,9 @@ const KnowledgeSparkViewPage: React.FC = () => {
         {spark.description ? (
           <p className="text-sm text-muted-foreground">{spark.description}</p>
         ) : null}
+        <div className="mt-2">
+          <SparkAuthorControls sparkId={spark.id} />
+        </div>
       </header>
       <section>
         <SparkViewer spark={spark} />
