@@ -24,6 +24,7 @@ import { SparkContributors } from "@/components/knowledge-sparks/SparkContributo
 import { SparkComments } from "@/components/knowledge-sparks/SparkComments";
 import { SparkAnalyticsMini } from "@/components/knowledge-sparks/SparkAnalyticsMini";
 import { SparkStatsRow } from "@/components/knowledge-sparks/SparkStatsRow";
+import { SparkContributorsStrip } from "@/components/knowledge-sparks/SparkContributorsStrip";
 const RichTextEditor = React.lazy(() =>
   import("@/components/knowledge-sparks/RichTextEditor").then((m) => ({ default: m.RichTextEditor }))
 );
@@ -710,8 +711,9 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
           </Button>
         </div>
       </div>
-      <div className="mt-3 xl:hidden">
+      <div className="mt-3 xl:hidden flex items-center justify-between">
         <SparkStatsRow sparkId={spark.id} />
+        <SparkContributorsStrip sparkId={spark.id} />
       </div>
 
       {/* Mobile TOC */}

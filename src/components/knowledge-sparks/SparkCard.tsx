@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { Trash2 } from "lucide-react";
+import { Trash2, Bookmark } from "lucide-react";
 import { useIsSparkAuthor } from "@/hooks/useIsSparkAuthor";
 import { useCanDeleteSpark } from "@/hooks/useCanDeleteSpark";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,9 +33,11 @@ interface SparkCardProps {
   selected?: boolean;
   className?: string;
   showActions?: boolean;
+  saved?: boolean;
+  onToggleSave?: (shouldSave: boolean) => void | Promise<void>;
 }
 
-export const SparkCard: React.FC<SparkCardProps> = ({ spark, onClick, selected, className, showActions = true }) => {
+export const SparkCard: React.FC<SparkCardProps> = ({ spark, onClick, selected, className, showActions = true, saved = false, onToggleSave }) => {
   const { isAuthor } = useIsSparkAuthor(showActions ? spark.id : null);
   const { canDelete } = useCanDeleteSpark(isAuthor && showActions ? spark.id : null);
   const queryClient = useQueryClient();
@@ -64,6 +66,14 @@ export const SparkCard: React.FC<SparkCardProps> = ({ spark, onClick, selected, 
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-semibold leading-tight">{spark.title}</h3>
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <Button
+            variant={saved ? "secondary" : "ghost"}
+            size="icon"
+            aria-label={saved ? "Remove bookmark" : "Save spark"}
+            onClick={() => onToggleSave?.(!saved)}
+          >
+            <Bookmark className="h-4 w-4" />
+          </Button>
           {spark.is_featured ? (
             <Badge className="shrink-0" variant="secondary">Featured</Badge>
           ) : null}

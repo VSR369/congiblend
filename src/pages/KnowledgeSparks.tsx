@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LayoutGrid, List as ListIcon } from "lucide-react";
 import SparksList from "@/components/knowledge-sparks/SparksList";
+import { Switch } from "@/components/ui/switch";
 
 const setMetaTag = (name: string, content: string) => {
   let tag = document.querySelector(`meta[name="${name}"]`);
@@ -34,6 +35,8 @@ const KnowledgeSparksBrowsePage: React.FC = () => {
     return saved === "list" ? "list" : "card"; // default to card
   });
 
+  const [savedOnly, setSavedOnly] = useState<boolean>(() => localStorage.getItem("spark-saved-only") === "1");
+
   useEffect(() => {
     document.title = "Knowledge Sparks – Browse and Search";
     setMetaTag("description", "Browse and search Knowledge Sparks. Discover, explore, and open sparks to contribute.");
@@ -44,6 +47,10 @@ const KnowledgeSparksBrowsePage: React.FC = () => {
     localStorage.setItem("spark-view-mode", viewMode);
   }, [viewMode]);
 
+  useEffect(() => {
+    localStorage.setItem("spark-saved-only", savedOnly ? "1" : "0");
+  }, [savedOnly]);
+
   return (
     <main className="w-full max-w-screen-2xl mx-auto px-4 py-6">
       <header className="mb-6 flex items-center justify-between">
@@ -51,22 +58,28 @@ const KnowledgeSparksBrowsePage: React.FC = () => {
           <h1 className="text-2xl font-bold">Knowledge Sparks</h1>
           <p className="text-sm text-muted-foreground">Browse and search sparks. Click a card to read and contribute.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as any)} aria-label="View mode">
-            <ToggleGroupItem value="card" aria-label="Card view" title="Card view">
-              <LayoutGrid className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="list" aria-label="List view" title="List view">
-              <ListIcon className="h-4 w-4" />
-            </ToggleGroupItem>
-          </ToggleGroup>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as any)} aria-label="View mode">
+              <ToggleGroupItem value="card" aria-label="Card view" title="Card view">
+                <LayoutGrid className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label="List view" title="List view">
+                <ListIcon className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-muted-foreground" htmlFor="saved-only">Saved only</label>
+            <Switch id="saved-only" checked={savedOnly} onCheckedChange={setSavedOnly} aria-label="Show saved sparks only" />
+          </div>
           <Button asChild>
             <Link to="/knowledge-sparks/new">Create Spark</Link>
           </Button>
         </div>
       </header>
       <section aria-label="Sparks list">
-        <SparksList viewMode={viewMode} onSelect={(spark) => navigate(`/knowledge-sparks/${spark.slug}`)} selectedId={null} />
+        <SparksList viewMode={viewMode} onSelect={(spark) => navigate(`/knowledge-sparks/${spark.slug}`)} selectedId={null} savedOnly={savedOnly} />
       </section>
     </main>
   );

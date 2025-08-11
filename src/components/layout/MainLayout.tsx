@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { LeftSidebar } from './LeftSidebar';
@@ -15,6 +15,11 @@ export const MainLayout = () => {
   useScrollManager();
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+  // Auto-close mobile sheet on route change to avoid overlay blocking content
+  useEffect(() => {
+    if (mobileOpen) setMobileOpen(false);
+  }, [location.pathname]);
   return (
     <div className="min-h-screen flex flex-col">
       <Header showMenuButton={isMobile} onMenuToggle={() => setMobileOpen(true)} />

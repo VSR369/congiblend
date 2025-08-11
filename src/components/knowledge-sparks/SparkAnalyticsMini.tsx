@@ -14,15 +14,30 @@ export const SparkAnalyticsMini: React.FC<SparkAnalyticsMiniProps> = ({ sparkId 
     queryKey: ["spark", sparkId, "analytics-mini"],
     enabled: Boolean(sparkId),
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("knowledge_sparks")
-        .select(
-          "view_count, contributor_count, total_edits, content_length, reactions_count, last_edited_at, created_at"
-        )
-        .eq("id", sparkId)
-        .maybeSingle();
-      if (error) throw error;
-      return data as {
+      const [ks, views] = await Promise.all([
+        supabase
+          .from("knowledge_sparks")
+          .select(
+            "contributor_count, total_edits, content_length, reactions_count, last_edited_at, created_at"
+          )
+          .eq("id", sparkId)
+          .maybeSingle(),
+        supabase
+          .from("spark_analytics")
+          .select("*", { count: "exact", head: true })
+          .eq("spark_id", sparkId)
+          .eq("action_type", "view"),
+      ]);
+      if (ks.error) throw ks.error;
+      return {
+        view_count: views.count || 0,
+        contributor_count: (ks.data as any)?.contributor_count ?? 1,
+        total_edits: (ks.data as any)?.total_edits ?? 0,
+        content_length: (ks.data as any)?.content_length ?? 0,
+        reactions_count: (ks.data as any)?.reactions_count ?? 0,
+        last_edited_at: (ks.data as any)?.last_edited_at ?? null,
+        created_at: (ks.data as any)?.created_at ?? new Date().toISOString(),
+      } as {
         view_count: number;
         contributor_count: number;
         total_edits: number;
@@ -30,7 +45,7 @@ export const SparkAnalyticsMini: React.FC<SparkAnalyticsMiniProps> = ({ sparkId 
         reactions_count: number;
         last_edited_at: string | null;
         created_at: string;
-      } | null;
+      };
     },
     staleTime: 60_000,
   });

@@ -93,6 +93,27 @@ const KnowledgeSparkViewPage: React.FC = () => {
     }
   }, [spark, slug]);
 
+  // Log a view event once per session for this spark
+  useEffect(() => {
+    const logView = async () => {
+      if (!spark?.id) return;
+      const key = `spark-viewed-${spark.id}`;
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, '1');
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        await supabase.from('spark_analytics').insert({
+          spark_id: spark.id,
+          action_type: 'view',
+          user_id: user?.id ?? null,
+        });
+      } catch (e) {
+        console.warn('Failed to log spark view', e);
+      }
+    };
+    logView();
+  }, [spark?.id]);
+
   if (isLoading) {
     return (
       <main className="w-full max-w-screen-lg mx-auto px-4 py-6">

@@ -1,11 +1,12 @@
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import SparkCard from "./SparkCard";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVirtualScroll } from "@/hooks/useVirtualScroll";
+import { fetchSavedSparkIds, persistSparkBookmarkToggle } from "@/services/sparkBookmarks";
 type Spark = {
   id: string;
   title: string;
@@ -24,10 +25,12 @@ interface SparksListProps {
   onSelect: (spark: Spark) => void;
   selectedId?: string | null;
   viewMode?: "card" | "list";
+  savedOnly?: boolean;
 }
 
-export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, viewMode = "list" }) => {
+export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, viewMode = "list", savedOnly = false }) => {
   const [query, setQuery] = useState("");
+  const [savedSet, setSavedSet] = useState<Set<string>>(new Set());
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["knowledge-sparks", "list"],
@@ -49,8 +52,20 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
     refetchOnWindowFocus: false,
   });
 
+  useEffect(() => {
+    const loadSaved = async () => {
+      const ids = (data ?? []).map((s) => s.id);
+      const set = await fetchSavedSparkIds(ids);
+      setSavedSet(set);
+    };
+    if (data) loadSaved();
+  }, [data]);
+
   const filtered = useMemo(() => {
-    const list = data ?? [];
+    let list = data ?? [];
+    if (savedOnly) {
+      list = list.filter((s) => savedSet.has(s.id));
+    }
     if (!query.trim()) return list;
     const q = query.toLowerCase();
     return list.filter((s) =>
@@ -59,7 +74,7 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
       (s.category ?? "").toLowerCase().includes(q) ||
       (s.tags ?? []).some(t => t.toLowerCase().includes(q))
     );
-  }, [data, query]);
+  }, [data, query, savedOnly, savedSet]);
 
   const { parentRef, visibleItems, shouldVirtualize, totalSize, measureElement } =
     useVirtualScroll({ items: filtered, threshold: 30, estimateSize: () => 120, overscan: 8 });
@@ -119,6 +134,15 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
                   onClick={() => onSelect(spark)}
                   className="h-full"
                   showActions={false}
+                  saved={savedSet.has(spark.id)}
+                  onToggleSave={async (shouldSave) => {
+                    await persistSparkBookmarkToggle(spark.id, shouldSave);
+                    setSavedSet((prev) => {
+                      const next = new Set(prev);
+                      if (shouldSave) next.add(spark.id); else next.delete(spark.id);
+                      return next;
+                    });
+                  }}
                 />
               </div>
             ))}
@@ -146,6 +170,15 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
                       onClick={() => onSelect(item)}
                       showActions={false}
                       className="h-full"
+                      saved={savedSet.has(item.id)}
+                      onToggleSave={async (shouldSave) => {
+                        await persistSparkBookmarkToggle(item.id, shouldSave);
+                        setSavedSet((prev) => {
+                          const next = new Set(prev);
+                          if (shouldSave) next.add(item.id); else next.delete(item.id);
+                          return next;
+                        });
+                      }}
                     />
                   </div>
                 </div>
@@ -160,6 +193,15 @@ export const SparksList: React.FC<SparksListProps> = ({ onSelect, selectedId, vi
                     selected={selectedId === spark.id}
                     onClick={() => onSelect(spark)}
                     showActions={false}
+                    saved={savedSet.has(spark.id)}
+                    onToggleSave={async (shouldSave) => {
+                      await persistSparkBookmarkToggle(spark.id, shouldSave);
+                      setSavedSet((prev) => {
+                        const next = new Set(prev);
+                        if (shouldSave) next.add(spark.id); else next.delete(spark.id);
+                        return next;
+                      });
+                    }}
                   />
                 </div>
               ))}
