@@ -1,13 +1,14 @@
 import React from 'react';
-import { Lightbulb, Heart, MessageCircle, Bookmark, MoreHorizontal, Users, Calendar, MapPin, Briefcase } from 'lucide-react';
+import { Lightbulb, Bookmark, MoreHorizontal, Users, Calendar, MapPin } from 'lucide-react';
 import { Button } from './button';
 import { Badge } from './badge';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { Card, CardContent, CardHeader } from './card';
-// Media rendering removed for simplicity
 import { useFeedStore } from '@/stores/feedStore';
 import { cn } from '@/lib/utils';
 import type { Post } from '@/types/feed';
+import { usePollResults } from '@/hooks/usePolls';
+import { toast } from '@/hooks/use-toast';
 
 interface EnhancedPostCardProps {
   post: Post;
@@ -15,8 +16,8 @@ interface EnhancedPostCardProps {
 }
 
 export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, className }) => {
-  const { toggleReaction, votePoll } = useFeedStore();
-  
+  const { toggleReaction } = useFeedStore();
+
   const formatDate = (date: Date) => {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -38,14 +39,34 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
     }
   };
 
+  // Poll handling with server RPCs
+  const { results, voting, statusLabel, castVote, refresh } = usePollResults(
+    post.type === 'poll' ? post.id : undefined
+  );
+
   const handlePollVote = async (optionIndex: number) => {
     try {
-      await votePoll(post.id, optionIndex);
-    } catch (error) {
-      console.error('Failed to vote:', error);
+      await castVote(optionIndex);
+      toast({
+        title: "Vote submitted",
+        description: "Your vote has been recorded.",
+      });
+    } catch (e: any) {
+      if (e?.message === "AUTH_REQUIRED") {
+        toast({
+          title: "Sign in required",
+          description: "Please sign in to vote on polls.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: "Vote failed",
+        description: e?.message || "Failed to vote.",
+        variant: "destructive",
+      });
     }
   };
-
 
   const renderMedia = () => {
     if (!post.media || post.media.length === 0) return null;
@@ -53,7 +74,7 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
     return (
       <div className="mt-3">
         <div className="grid grid-cols-1 gap-2">
-          {post.media.map((media, index) => (
+          {post.media.map((media) => (
             <div key={media.id} className="rounded-lg overflow-hidden bg-muted">
               {media.type === 'image' && (
                 <img 
@@ -84,33 +105,51 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
   };
 
   const renderPoll = () => {
-    if (!post.poll) return null;
+    // Prefer server results; fallback to existing post.poll if present
+    const closed = results?.closed ?? false;
+    const userSelected = results?.userSelected ?? (post.poll?.userVote?.length ? Number(post.poll?.userVote?.[0]) : null);
+    const opts = results?.options ?? post.poll?.options?.map(o => ({
+      text: o.text,
+      votes: Math.round((o.percentage / 100) * (post.poll?.totalVotes || 0)) || 0,
+      percentage: o.percentage,
+    })) ?? [];
+
+    if (!(post as any).poll && !results) return null;
 
     return (
       <div className="mt-3 p-4 border rounded-lg">
-        <h4 className="font-medium mb-3">{post.poll.question}</h4>
+        {post.poll?.question && <h4 className="font-medium mb-3">{post.poll.question}</h4>}
         <div className="space-y-2">
-          {post.poll.options.map((option, index) => (
+          {opts.map((option, index) => (
             <button
-              key={option.id}
+              key={`${index}-${option.text}`}
               onClick={() => handlePollVote(index)}
-              className="w-full relative border rounded-md p-3 text-left hover:bg-muted/50 transition-colors"
+              className={cn(
+                "w-full relative border rounded-md p-3 text-left transition-colors",
+                userSelected === index ? "border-primary bg-primary/10" : "hover:bg-muted/50"
+              )}
+              disabled={closed || voting}
             >
               <div className="flex items-center justify-between">
                 <span className="text-sm">{option.text}</span>
-                <span className="text-xs text-muted-foreground">{option.percentage}%</span>
+                <span className="text-xs text-muted-foreground">
+                  {typeof option.percentage === "number" ? `${option.percentage}%` : ""}
+                  {typeof option.votes === "number" ? ` • ${option.votes} votes` : ""}
+                </span>
               </div>
               <div
                 className="absolute bottom-0 left-0 h-1 bg-primary rounded-b-md transition-all"
-                style={{ width: `${option.percentage}%` }}
+                style={{ width: `${Math.min(100, Math.max(0, option.percentage || 0))}%` }}
               />
             </button>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          {post.poll.totalVotes} votes
-          {post.poll.expiresAt && ` • Expires ${formatDate(post.poll.expiresAt)}`}
-        </p>
+        <div className="flex items-center justify-between mt-2">
+          <p className="text-xs text-muted-foreground">{statusLabel}</p>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={refresh} disabled={voting}>
+            Refresh
+          </Button>
+        </div>
       </div>
     );
   };
@@ -118,11 +157,9 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
   const renderEvent = () => {
     if (!post.event_data && post.type !== 'event') return null;
 
-    // Handle event data from either event object or event_data field
     const eventInfo = post.event_data;
     if (!eventInfo) return null;
 
-    // Convert string dates to Date objects
     const startDate = new Date(eventInfo.start_date);
     const endDate = eventInfo.end_date ? new Date(eventInfo.end_date) : null;
 
@@ -213,7 +250,6 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
     );
   };
 
-
   return (
     <Card className={cn("w-full", className)}>
       <CardHeader className="pb-3">
@@ -248,12 +284,10 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
       </CardHeader>
 
       <CardContent className="pt-0">
-        {/* Post Content */}
         <div className="text-sm leading-relaxed">
           {post.content}
         </div>
 
-        {/* Hashtags */}
         {post.hashtags && post.hashtags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {post.hashtags.map((hashtag) => (
@@ -264,17 +298,12 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
           </div>
         )}
 
-        {/* Media */}
         {renderMedia()}
 
-        {/* Poll */}
-        {renderPoll()}
+        {post.type === 'poll' && renderPoll()}
 
-        {/* Event */}
         {renderEvent()}
 
-
-        {/* Engagement Bar */}
         <div className="flex items-center justify-between pt-4 mt-4 border-t">
           <div className="flex items-center space-x-4">
             <Button
@@ -289,8 +318,6 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
               <Lightbulb className="h-4 w-4 mr-1" />
               <span className="text-xs">{post.likes}</span>
             </Button>
-            
-            {/* Comments removed - functionality not implemented */}
           </div>
           
           <Button
@@ -304,7 +331,6 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
             <Bookmark className="h-4 w-4" />
           </Button>
         </div>
-
       </CardContent>
     </Card>
   );

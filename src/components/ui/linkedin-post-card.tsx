@@ -10,8 +10,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useFeedStore } from "@/stores/feedStore";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
-import type { Post, ReactionType } from "@/types/feed";
+import type { Post } from "@/types/feed";
 import { Avatar, AvatarImage, AvatarFallback } from "./avatar";
+import { usePollResults } from "@/hooks/usePolls";
 
 interface LinkedInPostCardProps {
   post: Post;
@@ -19,44 +20,46 @@ interface LinkedInPostCardProps {
 }
 
 export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCardProps) => {
-  const { toggleSave, votePoll } = useFeedStore();
+  const { toggleSave } = useFeedStore();
 
   const handleSaveToggle = React.useCallback(() => {
     toggleSave(post.id);
   }, [post.id, toggleSave]);
 
+  // Poll handling (server-authoritative)
+  const { results, loading: pollLoading, voting, castVote, statusLabel, refresh } = usePollResults(
+    post.type === "poll" ? post.id : undefined
+  );
 
-  const handlePollVote = React.useCallback(async (optionIndex: number) => {
-    try {
-      await votePoll(post.id, optionIndex);
-      toast({
-        title: "Vote submitted",
-        description: "Your vote has been recorded successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Vote failed", 
-        description: "Failed to submit your vote. Please try again.",
-        variant: "destructive"
-      });
-    }
-  }, [post.id, votePoll]);
+  const handlePollVote = React.useCallback(
+    async (optionIndex: number) => {
+      try {
+        await castVote(optionIndex);
+        toast({
+          title: "Vote submitted",
+          description: "Your vote has been recorded.",
+        });
+      } catch (e: any) {
+        if (e?.message === "AUTH_REQUIRED") {
+          toast({
+            title: "Sign in required",
+            description: "Please sign in to vote on polls.",
+            variant: "destructive",
+          });
+          return;
+        }
+        const msg = e?.message || "Failed to submit your vote. Please try again.";
+        toast({
+          title: "Vote failed",
+          description: msg,
+          variant: "destructive",
+        });
+      }
+    },
+    [castVote]
+  );
 
   const totalReactions = post.reactions.length;
-  const topReactions = React.useMemo(() => {
-    const reactionCounts: Record<ReactionType, number> = {
-      innovative: 0, practical: 0, well_researched: 0
-    };
-    
-    post.reactions.forEach(reaction => {
-      reactionCounts[reaction.type]++;
-    });
-
-    return Object.entries(reactionCounts)
-      .filter(([_, count]) => count > 0)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 3);
-  }, [post.reactions]);
 
   const renderPostContent = () => {
     switch (post.type) {
@@ -73,7 +76,7 @@ export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCar
                 post.media.length === 2 ? "grid-cols-2" :
                 "grid-cols-2"
               )}>
-                {post.media.slice(0, 4).map((media, index) => (
+                {post.media.slice(0, 4).map((media) => (
                   <div 
                     key={media.id}
                     className="relative bg-muted rounded-lg overflow-hidden aspect-video"
@@ -107,42 +110,65 @@ export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCar
           </div>
         );
 
-      case 'poll':
+      case 'poll': {
+        const opts = results?.options ?? post.poll?.options?.map(o => ({
+          text: o.text,
+          votes: Math.round((o.percentage / 100) * (post.poll?.totalVotes || 0)) || 0,
+          percentage: o.percentage,
+        })) ?? [];
+        const userSelected = results?.userSelected ?? (post.poll?.userVote?.length ? Number(post.poll?.userVote?.[0]) : null);
+        const closed = results?.closed ?? false;
+
         return (
           <div className="space-y-4">
             <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
             {post.poll && (
               <div className="space-y-3 p-4 border rounded-lg">
-                <h4 className="font-medium">{post.poll.question}</h4>
+                {post.poll.question && <h4 className="font-medium">{post.poll.question}</h4>}
                 <div className="space-y-2">
-                  {post.poll.options.map((option, index) => {
-                    const isSelected = post.poll?.userVote?.includes(index.toString());
+                  {opts.map((option, index) => {
+                    const isSelected = userSelected === index;
                     return (
                       <button
-                        key={option.id} 
+                        key={`${index}-${option.text}`} 
                         className={cn(
-                          "w-full text-left p-3 border rounded-lg transition-colors",
+                          "w-full text-left p-3 border rounded-lg transition-colors relative",
                           isSelected 
                             ? "border-primary bg-primary/10" 
                             : "hover:bg-muted"
                         )}
                         onClick={() => handlePollVote(index)}
-                        disabled={!!post.poll?.userVote?.length}
+                        disabled={closed || voting}
                       >
                         <div className="flex justify-between items-center">
                           <span className="text-sm">{option.text}</span>
                           <span className="text-xs text-muted-foreground">
-                            {option.percentage}%
+                            {typeof option.percentage === "number" ? `${option.percentage}%` : ""}
+                            {typeof option.votes === "number" ? ` • ${option.votes} votes` : ""}
                           </span>
                         </div>
+                        {/* Progress underline */}
+                        <div
+                          className="absolute bottom-0 left-0 h-1 bg-primary/70 rounded-b-md transition-all"
+                          style={{ width: `${Math.min(100, Math.max(0, option.percentage || 0))}%` }}
+                        />
                       </button>
                     );
                   })}
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    {statusLabel}
+                  </p>
+                  <Button variant="ghost" size="sm" className="text-xs" onClick={refresh} disabled={pollLoading}>
+                    Refresh
+                  </Button>
                 </div>
               </div>
             )}
           </div>
         );
+      }
 
       case 'event':
         return (
@@ -293,7 +319,6 @@ export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCar
               currentReaction={post.userReaction}
               reactions={post.reactions}
             />
-
 
             <Button 
               variant="ghost" 
