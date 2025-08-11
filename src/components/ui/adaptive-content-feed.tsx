@@ -238,7 +238,8 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
       <div
         ref={parentRef}
         className={cn(
-          "max-h-[calc(100vh-180px)] overflow-auto is-virtualized",
+          "max-h-[calc(100vh-180px)] overflow-auto is-virtualized virtual-scroll-container",
+          isScrolling ? "is-scrolling" : "",
           showCreateModal ? "virtual-scroll-modal-open" : ""
         )}
         style={{

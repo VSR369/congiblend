@@ -298,3 +298,16 @@
   content-visibility: visible !important;
   contain-intrinsic-size: auto !important;
 }
+
+/* Smooth and stable virtual scroll container */
+.virtual-scroll-container {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Pause animations/transitions during active scroll to prevent flicker */
+.virtual-scroll-container.is-scrolling * {
+  animation: none !important;
+  transition: none !important;
+}

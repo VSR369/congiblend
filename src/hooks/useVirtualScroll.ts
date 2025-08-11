@@ -19,6 +19,7 @@ export function useVirtualScroll<T>({
   const parentRef = useRef<HTMLDivElement>(null);
   
   const resizeObservers = useRef(new WeakMap<Element, ResizeObserver>());
+  const resizeObserverSet = useRef<Set<ResizeObserver>>(new Set());
   
   // Only enable virtualization for large lists
   const shouldVirtualize = enabled && items.length > threshold;
@@ -38,7 +39,7 @@ export function useVirtualScroll<T>({
       el.removeEventListener('scroll', onScroll as any);
       if (timeoutId) window.clearTimeout(timeoutId);
     };
-  }, [shouldVirtualize, parentRef.current]);
+  }, [shouldVirtualize]);
 
   const virtualizer = useVirtualizer({
     count: shouldVirtualize ? items.length : 0,
@@ -68,6 +69,7 @@ export function useVirtualScroll<T>({
           requestAnimationFrame(() => virtualizer.measureElement(node));
         });
         resizeObservers.current.set(node, ro);
+        resizeObserverSet.current.add(ro);
       }
       ro.observe(node);
     }
@@ -84,6 +86,15 @@ export function useVirtualScroll<T>({
       virtualItem,
     }));
   }, [shouldVirtualize, items, virtualItems]);
+
+  // Cleanup any ResizeObservers on unmount to prevent leaks and measurement jitter
+  useEffect(() => {
+    return () => {
+      resizeObserverSet.current.forEach((ro) => ro.disconnect());
+      resizeObserverSet.current.clear();
+    };
+  }, []);
+
 
   return {
     parentRef,
@@ -115,7 +126,7 @@ export function useVirtualInfiniteScroll<T>({
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Use intersection observer for load more trigger
-  const { ref: loadMoreTriggerRef } = useIntersectionObserver({
+  const { ref: loadMoreTriggerRef, isIntersecting } = useIntersectionObserver({
     threshold: 0.1,
     rootMargin: '200px',
     root: parentRef.current,
@@ -125,11 +136,14 @@ export function useVirtualInfiniteScroll<T>({
   const enhancedLoadMoreRef = (node: HTMLDivElement | null) => {
     loadMoreRef.current = node;
     loadMoreTriggerRef.current = node;
-    
-    if (node && hasMore && !loading) {
+  };
+
+  // Trigger load more only when intersecting
+  useEffect(() => {
+    if (isIntersecting && hasMore && !loading) {
       onLoadMore();
     }
-  };
+  }, [isIntersecting, hasMore, loading, onLoadMore]);
 
   return {
     parentRef,
