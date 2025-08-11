@@ -21,6 +21,7 @@ import { useSparkSections } from "@/hooks/useSparkSections";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { persistSparkBookmarkToggle } from "@/services/sparkBookmarks";
 import { SparkContributors } from "@/components/knowledge-sparks/SparkContributors";
+import { SparkComments } from "@/components/knowledge-sparks/SparkComments";
 const RichTextEditor = React.lazy(() =>
   import("@/components/knowledge-sparks/RichTextEditor").then((m) => ({ default: m.RichTextEditor }))
 );
@@ -1141,8 +1142,9 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
           </ul>
         </div>
       )}
-
-
+      <div className="mt-8">
+        <SparkComments sparkId={spark.id} />
+      </div>
 
       {/* Conflict Resolution Dialog */}
       <Dialog open={showConflictDialog} onOpenChange={(open) => setShowConflictDialog(open)}>

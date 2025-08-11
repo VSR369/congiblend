@@ -71,6 +71,7 @@ export const UniversalSearch = React.memo(({ className, onResultClick }: Univers
     posts: FileText,
     companies: Building2,
     jobs: Briefcase,
+    sparks: FileText,
     all: Search
   }), []);
 
@@ -98,7 +99,7 @@ export const UniversalSearch = React.memo(({ className, onResultClick }: Univers
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search people, posts, companies..."
+              placeholder="Search people, posts, companies, sparks..."
               value={inputValue}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}

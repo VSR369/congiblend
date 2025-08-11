@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { supabase } from "@/integrations/supabase/client";
 import type { 
   SearchUser, 
   SearchPost, 
@@ -10,7 +11,8 @@ import type {
   SavedSearch,
   SearchSuggestion,
   TrendingTopic,
-  Recommendation
+  Recommendation,
+  SearchSpark
 } from '@/types/search';
 
 interface SearchState {
@@ -25,6 +27,7 @@ interface SearchState {
   posts: SearchPost[];
   companies: SearchCompany[];
   jobs: SearchJob[];
+  sparks: SearchSpark[];
   totalResults: { [K in SearchResultType]: number };
   
   // History and suggestions
@@ -114,7 +117,8 @@ export const useSearchStore = create<SearchState>()(
       posts: [],
       companies: [],
       jobs: [],
-      totalResults: { all: 0, people: 0, posts: 0, companies: 0, jobs: 0 },
+      sparks: [],
+      totalResults: { all: 0, people: 0, posts: 0, companies: 0, jobs: 0, sparks: 0 },
       
       // History and suggestions
       recentSearches: [],
@@ -178,22 +182,41 @@ export const useSearchStore = create<SearchState>()(
           // Simulate API delay
           await new Promise(resolve => setTimeout(resolve, 500));
           
-          // Generate mock results
-          const users = generateMockUsers(Math.floor(Math.random() * 20) + 5);
-          const posts = generateMockPosts(Math.floor(Math.random() * 15) + 3);
-          const companies = generateMockCompanies(Math.floor(Math.random() * 10) + 2);
+          const q = query.trim();
+
+          // Generate mock results in parallel with real sparks query
+          const [users, posts, companies, sparksResp] = await Promise.all([
+            Promise.resolve(generateMockUsers(Math.floor(Math.random() * 20) + 5)),
+            Promise.resolve(generateMockPosts(Math.floor(Math.random() * 15) + 3)),
+            Promise.resolve(generateMockCompanies(Math.floor(Math.random() * 10) + 2)),
+            supabase
+              .from('knowledge_sparks')
+              .select('id,title,slug,description')
+              .eq('is_active', true)
+              .or(`title.ilike.%${q}%,description.ilike.%${q}%`)
+              .limit(10)
+          ]);
+
+          const sparks = (sparksResp as any).data?.map((s: any) => ({
+            id: s.id,
+            title: s.title,
+            slug: s.slug,
+            description: s.description ?? null,
+          })) || [];
           
           set({
             users,
             posts,
             companies,
             jobs: [],
+            sparks,
             totalResults: {
-              all: users.length + posts.length + companies.length,
+              all: users.length + posts.length + companies.length + sparks.length,
               people: users.length,
               posts: posts.length,
               companies: companies.length,
-              jobs: 0
+              jobs: 0,
+              sparks: sparks.length
             },
             recentSearches: updatedRecent,
             isSearching: false

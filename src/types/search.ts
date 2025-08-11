@@ -50,8 +50,14 @@ export interface SearchJob {
   applicants: number;
   skills: string[];
 }
+export interface SearchSpark {
+  id: string;
+  title: string;
+  slug: string;
+  description?: string | null;
+}
 
-export type SearchResultType = 'all' | 'people' | 'posts' | 'companies' | 'jobs';
+export type SearchResultType = 'all' | 'people' | 'posts' | 'companies' | 'jobs' | 'sparks';
 
 export interface SearchFilters {
   location?: string;
