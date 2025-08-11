@@ -69,6 +69,8 @@ const KnowledgeSparkViewPage: React.FC = () => {
     gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
   });
+  
+  const { status: realtimeStatus } = useRealtimeStatus();
 
   useEffect(() => {
     if (spark) {
@@ -149,7 +151,6 @@ const KnowledgeSparkViewPage: React.FC = () => {
     );
   }
 
-  const { status: realtimeStatus } = useRealtimeStatus();
 
   return (
     <FeedErrorBoundary>
