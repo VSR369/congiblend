@@ -6,7 +6,7 @@ import { UserStatsCard } from '@/components/ui/user-stats-card';
 
 const navigationItems = [
   { title: 'Mission Control', url: '/', icon: Home },
-  { title: 'Articles', url: '/articles/new', activeMatch: '/articles', icon: FileText },
+  { title: 'Articles', url: '/articles', activeMatch: '/articles', icon: FileText },
   { title: 'Messages', url: '/messages', icon: MessageCircle },
   { title: 'Knowledge Sparks', url: '/knowledge-sparks', icon: Lightbulb },
 ];

@@ -23,6 +23,7 @@ const KnowledgeSparks = lazy(() => import("./pages/KnowledgeSparks"));
 const KnowledgeSparkCreate = lazy(() => import("./pages/KnowledgeSparkCreate"));
 const KnowledgeSparkView = lazy(() => import("./pages/KnowledgeSparkView"));
 // Articles
+const Articles = lazy(() => import("./pages/Articles"));
 const ArticleCreate = lazy(() => import("./pages/ArticleCreate"));
 const ArticleView = lazy(() => import("./pages/ArticleView"));
 
@@ -81,9 +82,10 @@ const AppContent = () => {
               <Route path="knowledge-sparks" element={<KnowledgeSparks />} />
               <Route path="knowledge-sparks/new" element={<KnowledgeSparkCreate />} />
               <Route path="knowledge-sparks/:slug" element={<KnowledgeSparkView />} />
-              {/* Articles */}
-              <Route path="articles/new" element={<ArticleCreate />} />
-              <Route path="articles/:id" element={<ArticleView />} />
+{/* Articles */}
+<Route path="articles" element={<Articles />} />
+<Route path="articles/new" element={<ArticleCreate />} />
+<Route path="articles/:id" element={<ArticleView />} />
             </Route>
             <Route path="/login" element={<Auth />} />
             <Route path="/register" element={<Auth />} />

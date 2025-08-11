@@ -55,8 +55,8 @@ export const RightSidebar = () => {
           supabase
             .from('posts')
             .select('id, content, metadata, likes_count, reactions_count, created_at, post_type, visibility')
-            .or('post_type.eq.article,not.metadata->>article_html.is.null')
             .eq('visibility', 'public')
+            .or('post_type.eq.article,metadata->>article_html.not.is.null')
             .limit(10),
           supabase
             .from('knowledge_sparks')
