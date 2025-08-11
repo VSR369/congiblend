@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { htmlToPlainText } from "@/utils/html";
 import { useIsSparkAuthor } from "@/hooks/useIsSparkAuthor";
+import { useHasExternalContributions } from "@/hooks/useHasExternalContributions";
 import { SparkTOC, extractHeadings } from "@/components/knowledge-sparks/SparkTOC";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useAutosaveDraft } from "@/hooks/useAutosaveDraft";
@@ -92,6 +93,8 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   const qc = useQueryClient();
   const { isAuthenticated, user } = useAuthStore();
   const { isAuthor } = useIsSparkAuthor(spark?.id);
+  const { hasExternal, isLoading: hasExternalLoading } = useHasExternalContributions(spark?.id);
+  const canReplace = isAuthor && !hasExternal;
   const { status: realtimeStatus, refetchInterval } = useRealtimeStatus();
 
   const { data: latestVersion, isLoading } = useQuery({
@@ -294,10 +297,10 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
 
   // Ensure non-authors cannot remain in "replace" mode
   useEffect(() => {
-    if (!isAuthor && editMode === "replace") {
+    if (!canReplace && editMode === "replace") {
       setEditMode("append");
     }
-  }, [isAuthor, editMode]);
+  }, [canReplace, editMode]);
 
   // Capture base version when editing starts
   useEffect(() => {
@@ -432,8 +435,8 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
       return;
     }
 
-    if (editMode === "replace" && !isAuthor) {
-      toast.error("Only the author can replace content. Use Append instead.");
+    if (editMode === "replace" && !canReplace) {
+      toast.error("Full replacement is limited to the author before any external contributions. Use Append or Edit section.");
       setEditMode("append");
       return;
     }
@@ -698,22 +701,36 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             <span className="hidden sm:inline">{bookmarked ? "Saved" : "Save"}</span>
           </Button>
           {isAuthor && (
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={isLoading || !!spark.is_archived}
-              onClick={() => {
-                setEditing(true);
-                setEditMode("replace");
-                setContentHtmlDraft(currentHtml || "");
-                setShowPreview(false);
-              }}
-            >
-              Edit full content
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={isLoading || !!spark.is_archived || !canReplace}
+                      onClick={() => {
+                        if (!canReplace) return;
+                        setEditing(true);
+                        setEditMode("replace");
+                        setContentHtmlDraft(currentHtml || "");
+                        setShowPreview(false);
+                      }}
+                    >
+                      Edit full content (author only)
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {!canReplace && (
+                  <TooltipContent>
+                    Full replacement is disabled after external contributions. Use Edit section or Contribute (append).
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           )}
           <Button size="sm" variant={editing ? "secondary" : "default"} disabled={!!spark.is_archived} onClick={() => setEditing(true)}>
-            Contribute
+            Contribute (append)
           </Button>
         </div>
       </div>
@@ -769,8 +786,10 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               <div className="font-medium">About contributions</div>
               <p className="text-muted-foreground">
                 {isAuthor
-                  ? "As the author, you can append, modify sections, or replace the entire content. Others can only suggest append/modify."
-                  : "You can append new content or modify a section. Only the spark’s author can replace the full content."}
+                  ? canReplace
+                    ? "As the author, you can append, edit sections, or replace the entire content."
+                    : "As the author, you can append or edit sections. Full replacement is disabled after external contributions."
+                  : "You can append new content or edit a section. Only the spark’s author can replace the full content (before others contribute)."}
               </p>
             </div>
           </div>
@@ -806,13 +825,15 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             <Select
               value={editMode}
               onValueChange={(v) => {
-                if (v === "replace" && !isAuthor) {
-                  toast.error("Only the author can replace content. Use Append instead.");
-                  return;
+                if (v === "replace") {
+                  if (!canReplace) {
+                    toast.error("Full replacement is limited to the author before any external contributions.");
+                    return;
+                  }
                 }
                 if (v === "modify-section") {
                   if (tocHeadings.length === 0) {
-                    toast.error("No headings available to modify. Use Append or add a heading.");
+                    toast.error("No headings available to edit. Use Append or add a heading.");
                     return;
                   }
                   if (!selectedHeadingId && tocHeadings.length > 0) {
@@ -830,17 +851,17 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
                     </SelectTrigger>
                   </TooltipTrigger>
                   <TooltipContent>
-                    Choose how to contribute: Append adds at end, Modify targets a section, Replace overrides all (author only).
+                    Choose how to contribute: Append adds at end, Edit section targets a section, Replace entire content (author only; disabled after external contributions).
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
               <SelectContent>
                 <SelectItem value="append">Append</SelectItem>
-                <SelectItem value="modify-section">Modify section</SelectItem>
-                <SelectItem value="replace" disabled={!isAuthor}>
+                <SelectItem value="modify-section">Edit section</SelectItem>
+                <SelectItem value="replace" disabled={!canReplace}>
                   <span className="inline-flex items-center gap-1">
-                    {!isAuthor && <Lock className="h-3.5 w-3.5" aria-hidden="true" />}
-                    Replace {!isAuthor && "(author only)"}
+                    {!canReplace && <Lock className="h-3.5 w-3.5" aria-hidden="true" />}
+                    Replace {(!canReplace) && "(author only or disabled)"}
                   </span>
                 </SelectItem>
               </SelectContent>
@@ -963,13 +984,15 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               <Select
                 value={editMode}
                 onValueChange={(v) => {
-                  if (v === "replace" && !isAuthor) {
-                    toast.error("Only the author can replace content. Use Append instead.");
-                    return;
+                  if (v === "replace") {
+                    if (!canReplace) {
+                      toast.error("Full replacement is limited to the author before any external contributions.");
+                      return;
+                    }
                   }
                   if (v === "modify-section") {
                     if (tocHeadings.length === 0) {
-                      toast.error("No headings available to modify. Use Append or add a heading.");
+                      toast.error("No headings available to edit. Use Append or add a heading.");
                       return;
                     }
                     if (!selectedHeadingId && tocHeadings.length > 0) {
@@ -987,17 +1010,17 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
                       </SelectTrigger>
                     </TooltipTrigger>
                     <TooltipContent>
-                      Choose how to contribute: Append adds at end, Modify targets a section, Replace overrides all (author only).
+                      Choose how to contribute: Append adds at end, Edit section targets a section, Replace entire content (author only; disabled after external contributions).
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
                 <SelectContent>
                   <SelectItem value="append">Append</SelectItem>
-                  <SelectItem value="modify-section">Modify section</SelectItem>
-                  <SelectItem value="replace" disabled={!isAuthor}>
+                  <SelectItem value="modify-section">Edit section</SelectItem>
+                  <SelectItem value="replace" disabled={!canReplace}>
                     <span className="inline-flex items-center gap-1">
-                      {!isAuthor && <Lock className="h-3.5 w-3.5" aria-hidden="true" />}
-                      Replace {!isAuthor && "(author only)"}
+                      {!canReplace && <Lock className="h-3.5 w-3.5" aria-hidden="true" />}
+                      Replace {(!canReplace) && "(author only or disabled)"}
                     </span>
                   </SelectItem>
                 </SelectContent>
@@ -1075,13 +1098,15 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               <Select
                 value={editMode}
                 onValueChange={(v) => {
-                  if (v === "replace" && !isAuthor) {
-                    toast.error("Only the author can replace content. Use Append instead.");
-                    return;
+                  if (v === "replace") {
+                    if (!canReplace) {
+                      toast.error("Full replacement is limited to the author before any external contributions.");
+                      return;
+                    }
                   }
                   if (v === "modify-section") {
                     if (tocHeadings.length === 0) {
-                      toast.error("No headings available to modify. Use Append or add a heading.");
+                      toast.error("No headings available to edit. Use Append or add a heading.");
                       return;
                     }
                     if (!selectedHeadingId && tocHeadings.length > 0) {
@@ -1096,11 +1121,11 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="append">Append</SelectItem>
-                  <SelectItem value="modify-section">Modify section</SelectItem>
-                  <SelectItem value="replace" disabled={!isAuthor}>
+                  <SelectItem value="modify-section">Edit section</SelectItem>
+                  <SelectItem value="replace" disabled={!canReplace}>
                     <span className="inline-flex items-center gap-1">
-                      {!isAuthor && <Lock className="h-3.5 w-3.5" aria-hidden="true" />}
-                      Replace {!isAuthor && "(author only)"}
+                      {!canReplace && <Lock className="h-3.5 w-3.5" aria-hidden="true" />}
+                      Replace {(!canReplace) && "(author only or disabled)"}
                     </span>
                   </SelectItem>
                 </SelectContent>
