@@ -3,6 +3,7 @@ import type { Post, FeedSettings, CreatePostData, ReactionType, PostType, User }
 
 import { supabase } from '@/integrations/supabase/client';
 import { ALL_POST_TYPES } from '@/utils/constants';
+import { persistBookmarkToggle, fetchSavedPostIds } from '@/services/bookmarks';
 
 export interface FeedFilters {
   userFilter: 'all' | 'my_posts' | 'others' | string; // 'string' for specific user
@@ -314,7 +315,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
       try {
         const { filters } = state;
-        
+
         // Circuit breaker pattern - stop infinite retries
         const maxRetries = 3;
         const retryDelay = 1000;
@@ -532,8 +533,24 @@ export const useFeedStore = create<FeedState>((set, get) => {
           return transformDbPost(postWithData, dbPost.profiles, user?.id);
         });
 
+        // NEW: mark saved posts for current user
+        let annotatedPosts = transformedPosts;
+        try {
+          const postIds = (transformedPosts || []).map(p => p.id).filter(Boolean);
+          const savedSet = await fetchSavedPostIds(postIds);
+          if (savedSet.size > 0) {
+            annotatedPosts = transformedPosts.map(p => ({
+              ...p,
+              isSaved: savedSet.has(p.id),
+              userSaved: savedSet.has(p.id),
+            }));
+          }
+        } catch (e) {
+          console.warn('Failed to annotate saved posts:', e);
+        }
+
         set((state) => {
-          let merged = reset ? transformedPosts : [...state.posts, ...transformedPosts];
+          let merged = reset ? annotatedPosts : [...state.posts, ...annotatedPosts];
           if (reset) {
             // Purge any stale optimistic posts to avoid stuck "Publishing..." UI
             merged = merged.filter(p => !String(p.id).startsWith('post-'));
@@ -542,7 +559,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           return {
             posts: unique,
             loading: false,
-            hasMore: transformedPosts.length === pageSize
+            hasMore: (annotatedPosts.length || 0) === pageSize
           };
         });
 
@@ -1157,21 +1174,53 @@ export const useFeedStore = create<FeedState>((set, get) => {
       }
     },
 
-    toggleSave: (postId: string) => {
-      // This would require a separate saves table - for now just update locally
-      set(state => ({
-        posts: state.posts.map(post => {
-          if (post.id !== postId) return post;
-          
+    toggleSave: async (postId: string) => {
+      const state = get();
+      const post = state.posts.find(p => p.id === postId);
+      if (!post) return;
+
+      const willSave = !post.userSaved && !post.isSaved ? true : !post.userSaved || !post.isSaved ? true : false;
+      // Better: consider either property as the current truth
+      const currentlySaved = Boolean(post.userSaved ?? post.isSaved);
+      const nextSaved = !currentlySaved;
+
+      // Optimistic update
+      set(s => ({
+        posts: s.posts.map(p => {
+          if (p.id !== postId) return p;
           return {
-            ...post,
-            userSaved: !post.userSaved,
-            saves: post.userSaved ? post.saves - 1 : post.saves + 1
+            ...p,
+            userSaved: nextSaved,
+            isSaved: nextSaved,
+            // If you display saves count elsewhere, this keeps a local feel
+            saves: typeof p.saves === 'number' ? (nextSaved ? p.saves + 1 : Math.max(0, p.saves - 1)) : p.saves
           };
         })
       }));
-    },
 
+      try {
+        await persistBookmarkToggle(postId, nextSaved);
+        console.log('[toggleSave] persisted', { postId, saved: nextSaved });
+      } catch (err) {
+        console.error('[toggleSave] error, rolling back:', err);
+        // Rollback optimistic update
+        set(s => ({
+          posts: s.posts.map(p => {
+            if (p.id !== postId) return p;
+            const rollbackSaved = currentlySaved;
+            return {
+              ...p,
+              userSaved: rollbackSaved,
+              isSaved: rollbackSaved,
+              saves: typeof p.saves === 'number'
+                ? (rollbackSaved ? p.saves + (nextSaved ? -1 : 0) : p.saves - (nextSaved ? -1 : 0)) // revert the +/- we just did
+                : p.saves
+            };
+          })
+        }));
+        throw err;
+      }
+    },
 
     updateFeedSettings: (settings: Partial<FeedSettings>) => {
       set(state => ({
