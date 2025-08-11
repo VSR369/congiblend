@@ -88,6 +88,7 @@ export const SparkTOC: React.FC<SparkTOCProps> = ({ headings, canContribute, onE
   if (!headings.length) return null;
 
   const handleClick = (id: string) => {
+    try { history.replaceState(null, "", `#${id}`); } catch { location.hash = id; }
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };

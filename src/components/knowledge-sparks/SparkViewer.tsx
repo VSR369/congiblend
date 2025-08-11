@@ -129,6 +129,8 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   const [showConflictDialog, setShowConflictDialog] = useState(false);
   const [conflictVersion, setConflictVersion] = useState<number | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; anchorId: string | null; title?: string | null }>({ open: false, anchorId: null, title: null });
+  const [historyDialog, setHistoryDialog] = useState<{ open: boolean; anchorId: string | null; sectionId: string | null; title?: string | null }>({ open: false, anchorId: null, sectionId: null, title: null });
+  const [sectionHistory, setSectionHistory] = useState<any[]>([]);
 
   useEffect(() => {
     if (!spark?.id) return;
@@ -142,8 +144,22 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
           qc.invalidateQueries({ queryKey: ['spark', spark.id, 'latestVersion'] });
           qc.invalidateQueries({ queryKey: ['spark', spark.id, 'versions', 'history'] });
         }
-      );
-    channel.subscribe();
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'spark_sections', filter: `spark_id=eq.${spark.id}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ['spark', spark.id, 'sections'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'spark_section_edits', filter: `spark_id=eq.${spark.id}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ['spark', spark.id, 'sections'] });
+        }
+      )
+      .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
@@ -465,6 +481,30 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   const currentHtml = useMemo(() => (viewVersion?.content_html || latestVersion?.content_html || ""), [viewVersion?.content_html, latestVersion?.content_html]);
   const tocHeadings = useMemo(() => extractHeadings(currentHtml).headings, [currentHtml]);
 
+  // Deep link: scroll to heading from URL hash when content/headings are ready
+  useEffect(() => {
+    if (!tocHeadings.length) return;
+    const id = decodeURIComponent((window.location.hash || '').slice(1));
+    if (!id) return;
+    const el = document.getElementById(id);
+    if (el) {
+      try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
+      el.classList.add('ring-1','ring-ring','rounded-sm');
+      setTimeout(() => el.classList.remove('ring-1','ring-ring','rounded-sm'), 1200);
+    }
+  }, [tocHeadings]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const id = decodeURIComponent((window.location.hash || '').slice(1));
+      if (!id) return;
+      const el = document.getElementById(id);
+      if (el) try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
   // Map sections by anchor for quick lookup
   const sectionByAnchor = useMemo(() => {
     const map = new Map<string, any>();
@@ -545,6 +585,20 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     ensureSectionsForHeadings(tocHeadings.map((h) => ({ id: h.id, text: h.text })));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spark?.id, currentHtml]);
+
+  // Load per-section history when dialog opens
+  useEffect(() => {
+    if (!historyDialog.open || !historyDialog.sectionId) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from('spark_section_edits')
+        .select('id,editor_id,version_number,summary,created_at,content_plain')
+        .eq('section_id', historyDialog.sectionId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (!error) setSectionHistory(data || []);
+    })();
+  }, [historyDialog.open, historyDialog.sectionId]);
 
   useEffect(() => {
     if (editMode === "modify-section" && !selectedHeadingId && tocHeadings.length > 0) {
@@ -781,8 +835,25 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               const updated = sec.last_modified_at ? new Date(sec.last_modified_at).toLocaleDateString() : "";
               return (
                 <InlineAfterHeadingPortal key={`meta-${h.id}`} containerRef={contentRef} headingId={h.id}>
-                  <div className="mt-1 text-[11px] text-muted-foreground">
-                    Section by {isOwner ? "you" : (sec.creator_id?.slice(0, 8) || "someone")} {updated && `• updated ${updated}`}
+                  <div className="mt-1 flex items-center gap-3 text-[11px] text-muted-foreground">
+                    <span>Section by {isOwner ? "you" : (sec.creator_id?.slice(0, 8) || "someone")} {updated && `• updated ${updated}`}</span>
+                    <button
+                      className="underline underline-offset-2 hover:text-foreground"
+                      onClick={async () => {
+                        const url = `${window.location.origin}/knowledge-sparks/${spark.slug}#${h.id}`;
+                        try { await navigator.clipboard.writeText(url); toast.success('Link copied'); } catch { toast.error('Failed to copy'); }
+                      }}
+                      aria-label={`Copy link to ${h.text}`}
+                    >
+                      Copy link
+                    </button>
+                    <button
+                      className="underline underline-offset-2 hover:text-foreground"
+                      onClick={() => setHistoryDialog({ open: true, anchorId: h.id, sectionId: sec.id, title: h.text })}
+                      aria-label={`View history of ${h.text}`}
+                    >
+                      History
+                    </button>
                   </div>
                 </InlineAfterHeadingPortal>
               );
@@ -1032,6 +1103,36 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
           <DialogFooter>
             <Button variant="secondary" onClick={() => setDeleteDialog({ open: false, anchorId: null, title: null })}>Cancel</Button>
             <Button variant="destructive" onClick={() => { if (deleteDialog.anchorId) { handleDeleteSection(deleteDialog.anchorId, deleteDialog.title || undefined); } setDeleteDialog({ open: false, anchorId: null, title: null }); }}>Delete section</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Section History Dialog */}
+      <Dialog open={historyDialog.open} onOpenChange={(open) => setHistoryDialog((d) => ({ ...d, open }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Section history{historyDialog.title ? ` – ${historyDialog.title}` : ''}</DialogTitle>
+            <DialogDescription>Recent edits for this section.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[300px] overflow-y-auto">
+            {sectionHistory.length === 0 ? (
+              <div className="text-sm text-muted-foreground p-2">No edits yet.</div>
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {sectionHistory.map((e) => (
+                  <li key={e.id} className="rounded-md border border-border p-2 bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <span>v{e.version_number ?? '–'}</span>
+                      <span className="text-xs text-muted-foreground">{new Date(e.created_at).toLocaleString()}</span>
+                    </div>
+                    {e.summary && <div className="mt-1 text-xs text-muted-foreground">{e.summary}</div>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setHistoryDialog({ open: false, anchorId: null, sectionId: null, title: null })}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

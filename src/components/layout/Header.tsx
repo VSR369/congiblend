@@ -44,7 +44,7 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false }: Head
   const { theme, toggleTheme } = useThemeStore();
   const { user, isAuthenticated, signOut } = useAuthStore();
   const { unreadCount } = useNotificationStore();
-  useRealtimeNotifications();
+  const { markAllAsRead } = useRealtimeNotifications();
 
   const handleSearch = React.useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -146,10 +146,19 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false }: Head
             <DropdownMenuContent align="end" className="w-80 glass-card border-glass-border">
               <DropdownMenuLabel className="text-lg font-semibold">Notifications</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <div className="p-4 text-center text-muted-foreground">
-                <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No new notifications</p>
-              </div>
+              {unreadCount === 0 ? (
+                <div className="p-4 text-center text-muted-foreground">
+                  <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No new notifications</p>
+                </div>
+              ) : (
+                <div className="p-3 space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>You have {unreadCount} unread</span>
+                    <Button size="sm" variant="secondary" onClick={markAllAsRead}>Mark all as read</Button>
+                  </div>
+                </div>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
