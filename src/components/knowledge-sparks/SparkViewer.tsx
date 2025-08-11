@@ -16,10 +16,10 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useAutosaveDraft } from "@/hooks/useAutosaveDraft";
 import { createPortal } from "react-dom";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-import { Info, Lock } from "lucide-react";
+import { Info, Lock, Bookmark, BookmarkCheck } from "lucide-react";
 import { useSparkSections } from "@/hooks/useSparkSections";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-
+import { persistSparkBookmarkToggle } from "@/services/sparkBookmarks";
 const RichTextEditor = React.lazy(() =>
   import("@/components/knowledge-sparks/RichTextEditor").then((m) => ({ default: m.RichTextEditor }))
 );
@@ -175,9 +175,51 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
 
   const contentRef = React.useRef<HTMLDivElement>(null);
 
-  // Section metadata helpers
+// Section metadata helpers
   const { sections, ensureSectionsForHeadings, recordSectionEdit, deleteSection } = useSparkSections(spark.id);
 
+  // Bookmark state
+  const [bookmarked, setBookmarked] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!spark?.id) return;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          if (!cancelled) setBookmarked(false);
+          return;
+        }
+        const { data } = await supabase
+          .from("spark_bookmarks")
+          .select("id")
+          .eq("spark_id", spark.id)
+          .limit(1);
+        if (!cancelled) setBookmarked(!!(data && data.length));
+      } catch {
+        if (!cancelled) setBookmarked(false);
+      }
+    })();
+    return () => { cancelled = true };
+  }, [spark?.id]);
+
+  const handleToggleBookmark = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Please sign in to save sparks.");
+      return;
+    }
+    try {
+      await persistSparkBookmarkToggle(spark.id, !bookmarked);
+      setBookmarked((v) => !v);
+      toast.success(!bookmarked ? "Saved to your sparks" : "Removed from saved");
+    } catch (e) {
+      console.error("Bookmark toggle failed", e);
+      toast.error("Failed to update saved state");
+    }
+  };
+
+  const [showMobileTOC, setShowMobileTOC] = useState(false);
 
   const draftKey = `sparkDraft:${spark.id}`;
   const { loadedDraft, clearDraft } = useAutosaveDraft(draftKey, {
@@ -640,6 +682,10 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               <SelectItem value="full">Width: Full</SelectItem>
             </SelectContent>
           </Select>
+          <Button size="sm" variant="outline" onClick={handleToggleBookmark} aria-label={bookmarked ? "Remove from saved" : "Save spark"}>
+            {bookmarked ? <BookmarkCheck className="h-4 w-4 mr-1" /> : <Bookmark className="h-4 w-4 mr-1" />}
+            <span className="hidden sm:inline">{bookmarked ? "Saved" : "Save"}</span>
+          </Button>
           {isAuthor && (
             <Button
               size="sm"
@@ -660,6 +706,27 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
           </Button>
         </div>
       </div>
+
+      {/* Mobile TOC */}
+      {tocHeadings.length > 0 && (
+        <div className="mt-3 xl:hidden">
+          <Button size="sm" variant="outline" onClick={() => setShowMobileTOC((v) => !v)}>
+            Contents
+          </Button>
+          {showMobileTOC && (
+            <div className="mt-2 rounded-md border border-border bg-muted/30 p-2">
+              <SparkTOC
+                headings={tocHeadings}
+                canContribute={isAuthenticated}
+                onEditHere={(id) => { setSelectedHeadingId(id); setEditMode("modify-section"); setEditing(true); setShowPreview(false); setShowMobileTOC(false); }}
+                sections={sections}
+                currentUserId={user?.id}
+                onDeleteSection={(id, text) => requestDeleteSection(id, text)}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {!isAuthenticated && (
         <div className="mt-4 p-3 rounded-lg bg-muted text-sm flex items-center justify-between">
