@@ -126,6 +126,28 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   });
 
   const [editing, setEditing] = useState(false);
+  const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [conflictVersion, setConflictVersion] = useState<number | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; anchorId: string | null; title?: string | null }>({ open: false, anchorId: null, title: null });
+
+  useEffect(() => {
+    if (!spark?.id) return;
+    const channel = supabase
+      .channel(`spark_versions_${spark.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'spark_content_versions', filter: `spark_id=eq.${spark.id}` },
+        (payload) => {
+          console.debug('Realtime: new spark version', payload);
+          qc.invalidateQueries({ queryKey: ['spark', spark.id, 'latestVersion'] });
+          qc.invalidateQueries({ queryKey: ['spark', spark.id, 'versions', 'history'] });
+        }
+      );
+    channel.subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [spark?.id, qc]);
   const [contentHtmlDraft, setContentHtmlDraft] = useState("");
   const [changeSummary, setChangeSummary] = useState("");
   const [editMode, setEditMode] = useState<"append" | "modify-section" | "replace">("append");
@@ -327,7 +349,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     }
   };
 
-  const handleSuggestEdit = async () => {
+  const handleSuggestEdit = async (force?: boolean) => {
     const { data: auth } = await supabase.auth.getUser();
     const user = auth?.user;
     if (!user) {
@@ -373,8 +395,11 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     } catch {}
 
     if (baseVersionNumber != null && currentLatest != null && currentLatest !== baseVersionNumber) {
-      const proceed = confirm(`A newer version (v${currentLatest}) was published while you were editing. Continue anyway?`);
-      if (!proceed) return;
+      if (!force) {
+        setConflictVersion(currentLatest);
+        setShowConflictDialog(true);
+        return;
+      }
     }
     const effectiveNext = ((currentLatest ?? (latestVersion?.version_number ?? 0)) + 1);
 
@@ -447,6 +472,10 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     return map;
   }, [sections]);
 
+  const requestDeleteSection = (anchorId: string, title?: string) => {
+    setDeleteDialog({ open: true, anchorId, title: title ?? null });
+  };
+
   const handleDeleteSection = async (anchorId: string, title?: string) => {
     try {
       const sec = sectionByAnchor.get(anchorId);
@@ -458,7 +487,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         toast.error("Only the section creator can delete this section.");
         return;
       }
-      if (!confirm(`Delete section "${title || anchorId}" and create a new version?`)) return;
+      
 
       // Compute updated HTML without this section
       const baseHtml = (latestVersion?.content_html || "").trim();
@@ -697,7 +726,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
           <div className="mt-2 flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setShowPreview((v) => !v)}>Preview</Button>
             <Button variant="secondary" onClick={() => setEditing(false)}>Cancel</Button>
-            <Button onClick={handleSuggestEdit}>Submit Edit</Button>
+            <Button onClick={() => handleSuggestEdit()}>Submit Edit</Button>
           </div>
         </div>
       )}
@@ -837,7 +866,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             <div className="mt-2 flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setShowPreview((v) => !v)}>Preview</Button>
               <Button variant="secondary" onClick={() => setEditing(false)}>Cancel</Button>
-              <Button onClick={handleSuggestEdit}>Submit Edit</Button>
+              <Button onClick={() => handleSuggestEdit()}>Submit Edit</Button>
             </div>
           </div>
         )}
@@ -851,7 +880,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               onEditHere={(id) => { setSelectedHeadingId(id); setEditMode("modify-section"); setEditing(true); setShowPreview(false); }}
               sections={sections}
               currentUserId={user?.id}
-              onDeleteSection={(id, text) => handleDeleteSection(id, text)}
+              onDeleteSection={(id, text) => requestDeleteSection(id, text)}
             />
           </aside>
         )}
@@ -941,7 +970,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             <div className="mt-2 flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setShowPreview((v) => !v)}>Preview</Button>
               <Button variant="secondary" onClick={() => setEditing(false)}>Cancel</Button>
-              <Button onClick={handleSuggestEdit}>Submit Edit</Button>
+              <Button onClick={() => handleSuggestEdit()}>Submit Edit</Button>
             </div>
           </div>
         </InlineAfterHeadingPortal>
@@ -973,6 +1002,39 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         </div>
       )}
 
+
+
+      {/* Conflict Resolution Dialog */}
+      <Dialog open={showConflictDialog} onOpenChange={(open) => setShowConflictDialog(open)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Newer version available</DialogTitle>
+            <DialogDescription>
+              A newer version{typeof conflictVersion === 'number' ? ` (v${conflictVersion})` : ''} was published while you were editing.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setShowConflictDialog(false)}>Cancel</Button>
+            <Button onClick={() => { setShowConflictDialog(false); handleSuggestEdit(true); }}>Continue and submit</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Section Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog((d) => ({ ...d, open }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete section?</DialogTitle>
+            <DialogDescription>
+              This will remove the selected section and create a new version. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setDeleteDialog({ open: false, anchorId: null, title: null })}>Cancel</Button>
+            <Button variant="destructive" onClick={() => { if (deleteDialog.anchorId) { handleDeleteSection(deleteDialog.anchorId, deleteDialog.title || undefined); } setDeleteDialog({ open: false, anchorId: null, title: null }); }}>Delete section</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </Card>
   );
