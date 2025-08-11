@@ -20,6 +20,7 @@ import { Info, Lock, Bookmark, BookmarkCheck } from "lucide-react";
 import { useSparkSections } from "@/hooks/useSparkSections";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { persistSparkBookmarkToggle } from "@/services/sparkBookmarks";
+import { SparkContributors } from "@/components/knowledge-sparks/SparkContributors";
 const RichTextEditor = React.lazy(() =>
   import("@/components/knowledge-sparks/RichTextEditor").then((m) => ({ default: m.RichTextEditor }))
 );
@@ -1020,6 +1021,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
               currentUserId={user?.id}
               onDeleteSection={(id, text) => requestDeleteSection(id, text)}
             />
+            <SparkContributors sparkId={spark.id} />
           </aside>
         )}
 
