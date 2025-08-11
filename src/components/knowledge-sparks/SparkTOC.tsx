@@ -111,6 +111,7 @@ export const SparkTOC: React.FC<SparkTOCProps> = ({ headings, canContribute, onE
                 {sec && (
                   <span className="ml-2 text-[10px] text-muted-foreground">
                     {isOwner ? "(yours)" : ""}
+                    {sec.last_modified_at ? ` • ${new Date(sec.last_modified_at).toLocaleDateString()}` : ""}
                   </span>
                 )}
                 {canContribute && onEditHere && (

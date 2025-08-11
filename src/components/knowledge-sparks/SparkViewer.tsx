@@ -296,6 +296,36 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
     }
   };
 
+  // Remove heading node and all content until next heading of same or higher level
+  const removeSectionFromHtml = (baseHtml: string, headingId: string): string => {
+    const { htmlWithIds } = extractHeadings(baseHtml || "");
+    const container = document.createElement("div");
+    container.innerHTML = htmlWithIds;
+    try {
+      const target = container.querySelector(`#${CSS.escape(headingId)}`) as HTMLElement | null;
+      if (!target) return cleanHtml(container.innerHTML);
+      const level = parseInt(target.tagName.replace("H", ""), 10) || 2;
+      // Remove nodes after heading until next heading of same or higher level
+      let cursor: Node | null = target.nextSibling;
+      while (
+        cursor && !(
+          cursor.nodeType === Node.ELEMENT_NODE &&
+          /^H[1-6]$/.test((cursor as HTMLElement).tagName) &&
+          parseInt((cursor as HTMLElement).tagName.replace("H", ""), 10) <= level
+        )
+      ) {
+        const toRemove = cursor;
+        cursor = cursor.nextSibling;
+        toRemove.parentNode?.removeChild(toRemove);
+      }
+      // Finally remove the heading itself
+      target.parentNode?.removeChild(target);
+      return cleanHtml(container.innerHTML);
+    } catch {
+      return cleanHtml(container.innerHTML);
+    }
+  };
+
   const handleSuggestEdit = async () => {
     const { data: auth } = await supabase.auth.getUser();
     const user = auth?.user;
@@ -427,11 +457,54 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
         toast.error("Only the section creator can delete this section.");
         return;
       }
-      if (!confirm(`Delete section "${title || anchorId}"?`)) return;
+      if (!confirm(`Delete section "${title || anchorId}" and create a new version?`)) return;
+
+      // Compute updated HTML without this section
+      const baseHtml = (latestVersion?.content_html || "").trim();
+      const updatedHtml = removeSectionFromHtml(baseHtml, anchorId);
+      const updatedPlain = htmlToPlainText(updatedHtml).trim();
+
+      // Conflict check
+      let currentLatest: number | null = latestVersion?.version_number ?? null;
+      try {
+        const { data: latestNow } = await supabase
+          .from("spark_content_versions")
+          .select("version_number")
+          .eq("spark_id", spark.id)
+          .order("version_number", { ascending: false })
+          .limit(1);
+        currentLatest = (latestNow && latestNow[0]?.version_number) ?? currentLatest;
+      } catch {}
+      const effectiveNext = ((currentLatest ?? (latestVersion?.version_number ?? 0)) + 1);
+
+      // Insert new version reflecting the deletion
+      const { error: verErr } = await supabase.from("spark_content_versions").insert({
+        spark_id: spark.id,
+        version_number: effectiveNext,
+        content: { blocks: [] },
+        content_html: updatedHtml || null,
+        content_plain: updatedPlain,
+        change_summary: `Delete section: ${title || anchorId}`,
+        edit_type: "modification",
+        word_count: updatedPlain.split(/\s+/).filter(Boolean).length,
+        character_count: updatedPlain.length,
+        sections_modified: [anchorId],
+        edited_by: user.id,
+      });
+      if (verErr) {
+        console.debug("insert deletion version error:", verErr);
+        toast.error("Failed to create deletion version");
+        return;
+      }
+
+      // Mark metadata as deleted
       await deleteSection(sec.id);
-      toast.success("Section deleted");
+      toast.success("Section deleted and version created");
+      qc.invalidateQueries({ queryKey: ["spark", spark.id, "latestVersion"] });
+      qc.invalidateQueries({ queryKey: ["spark", spark.id, "versions", "history"] });
+      qc.invalidateQueries({ queryKey: ["spark", spark.id, "sections"] });
     } catch (e) {
-      console.debug("deleteSection error:", e);
+      console.debug("deleteSection flow error:", e);
       toast.error("Failed to delete section");
     }
   };
@@ -668,6 +741,25 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
           )}
         </article>
 
+        {/* Inline section info badges under headings */}
+        {tocHeadings.length > 0 && (
+          <>
+            {tocHeadings.map((h) => {
+              const sec = sectionByAnchor.get(h.id);
+              if (!sec) return null;
+              const isOwner = !!(user?.id && user.id === sec.creator_id);
+              const updated = sec.last_modified_at ? new Date(sec.last_modified_at).toLocaleDateString() : "";
+              return (
+                <InlineAfterHeadingPortal key={`meta-${h.id}`} containerRef={contentRef} headingId={h.id}>
+                  <div className="mt-1 text-[11px] text-muted-foreground">
+                    Section by {isOwner ? "you" : (sec.creator_id?.slice(0, 8) || "someone")} {updated && `• updated ${updated}`}
+                  </div>
+                </InlineAfterHeadingPortal>
+              );
+            })}
+          </>
+        )}
+ 
         {editing && editMode === "append" && (
           <div className={`${articleWidthCls} mx-auto mt-4 rounded-md border border-border bg-background p-3 shadow-sm`}>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">

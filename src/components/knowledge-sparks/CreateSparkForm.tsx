@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import { Link } from "react-router-dom";
 import { RichTextEditor, htmlToPlainText } from "./RichTextEditor";
+import { extractHeadings } from "@/components/knowledge-sparks/SparkTOC";
 
 type Spark = {
   id: string;
@@ -103,6 +104,25 @@ export const CreateSparkForm: React.FC<CreateSparkFormProps> = ({ onCreated }) =
       toast.error("Spark created but version init failed.");
     } else {
       toast.success("Knowledge Spark created!");
+      // Register section metadata for headings in the initial content
+      try {
+        const { headings } = extractHeadings(contentHtml || "");
+        if (headings.length) {
+          await Promise.all(
+            headings.map((h) =>
+              (supabase as any).rpc("mark_section_created", {
+                p_spark_id: spark.id,
+                p_anchor_id: h.id,
+                p_title: h.text,
+                p_content_html: null,
+                p_section_type: "original",
+              })
+            )
+          );
+        }
+      } catch (e) {
+        console.debug("mark_section_created on create error:", e);
+      }
     }
 
     onCreated?.(spark as Spark);
