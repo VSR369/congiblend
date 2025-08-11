@@ -105,6 +105,9 @@ const ArticleView: React.FC = () => {
     }
   }, [article, title, description]);
 
+  const { ref: likeRef, isIntersecting: likeInView } = useIntersectionObserver({ rootMargin: "200px" });
+  const { ref: commentsRef, isIntersecting: commentsInView } = useIntersectionObserver({ rootMargin: "400px" });
+
   if (loading) {
     return (
       <main className="max-w-3xl mx-auto px-4 py-10">
@@ -127,9 +130,6 @@ const ArticleView: React.FC = () => {
 
   const author = article.profiles;
   const html = article.metadata?.article_html || "";
-
-  const { ref: likeRef, isIntersecting: likeInView } = useIntersectionObserver({ rootMargin: "200px" });
-  const { ref: commentsRef, isIntersecting: commentsInView } = useIntersectionObserver({ rootMargin: "400px" });
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-6">

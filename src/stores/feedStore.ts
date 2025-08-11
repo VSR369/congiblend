@@ -1173,6 +1173,12 @@ export const useFeedStore = create<FeedState>((set, get) => {
     },
 
 
+    updateFeedSettings: (settings: Partial<FeedSettings>) => {
+      set(state => ({
+        feedSettings: { ...state.feedSettings, ...settings }
+      }));
+    },
+
     updateFilters: (newFilters: Partial<FeedFilters>) => {
       set(state => ({
         filters: { ...state.filters, ...newFilters }
