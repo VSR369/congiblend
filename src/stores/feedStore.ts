@@ -20,6 +20,9 @@ interface FeedState {
   users: User[];
   isScrolling: boolean;
   
+  // New posts queue (LinkedIn-style)
+  pendingNewPosts: Post[];
+  
   // Actions
   loadPosts: (reset?: boolean) => Promise<void>;
   loadUsers: () => Promise<void>;
@@ -43,6 +46,9 @@ interface FeedState {
   updateFeedSettings: (settings: Partial<FeedSettings>) => void;
   updateFilters: (filters: Partial<FeedFilters>) => void;
   setScrolling: (scrolling: boolean) => void;
+
+  // New posts queue actions
+  flushPendingPosts: () => void;
 }
 
 // Helper function to transform database post to our Post type
@@ -289,6 +295,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
   return {
     posts: [],
+    pendingNewPosts: [],
     loading: false,
     hasMore: true,
     users: [],
@@ -668,10 +675,9 @@ export const useFeedStore = create<FeedState>((set, get) => {
                           )
                         };
                       } else {
-                        // Add new post from other users
-                        return {
-                          posts: [transformedPost, ...state.posts.filter(p => p.id !== payload.new.id)]
-                        };
+                        // Queue new post to avoid scroll jumps; user can load via banner
+                        const pending = [transformedPost, ...state.pendingNewPosts.filter(p => p.id !== transformedPost.id)];
+                        return { pendingNewPosts: pending };
                       }
                     });
                   }
@@ -1238,6 +1244,15 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
     setScrolling: (scrolling: boolean) => {
       set({ isScrolling: scrolling });
+    },
+
+    flushPendingPosts: () => {
+      set(state => {
+        if (state.pendingNewPosts.length === 0) return state as any;
+        const merged = [...state.pendingNewPosts, ...state.posts];
+        const unique = Array.from(new Map(merged.map(p => [p.id, p])).values());
+        return { posts: unique, pendingNewPosts: [] } as any;
+      });
     },
 
     // Comment reaction function removed - comments functionality not implemented

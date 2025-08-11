@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AdaptiveContentFeed } from '@/components/ui/adaptive-content-feed';
+import { ContentFeed } from '@/components/ui/content-feed';
 import { AnalyticsDashboard } from '@/components/ui/analytics-dashboard';
 import { EnhancedTabs, EnhancedTabsList, EnhancedTabsTrigger, EnhancedTabsContent } from '@/components/ui/enhanced-tabs';
 import { BarChart3, Users, MessageSquare, Sparkles, TrendingUp, Zap, Plus, ArrowRight, Target } from 'lucide-react';
@@ -39,7 +39,7 @@ const Index = () => {
                   </div>
                   
                   <EnhancedTabsContent value="feed" className="animate-fade-in">
-                    <AdaptiveContentFeed />
+                    <ContentFeed />
                   </EnhancedTabsContent>
                   
                   <EnhancedTabsContent value="analytics" className="animate-fade-in">

@@ -22,7 +22,7 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
   const [modalAllowedTypes, setModalAllowedTypes] = React.useState<PostType[] | undefined>(undefined);
   const [modalInitialType, setModalInitialType] = React.useState<PostType | undefined>(undefined);
   const navigate = useNavigate();
-  const { posts, loading, hasMore, loadPosts, filters } = useFeedStore();
+  const { posts, loading, hasMore, loadPosts, filters, pendingNewPosts, flushPendingPosts } = useFeedStore();
 
   // Simple list rendering - no virtual scrolling complexity
 
@@ -158,6 +158,13 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
         </div>
 
         {/* LinkedIn-Style Feed - Clean List */}
+        {pendingNewPosts.length > 0 && (
+          <div className="sticky top-0 z-20 mb-4">
+            <Button variant="secondary" size="sm" className="w-full" onClick={flushPendingPosts}>
+              Show {pendingNewPosts.length} new post{pendingNewPosts.length > 1 ? 's' : ''}
+            </Button>
+          </div>
+        )}
         <div className="linkedin-feed">
           {posts.length === 0 && loading ? (
             <FeedSkeleton />
