@@ -8,12 +8,17 @@ import {
   ChevronRight,
   Sparkles,
   MessageSquare,
-  Heart
+  Heart,
+  FileText,
+  BookOpen
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 const trendingTopics = [
   { name: '#ProductLaunch', posts: 234, growth: '+12%' },
@@ -36,8 +41,146 @@ const recentActivity = [
 ];
 
 export const RightSidebar = () => {
+  // Top lists state
+  const [topArticles, setTopArticles] = React.useState<{ id: string; title: string }[]>([]);
+  const [topSparks, setTopSparks] = React.useState<{ id: string; slug: string; title: string }[]>([]);
+  const [loadingTop, setLoadingTop] = React.useState(true);
+
+  React.useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        setLoadingTop(true);
+        const [articlesRes, sparksRes] = await Promise.all([
+          supabase
+            .from('posts')
+            .select('id, content, metadata, likes_count, reactions_count, created_at, post_type, visibility')
+            .or('post_type.eq.article,not.metadata->>article_html.is.null')
+            .eq('visibility', 'public')
+            .limit(10),
+          supabase
+            .from('knowledge_sparks')
+            .select('id, title, slug, view_count, is_featured, updated_at')
+            .eq('is_active', true)
+            .limit(10),
+        ]);
+
+        if (!active) return;
+
+        const arts = (articlesRes.data || [])
+          .map((p: any) => ({
+            id: p.id,
+            title: p?.metadata?.title || (p?.content || '').split('\n')[0] || 'Untitled',
+            likes: p?.likes_count ?? 0,
+            reactions: p?.reactions_count ?? 0,
+            created_at: p?.created_at,
+          }))
+          .sort((a: any, b: any) =>
+            (b.likes - a.likes) || (b.reactions - a.reactions) || (new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          )
+          .slice(0, 3)
+          .map(({ id, title }) => ({ id, title }));
+
+        const ks = (sparksRes.data || [])
+          .map((s: any) => ({
+            id: s.id,
+            slug: s.slug,
+            title: s.title || 'Untitled Spark',
+            featured: !!s.is_featured,
+            views: s.view_count ?? 0,
+            updated_at: s.updated_at,
+          }))
+          .sort((a: any, b: any) =>
+            (Number(b.featured) - Number(a.featured)) || (b.views - a.views) || (new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+          )
+          .slice(0, 3)
+          .map(({ id, slug, title }) => ({ id, slug, title }));
+
+        setTopArticles(arts);
+        setTopSparks(ks);
+      } catch (e) {
+        console.warn('RightSidebar: failed to load top lists', e);
+      } finally {
+        if (active) setLoadingTop(false);
+      }
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <div className="w-80 h-screen overflow-y-auto p-4 space-y-6">
+      {/* Top Articles */}
+      <div className="glass-card p-4 rounded-xl border border-white/10 animate-fade-in">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-foreground flex items-center">
+            <FileText className="h-4 w-4 mr-2 text-primary" />
+            Top Articles
+          </h3>
+        </div>
+        {loadingTop ? (
+          <div className="space-y-2">
+            {[0,1,2].map((i) => (
+              <Skeleton key={i} className="h-7 w-full" />
+            ))}
+          </div>
+        ) : topArticles.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No articles yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {topArticles.map((a) => (
+              <li key={a.id} className="animate-fade-in">
+                <Button asChild variant="ghost" className="w-full justify-start h-8 px-2 text-sm truncate">
+                  <Link to={`/articles/${a.id}`} title={a.title} aria-label={`Open article ${a.title}`}>
+                    <span className="inline-flex items-center">
+                      <FileText className="h-3.5 w-3.5 mr-2 text-primary" />
+                      <span className="truncate">{a.title}</span>
+                    </span>
+                  </Link>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Top Knowledge Sparks */}
+      <div className="glass-card p-4 rounded-xl border border-white/10 animate-fade-in" style={{ animationDelay: '0.05s' }}>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-foreground flex items-center">
+            <BookOpen className="h-4 w-4 mr-2 text-primary" />
+            Top Knowledge Sparks
+          </h3>
+        </div>
+        {loadingTop ? (
+          <div className="space-y-2">
+            {[0,1,2].map((i) => (
+              <Skeleton key={i} className="h-7 w-full" />
+            ))}
+          </div>
+        ) : topSparks.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No sparks yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {topSparks.map((s) => (
+              <li key={s.id} className="animate-fade-in">
+                <Button asChild variant="ghost" className="w-full justify-start h-8 px-2 text-sm truncate">
+                  <Link to={`/knowledge-sparks/${s.slug}`} title={s.title} aria-label={`Open spark ${s.title}`}>
+                    <span className="inline-flex items-center">
+                      <BookOpen className="h-3.5 w-3.5 mr-2 text-primary" />
+                      <span className="truncate">{s.title}</span>
+                    </span>
+                  </Link>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       {/* Trending Topics */}
       <div className="glass-card p-4 rounded-xl border border-white/10 animate-fade-in">
         <div className="flex items-center justify-between mb-4">
