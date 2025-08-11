@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, Search, Settings, User, Menu, Sun, Moon, PanelLeft, Lightbulb, Home } from 'lucide-react';
+import { Bell, Search, Settings, User, Menu, Sun, Moon, PanelLeft, Lightbulb, Home, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,9 +23,11 @@ import { supabase } from '@/integrations/supabase/client';
 interface HeaderProps {
   onMenuToggle?: () => void;
   showMenuButton?: boolean;
+  onDiscoverToggle?: () => void;
+  showDiscoverButton?: boolean;
 }
 
-export const Header = React.memo(({ onMenuToggle, showMenuButton = false }: HeaderProps) => {
+export const Header = React.memo(({ onMenuToggle, showMenuButton = false, onDiscoverToggle, showDiscoverButton = false }: HeaderProps) => {
   // Performance monitoring
   const renderCountRef = React.useRef(0);
   const lastRenderTime = React.useRef(Date.now());
@@ -151,6 +153,19 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false }: Head
 
         {/* Right Section */}
         <div className="flex items-center space-x-3">
+          {/* Discover (mobile) */}
+          {showDiscoverButton && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onDiscoverToggle}
+              className="md:hidden h-12 w-12 rounded-xl hover-glow transition-all duration-300 glass-card border-0"
+              aria-label="Open Discover"
+            >
+              <Sparkles className="h-5 w-5" />
+            </Button>
+          )}
+
           {/* Theme Toggle */}
           <Button
             variant="ghost"
@@ -317,9 +332,11 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false }: Head
     </header>
   );
 }, (prevProps, nextProps) => {
-  // Shallow comparison for Header props
-  return prevProps.onMenuToggle === nextProps.onMenuToggle &&
-         prevProps.showMenuButton === nextProps.showMenuButton;
+// Shallow comparison for Header props
+return prevProps.onMenuToggle === nextProps.onMenuToggle &&
+       prevProps.showMenuButton === nextProps.showMenuButton &&
+       prevProps.onDiscoverToggle === nextProps.onDiscoverToggle &&
+       prevProps.showDiscoverButton === nextProps.showDiscoverButton;
 });
 
 Header.displayName = "Header";

@@ -15,30 +15,40 @@ export const MainLayout = () => {
   useScrollManager();
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileRightOpen, setMobileRightOpen] = useState(false);
   const location = useLocation();
   // Auto-close mobile sheet on route change to avoid overlay blocking content
   useEffect(() => {
     if (mobileOpen) setMobileOpen(false);
+    if (mobileRightOpen) setMobileRightOpen(false);
   }, [location.pathname]);
   // Ensure sheet is closed and unmounted on desktop to prevent invisible overlay
   useEffect(() => {
     if (!isMobile && mobileOpen) setMobileOpen(false);
-  }, [isMobile, mobileOpen]);
+    if (!isMobile && mobileRightOpen) setMobileRightOpen(false);
+  }, [isMobile, mobileOpen, mobileRightOpen]);
   return (
     <div className="min-h-screen flex flex-col">
-      <Header showMenuButton={isMobile} onMenuToggle={() => setMobileOpen(true)} />
+      <Header showMenuButton={isMobile} onMenuToggle={() => setMobileOpen(true)} showDiscoverButton={isMobile} onDiscoverToggle={() => setMobileRightOpen(true)} />
       
-      {/* Mobile sidebar sheet - render only on mobile to avoid overlay issues */}
+      {/* Mobile sidebar sheets - render only on mobile to avoid overlay issues */}
       {isMobile ? (
-        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent side="left" className="p-0 w-[85vw] sm:max-w-sm lg:hidden">
-            <LeftSidebar />
-          </SheetContent>
-        </Sheet>
+        <>
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetContent side="left" className="p-0 w-[85vw] sm:max-w-sm lg:hidden">
+              <LeftSidebar />
+            </SheetContent>
+          </Sheet>
+          <Sheet open={mobileRightOpen} onOpenChange={setMobileRightOpen}>
+            <SheetContent side="right" className="p-0 w-[85vw] sm:max-w-sm lg:hidden">
+              <RightSidebar />
+            </SheetContent>
+          </Sheet>
+        </>
       ) : null}
 
       <div className="flex-1">
-        <div className="grid grid-cols-1 lg:grid-cols-[20rem_1fr] xl:grid-cols-[20rem_1fr_22rem]">
+        <div className="grid grid-cols-1 lg:grid-cols-[20rem_1fr_22rem]">
           <aside className="hidden lg:block border-r">
             <LeftSidebar />
           </aside>
@@ -49,7 +59,7 @@ export const MainLayout = () => {
             </main>
           </ErrorBoundary>
 
-          <aside className="hidden xl:block border-l">
+          <aside className="hidden lg:block border-l">
             <RightSidebar />
           </aside>
         </div>

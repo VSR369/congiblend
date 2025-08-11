@@ -60,7 +60,7 @@ const Articles: React.FC = () => {
             profiles:user_id (id, username, display_name, avatar_url)
           `)
           .eq('visibility', 'public')
-          .or('post_type.eq.article,metadata->>article_html.not.is.null')
+          .not('metadata->>article_html', 'is', null)
           .order('created_at', { ascending: false })
           .limit(50);
         if (error) throw error;

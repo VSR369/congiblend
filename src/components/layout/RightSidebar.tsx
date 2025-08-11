@@ -56,7 +56,7 @@ export const RightSidebar = () => {
             .from('posts')
             .select('id, content, metadata, likes_count, reactions_count, created_at, post_type, visibility')
             .eq('visibility', 'public')
-            .or('post_type.eq.article,metadata->>article_html.not.is.null')
+            .not('metadata->>article_html', 'is', null)
             .limit(10),
           supabase
             .from('knowledge_sparks')
@@ -66,6 +66,9 @@ export const RightSidebar = () => {
         ]);
 
         if (!active) return;
+
+        if (articlesRes.error) console.error('RightSidebar: articles query error', articlesRes.error);
+        if (sparksRes.error) console.error('RightSidebar: sparks query error', sparksRes.error);
 
         const arts = (articlesRes.data || [])
           .map((p: any) => ({
