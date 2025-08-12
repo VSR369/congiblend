@@ -380,6 +380,7 @@ const isTempPost = post.id.startsWith('post-');
             shouldTruncate={post.content.length > 220}
           />
         );
+    }
   };
 
   return (
