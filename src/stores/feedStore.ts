@@ -896,6 +896,68 @@ export const useFeedStore = create<FeedState>((set, get) => {
           set(state => ({
             posts: state.posts.map(p => p.id === optimisticPost.id ? transformed : p)
           }));
+
+          // If this is a poll, enrich it immediately so it renders in the feed
+          const postType = (newPost.post_type || data.post_type);
+          if (postType === 'poll') {
+            try {
+              const { data: pollRow } = await supabase
+                .from('polls')
+                .select(`
+                  id,
+                  post_id,
+                  question,
+                  end_time,
+                  poll_options (
+                    id,
+                    option_text,
+                    idx
+                  )
+                `)
+                .eq('post_id', newPost.id)
+                .maybeSingle();
+
+              if (pollRow) {
+                // Current user's vote (if any)
+                let userVote: string | undefined = undefined;
+                if (user?.id) {
+                  const { data: vote } = await supabase
+                    .from('poll_votes')
+                    .select('option_id')
+                    .eq('poll_id', pollRow.id)
+                    .eq('voter_id', user.id)
+                    .maybeSingle();
+                  userVote = vote?.option_id;
+                }
+
+                // Results via RPC
+                const { data: res } = await supabase.rpc('poll_results', { p_poll_id: pollRow.id });
+                const options = (res || []).map((r: any) => ({
+                  id: r.option_id,
+                  text: r.option_text,
+                  votes: r.votes,
+                  percentage: r.pct
+                }));
+                const totalVotes = options.reduce((sum: number, o: any) => sum + (o.votes || 0), 0);
+
+                const pollObj = {
+                  id: pollRow.id,
+                  question: pollRow.question,
+                  options,
+                  endTime: new Date(pollRow.end_time),
+                  totalVotes,
+                  userVote,
+                  hasEnded: new Date(pollRow.end_time) <= new Date()
+                };
+
+                set(state => ({
+                  posts: state.posts.map(p => p.id === newPost.id ? { ...p, type: 'poll', poll: pollObj } as any : p)
+                }));
+              }
+            } catch (err) {
+              console.warn('Failed to enrich newly created poll', err);
+            }
+          }
         } catch (e) {
           console.warn('Fallback replacement failed, attempting ID swap only:', e);
           set(state => ({

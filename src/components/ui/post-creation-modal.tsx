@@ -50,7 +50,7 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
   // Poll state
   const [pollQuestion, setPollQuestion] = React.useState('');
   const [pollOptions, setPollOptions] = React.useState(['', '']);
-  const [pollDuration, setPollDuration] = React.useState(7); // days
+  const [pollDuration, setPollDuration] = React.useState(3); // days
 
   // Local state for improved Event date/time UX (does not change global logic)
   const [startDate, setStartDate] = React.useState<Date | undefined>(undefined);
@@ -341,7 +341,7 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
       // Reset poll state
       setPollQuestion('');
       setPollOptions(['', '']);
-      setPollDuration(7);
+      setPollDuration(3);
       onClose();
       
       toast.success("Post created successfully!");

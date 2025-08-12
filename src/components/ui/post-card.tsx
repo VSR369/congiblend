@@ -294,18 +294,22 @@ export const PostCard = React.memo(({ post, className, virtualized = false }: Po
         );
 
       case 'poll':
-        return post.poll ? (
+        return (
           <div className="space-y-3">
             <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
-            <PollCard
-              poll={post.poll}
-              onVoteUpdate={(_pollId, newResults) => {
-                const totalVotes = newResults.reduce((sum, o) => sum + o.votes, 0);
-                updatePost(post.id, { poll: { ...post.poll!, options: newResults, totalVotes } });
-              }}
-            />
+            {post.poll ? (
+              <PollCard
+                poll={post.poll}
+                onVoteUpdate={(_pollId, newResults) => {
+                  const totalVotes = newResults.reduce((sum, o) => sum + o.votes, 0);
+                  updatePost(post.id, { poll: { ...post.poll!, options: newResults, totalVotes } });
+                }}
+              />
+            ) : (
+              <div className="text-sm text-muted-foreground">Loading poll…</div>
+            )}
           </div>
-        ) : null;
+        );
 
       default:
         return (
