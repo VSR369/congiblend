@@ -20,6 +20,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 import { PostContent } from "./post-content";
 import { buildPreview } from "@/utils/formatters";
+import { PollCard } from "./poll-card";
 
 interface PostCardProps {
   post: Post;
@@ -28,7 +29,7 @@ interface PostCardProps {
 }
 
 export const PostCard = React.memo(({ post, className, virtualized = false }: PostCardProps) => {
-  const { toggleSave, rsvpEvent } = useFeedStore();
+  const { toggleSave, rsvpEvent, updatePost } = useFeedStore();
   const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
 
@@ -291,6 +292,20 @@ export const PostCard = React.memo(({ post, className, virtualized = false }: Po
             </Button>
           </div>
         );
+
+      case 'poll':
+        return post.poll ? (
+          <div className="space-y-3">
+            <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
+            <PollCard
+              poll={post.poll}
+              onVoteUpdate={(_pollId, newResults) => {
+                const totalVotes = newResults.reduce((sum, o) => sum + o.votes, 0);
+                updatePost(post.id, { poll: { ...post.poll!, options: newResults, totalVotes } });
+              }}
+            />
+          </div>
+        ) : null;
 
       default:
         return (

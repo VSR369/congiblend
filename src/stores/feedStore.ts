@@ -483,12 +483,91 @@ export const useFeedStore = create<FeedState>((set, get) => {
           return transformDbPost(postWithData, dbPost.profiles, user?.id);
         });
 
-        // NEW: annotate saved and liked states for current user
-        let annotatedPosts = transformedPosts;
+        // Enrich poll posts with poll details
+        let enrichedPosts = transformedPosts;
         try {
-          const postIds = (transformedPosts || []).map(p => p.id).filter(Boolean);
+          const pollPostIds = (postsData || [])
+            .filter((p: any) => p.post_type === 'poll')
+            .map((p: any) => p.id);
+
+          if (pollPostIds.length > 0) {
+            const { data: pollsRows } = await supabase
+              .from('polls')
+              .select(`
+                id,
+                post_id,
+                question,
+                end_time,
+                poll_options (
+                  id,
+                  option_text,
+                  idx
+                )
+              `)
+              .in('post_id', pollPostIds);
+
+            const pollIdList = (pollsRows || []).map((pr: any) => pr.id);
+
+            // Current user's votes across these polls
+            const userVotesByPoll: Record<string, string> = {};
+            if (user?.id && pollIdList.length > 0) {
+              const { data: votes } = await supabase
+                .from('poll_votes')
+                .select('poll_id, option_id')
+                .eq('voter_id', user.id)
+                .in('poll_id', pollIdList);
+              (votes || []).forEach((v: any) => {
+                userVotesByPoll[v.poll_id] = v.option_id;
+              });
+            }
+
+            // Fetch results per poll via RPC
+            const resultsByPoll: Record<string, any[]> = {};
+            await Promise.all(
+              (pollsRows || []).map(async (pr: any) => {
+                const { data: res } = await supabase.rpc('poll_results', { p_poll_id: pr.id });
+                resultsByPoll[pr.id] = res || [];
+              })
+            );
+
+            const pollByPostId: Record<string, any> = {};
+            (pollsRows || []).forEach((pr: any) => {
+              const results = resultsByPoll[pr.id] || [];
+              const options = results.map((r: any) => ({
+                id: r.option_id,
+                text: r.option_text,
+                votes: r.votes,
+                percentage: r.pct
+              }));
+              const totalVotes = options.reduce((sum: number, o: any) => sum + (o.votes || 0), 0);
+              pollByPostId[pr.post_id] = {
+                id: pr.id,
+                question: pr.question,
+                options,
+                endTime: new Date(pr.end_time),
+                totalVotes,
+                userVote: userVotesByPoll[pr.id],
+                hasEnded: new Date(pr.end_time) <= new Date()
+              };
+            });
+
+            enrichedPosts = transformedPosts.map((p) => {
+              if (pollByPostId[p.id]) {
+                return { ...p, type: 'poll', poll: pollByPostId[p.id] } as any;
+              }
+              return p;
+            });
+          }
+        } catch (e) {
+          console.warn('Failed to enrich poll posts', e);
+        }
+
+        // NEW: annotate saved and liked states for current user
+        let annotatedPosts = enrichedPosts;
+        try {
+          const postIds = (enrichedPosts || []).map(p => p.id).filter(Boolean);
           const savedSet = await fetchSavedPostIds(postIds);
-          annotatedPosts = transformedPosts.map(p => ({
+          annotatedPosts = enrichedPosts.map(p => ({
             ...p,
             isSaved: savedSet.has(p.id) || p.isSaved,
             userSaved: savedSet.has(p.id) || p.userSaved,
@@ -496,7 +575,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           }));
         } catch (e) {
           console.warn('Failed to annotate saved/liked posts:', e);
-          annotatedPosts = transformedPosts.map(p => ({ ...p, userLiked: likedSet.has(p.id) }));
+          annotatedPosts = enrichedPosts.map(p => ({ ...p, userLiked: likedSet.has(p.id) }));
         }
 
         set((state) => {
