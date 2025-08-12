@@ -13,6 +13,8 @@ import { toast } from "@/hooks/use-toast";
 import type { Post } from "@/types/feed";
 import { Avatar, AvatarImage, AvatarFallback } from "./avatar";
 import { usePollResults } from "@/hooks/usePolls";
+import { PostContent } from "./post-content";
+import { buildPreview } from "@/utils/formatters";
 
 interface LinkedInPostCardProps {
   post: Post;
@@ -234,7 +236,13 @@ export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCar
         );
 
       default:
-        return <p className="text-foreground whitespace-pre-wrap">{post.content}</p>;
+        return (
+          <PostContent
+            content={post.content}
+            truncatedContent={buildPreview(post.content)}
+            shouldTruncate={post.content.length > 220}
+          />
+        );
     }
   };
 

@@ -18,7 +18,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { useAuthStore } from "@/stores/authStore";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
-
+import { PostContent } from "./post-content";
+import { buildPreview } from "@/utils/formatters";
 interface PostCardProps {
   post: Post;
   className?: string;
@@ -372,8 +373,13 @@ const isTempPost = post.id.startsWith('post-');
         );
 
       default:
-        return <p className="text-foreground whitespace-pre-wrap">{post.content}</p>;
-    }
+        return (
+          <PostContent
+            content={post.content}
+            truncatedContent={buildPreview(post.content)}
+            shouldTruncate={post.content.length > 220}
+          />
+        );
   };
 
   return (

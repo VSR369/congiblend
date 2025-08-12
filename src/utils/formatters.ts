@@ -116,3 +116,20 @@ export const addQueryParams = (url: string, params: Record<string, any>) => {
   
   return urlObj.toString();
 };
+
+// Build a preview between 200-220 chars, cutting on a word boundary when possible
+export const buildPreview = (text: string, min = 200, max = 220) => {
+  if (!text) return "";
+  if (text.length <= max) return text;
+
+  const windowText = text.slice(0, max + 1);
+  let cutIndex = max;
+  for (let i = max; i >= min; i--) {
+    if (/\s/.test(windowText[i])) {
+      cutIndex = i;
+      break;
+    }
+  }
+  const trimmed = text.slice(0, cutIndex).trimEnd();
+  return trimmed + "…";
+};

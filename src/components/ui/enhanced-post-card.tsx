@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils';
 import type { Post } from '@/types/feed';
 import { usePollResults } from '@/hooks/usePolls';
 import { toast } from '@/hooks/use-toast';
+import { PostContent } from './post-content';
+import { buildPreview } from '@/utils/formatters';
 
 interface EnhancedPostCardProps {
   post: Post;
@@ -284,9 +286,12 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
       </CardHeader>
 
       <CardContent className="pt-0">
-        <div className="text-sm leading-relaxed">
-          {post.content}
-        </div>
+        <PostContent
+          content={post.content}
+          className="text-sm leading-relaxed"
+          truncatedContent={buildPreview(post.content)}
+          shouldTruncate={post.content.length > 220}
+        />
 
         {post.hashtags && post.hashtags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">

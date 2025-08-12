@@ -574,6 +574,7 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
               value={content}
               onChange={(e) => dispatch({ type: 'SET_CONTENT', payload: e.target.value })}
               className="min-h-24"
+              maxLength={3000}
             />
             <div className="space-y-4">
               <input
@@ -615,6 +616,7 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
             value={content}
             onChange={(e) => dispatch({ type: 'SET_CONTENT', payload: e.target.value })}
             className="min-h-32 resize-none"
+            maxLength={3000}
           />
         );
     }
