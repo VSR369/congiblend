@@ -19,7 +19,7 @@ interface EnhancedPostCardProps {
 }
 
 export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, className }) => {
-  const { toggleReaction } = useFeedStore();
+  const { toggleReaction, updatePost } = useFeedStore();
 
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -234,11 +234,17 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
         {renderEvent()}
 
         {/* Render poll if it's a poll post */}
-        {post.type === 'poll' && post.poll && (
-          <div className="mt-3">
-            <PollCard poll={post.poll} />
-          </div>
-        )}
+          {post.type === 'poll' && post.poll && (
+            <div className="mt-3">
+              <PollCard 
+                poll={post.poll}
+                onVoteUpdate={(_pollId, newResults) => {
+                  const totalVotes = newResults.reduce((sum, o) => sum + o.votes, 0);
+                  updatePost(post.id, { poll: { ...post.poll!, options: newResults, totalVotes } });
+                }}
+              />
+            </div>
+          )}
 
         <div className="flex items-center justify-between pt-4 mt-4 border-t">
           <div className="flex items-center space-x-4">

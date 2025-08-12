@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './button';
 import { Input } from './input';
 import { Textarea } from './textarea';
@@ -45,9 +45,34 @@ export const PollComposer: React.FC<PollComposerProps> = ({
     }
   };
 
+  // Local duration controls (amount + unit) while passing days to parent
+  const [durationUnit, setDurationUnit] = useState<'days' | 'weeks'>(duration % 7 === 0 ? 'weeks' : 'days');
+  const [durationAmount, setDurationAmount] = useState<number>(duration % 7 === 0 ? duration / 7 : duration);
+
+  useEffect(() => {
+    // Sync when parent duration changes
+    const unit = duration % 7 === 0 ? 'weeks' : 'days';
+    setDurationUnit(unit);
+    setDurationAmount(unit === 'weeks' ? duration / 7 : duration);
+  }, [duration]);
+
+  const handleDurationAmountChange = (value: string) => {
+    const parsed = parseInt(value || '1', 10);
+    const amount = isNaN(parsed) ? 1 : Math.max(1, Math.min(30, parsed));
+    setDurationAmount(amount);
+    const days = durationUnit === 'weeks' ? amount * 7 : amount;
+    onDurationChange(days);
+  };
+
+  const handleDurationUnitChange = (unit: 'days' | 'weeks') => {
+    setDurationUnit(unit);
+    const days = unit === 'weeks' ? durationAmount * 7 : durationAmount;
+    onDurationChange(days);
+  };
   const getEndDate = () => {
     const endDate = new Date();
-    endDate.setDate(endDate.getDate() + duration);
+    const days = durationUnit === 'weeks' ? durationAmount * 7 : durationAmount;
+    endDate.setDate(endDate.getDate() + days);
     return endDate.toLocaleDateString([], { 
       year: 'numeric', 
       month: 'short', 
@@ -118,17 +143,25 @@ export const PollComposer: React.FC<PollComposerProps> = ({
 
       <div className="space-y-2">
         <label className="text-sm font-medium">Poll Duration</label>
-        <Select value={duration.toString()} onValueChange={(value) => onDurationChange(parseInt(value))}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1">1 day</SelectItem>
-            <SelectItem value="3">3 days</SelectItem>
-            <SelectItem value="7">1 week</SelectItem>
-            <SelectItem value="14">2 weeks</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="grid grid-cols-3 gap-2 items-center">
+          <Input
+            type="number"
+            min={1}
+            max={30}
+            value={durationAmount}
+            onChange={(e) => handleDurationAmountChange(e.target.value)}
+            className="col-span-2"
+          />
+          <Select value={durationUnit} onValueChange={(value) => handleDurationUnitChange(value as 'days' | 'weeks')}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="days">Days</SelectItem>
+              <SelectItem value="weeks">Weeks</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div className="text-xs text-muted-foreground">
           Poll will end on {getEndDate()}
         </div>

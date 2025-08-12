@@ -100,6 +100,19 @@ export const PollCard: React.FC<PollCardProps> = ({ poll, onVoteUpdate }) => {
           {poll.options.map((option) => {
             const isSelected = userVote === option.id;
             const showResults = hasEnded || userVote;
+
+            const interactive = !hasEnded && !!userVote; // allow changing vote before poll ends
+            const handleRowClick = () => {
+              if (!interactive || isVoting || option.id === userVote) return;
+              handleVote(option.id);
+            };
+            const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+              if (!interactive || isVoting || option.id === userVote) return;
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleVote(option.id);
+              }
+            };
             
             return (
               <div key={option.id} className="space-y-1">
@@ -117,10 +130,17 @@ export const PollCard: React.FC<PollCardProps> = ({ poll, onVoteUpdate }) => {
                   </Button>
                 ) : (
                   <div className="relative">
-                    <div className={cn(
-                      "w-full p-3 border rounded-md",
-                      isSelected && "border-primary bg-primary/5"
-                    )}>
+                    <div
+                      role={interactive ? 'button' : undefined}
+                      tabIndex={interactive ? 0 : -1}
+                      onClick={handleRowClick}
+                      onKeyDown={handleKeyDown}
+                      className={cn(
+                        "w-full p-3 border rounded-md",
+                        isSelected && "border-primary bg-primary/5",
+                        interactive && "cursor-pointer"
+                      )}
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span>{option.text}</span>
@@ -149,8 +169,12 @@ export const PollCard: React.FC<PollCardProps> = ({ poll, onVoteUpdate }) => {
             <BarChart className="h-4 w-4" />
             <span>{poll.totalVotes} votes</span>
           </div>
-          {!userVote && !hasEnded && (
-            <span className="text-xs">Vote to see results</span>
+          {!hasEnded && (
+            userVote ? (
+              <span className="text-xs">You can change your vote until the poll ends.</span>
+            ) : (
+              <span className="text-xs">Vote to see results</span>
+            )
           )}
         </div>
         
