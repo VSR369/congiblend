@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const postSchema = z.object({
   content: z.string().min(1, "Content cannot be empty").max(5000, "Content too long"),
   visibility: z.enum(['public', 'connections', 'private']),
-  type: z.enum(['text', 'image', 'video', 'article', 'poll', 'event']),
+  type: z.enum(['text', 'image', 'video', 'article', 'event']),
   media_urls: z.array(z.string().url()).optional(),
   hashtags: z.array(z.string()).optional(),
   mentions: z.array(z.string()).optional(),

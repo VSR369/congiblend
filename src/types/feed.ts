@@ -31,22 +31,6 @@ export interface PostMedia {
   size?: number;
 }
 
-export interface PollOption {
-  id: string;
-  text: string;
-  votes: number;
-  percentage: number;
-}
-
-export interface Poll {
-  id: string;
-  question: string;
-  options: PollOption[];
-  totalVotes: number;
-  expiresAt?: Date;
-  allowMultiple?: boolean;
-  userVote?: string[];
-}
 
 export interface Event {
   id: string;
@@ -77,7 +61,7 @@ export interface LinkPreview {
   domain: string;
 }
 
-export type PostType = 'text' | 'image' | 'video' | 'audio' | 'article' | 'poll' | 'event' | 'document' | 'link' | 'carousel';
+export type PostType = 'text' | 'image' | 'video' | 'audio' | 'article' | 'event' | 'document' | 'link' | 'carousel';
 
 export type ReactionType = 'innovative' | 'practical' | 'well_researched';
 
@@ -96,7 +80,7 @@ export interface Post {
   author: User;
   content: string;
   media?: PostMedia[];
-  poll?: Poll;
+  
   event?: Event;
   event_data?: {
     title: string;
@@ -150,11 +134,6 @@ export interface CreatePostData {
   post_type?: PostType;
   visibility?: 'public' | 'connections' | 'private';
   media_urls?: string[];
-  poll_data?: {
-    options: Array<{ text: string; votes: number }>;
-    multiple_choice: boolean;
-    expires_at?: string;
-  };
   event_data?: {
     title: string;
     description?: string;

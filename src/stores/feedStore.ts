@@ -37,9 +37,6 @@ interface FeedState {
   toggleSave: (postId: string) => void;
   
   
-  // Poll actions
-  votePoll: (postId: string, optionIndex: number) => Promise<any>;
-  
   // Event actions
   rsvpEvent: (postId: string, status: 'attending' | 'interested' | 'not_attending') => Promise<void>;
   
@@ -125,30 +122,6 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
 
   // Comments functionality removed - no comments
 
-  // Transform poll_data to poll object
-  let poll = undefined;
-  if (dbPost.poll_data && dbPost.poll_data.options) {
-    console.log('Transforming poll data:', dbPost.poll_data);
-    const totalVotes = dbPost.poll_data.options.reduce((sum: number, option: any) => sum + (option.votes || 0), 0);
-    const userVoteIndices: string[] | undefined = Array.isArray((dbPost as any).userVoteIndices)
-      ? (dbPost as any).userVoteIndices
-      : undefined;
-    poll = {
-      id: `${dbPost.id}-poll`,
-      question: dbPost.content, // Use post content as question
-      options: dbPost.poll_data.options.map((option: any, index: number) => ({
-        id: `${dbPost.id}-option-${index}`,
-        text: option.text,
-        votes: option.votes || 0,
-        percentage: totalVotes > 0 ? Math.round((option.votes || 0) / totalVotes * 100) : 0
-      })),
-      totalVotes,
-      expiresAt: dbPost.poll_data.expires_at && !isNaN(new Date(dbPost.poll_data.expires_at).getTime()) ? new Date(dbPost.poll_data.expires_at) : undefined,
-      allowMultiple: dbPost.poll_data.multiple_choice || false,
-      userVote: userVoteIndices
-    };
-    console.log('Transformed poll:', poll);
-  }
 
   // Transform event_data to event object
   let event = undefined;
@@ -497,21 +470,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
           (userLikes || []).forEach((l: any) => likedSet.add(l.post_id));
         }
 
-        // Votes by post for poll posts (single query)
-        const pollPostIds = (postsData || [])
-          .filter((p: any) => p.poll_data && Array.isArray(p.poll_data.options))
-          .map((p: any) => p.id);
-        const votesByPost: Record<string, any[]> = {};
-        if (pollPostIds.length > 0) {
-          const { data: allVotes } = await supabase
-            .from('votes')
-            .select('post_id, option_index, user_id, is_current')
-            .in('post_id', pollPostIds)
-            .eq('is_current', true);
-          (allVotes || []).forEach((v: any) => {
-            (votesByPost[v.post_id] ||= []).push(v);
-          });
-        }
 
         // Transform posts using batched data
         const transformedPosts = (postsData || []).map((dbPost: any) => {
@@ -521,34 +479,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
             reactions
           };
 
-          const pollData: any = (dbPost as any).poll_data;
-          if (pollData && Array.isArray(pollData.options)) {
-            const votes = votesByPost[dbPost.id] || [];
-            const voteCounts: Record<number, number> = {};
-            let userVoteIndices: string[] | undefined = undefined;
-
-            votes.forEach((v: any) => {
-              voteCounts[v.option_index] = (voteCounts[v.option_index] || 0) + 1;
-              if (user?.id && v.user_id === user.id) {
-                userVoteIndices = [String(v.option_index)];
-              }
-            });
-
-            const updatedOptions = pollData.options.map((opt: any, idx: number) => ({
-              text: opt.text,
-              votes: voteCounts[idx] || 0
-            }));
-
-            postWithData = {
-              ...postWithData,
-              poll_data: {
-                options: updatedOptions,
-                multiple_choice: pollData.multiple_choice ?? false,
-                expires_at: pollData.expires_at ?? null,
-              },
-              userVoteIndices,
-            };
-          }
 
           return transformDbPost(postWithData, dbPost.profiles, user?.id);
         });
@@ -809,19 +739,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
             alt: `Media ${index + 1}`,
             thumbnail: url
           })),
-          poll: data.poll_data ? {
-            id: `poll-${Date.now()}`,
-            question: data.content,
-            options: data.poll_data.options.map((option, index) => ({
-              id: `option-${Date.now()}-${index}`,
-              text: option.text,
-              votes: 0,
-              percentage: 0
-            })),
-            totalVotes: 0,
-            expiresAt: data.poll_data.expires_at ? new Date(data.poll_data.expires_at) : undefined,
-            allowMultiple: data.poll_data.multiple_choice || false,
-          } : undefined,
           event: data.event_data ? {
             id: `event-${Date.now()}`,
             title: data.event_data.title,
@@ -860,7 +777,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
           visibility: data.visibility || 'public',
           media_urls: mediaUrls,
           thumbnail_url: thumbnailUrl,
-          poll_data: data.poll_data,
           event_data: data.event_data,
           metadata: data.metadata || {}
         };

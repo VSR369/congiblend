@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import type { Post } from "@/types/feed";
 import { Avatar, AvatarImage, AvatarFallback } from "./avatar";
-import { usePollResults } from "@/hooks/usePolls";
+
 import { PostContent } from "./post-content";
 import { buildPreview } from "@/utils/formatters";
 
@@ -28,38 +28,7 @@ export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCar
     toggleSave(post.id);
   }, [post.id, toggleSave]);
 
-  // Poll handling (server-authoritative)
-  const { results, loading: pollLoading, voting, castVote, statusLabel, refresh } = usePollResults(
-    post.type === "poll" ? post.id : undefined
-  );
 
-  const handlePollVote = React.useCallback(
-    async (optionIndex: number) => {
-      try {
-        await castVote(optionIndex);
-        toast({
-          title: "Vote submitted",
-          description: "Your vote has been recorded.",
-        });
-      } catch (e: any) {
-        if (e?.message === "AUTH_REQUIRED") {
-          toast({
-            title: "Sign in required",
-            description: "Please sign in to vote on polls.",
-            variant: "destructive",
-          });
-          return;
-        }
-        const msg = e?.message || "Failed to submit your vote. Please try again.";
-        toast({
-          title: "Vote failed",
-          description: msg,
-          variant: "destructive",
-        });
-      }
-    },
-    [castVote]
-  );
 
   const totalReactions = post.reactions.length;
 
@@ -112,65 +81,6 @@ export const LinkedInPostCard = React.memo(({ post, className }: LinkedInPostCar
           </div>
         );
 
-      case 'poll': {
-        const opts = results?.options ?? post.poll?.options?.map(o => ({
-          text: o.text,
-          votes: Math.round((o.percentage / 100) * (post.poll?.totalVotes || 0)) || 0,
-          percentage: o.percentage,
-        })) ?? [];
-        const userSelected = results?.userSelected ?? (post.poll?.userVote?.length ? Number(post.poll?.userVote?.[0]) : null);
-        const closed = results?.closed ?? false;
-
-        return (
-          <div className="space-y-4">
-            <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
-            {post.poll && (
-              <div className="space-y-3 p-4 border rounded-lg">
-                {post.poll.question && <h4 className="font-medium">{post.poll.question}</h4>}
-                <div className="space-y-2">
-                  {opts.map((option, index) => {
-                    const isSelected = userSelected === index;
-                    return (
-                      <button
-                        key={`${index}-${option.text}`} 
-                        className={cn(
-                          "w-full text-left p-3 border rounded-lg transition-colors relative",
-                          isSelected 
-                            ? "border-primary bg-primary/10" 
-                            : "hover:bg-muted"
-                        )}
-                        onClick={() => handlePollVote(index)}
-                        disabled={closed || voting}
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">{option.text}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {typeof option.percentage === "number" ? `${option.percentage}%` : ""}
-                            {typeof option.votes === "number" ? ` • ${option.votes} votes` : ""}
-                          </span>
-                        </div>
-                        {/* Progress underline */}
-                        <div
-                          className="absolute bottom-0 left-0 h-1 bg-primary/70 rounded-b-md transition-all"
-                          style={{ width: `${Math.min(100, Math.max(0, option.percentage || 0))}%` }}
-                        />
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">
-                    {statusLabel}
-                  </p>
-                  <Button variant="ghost" size="sm" className="text-xs" onClick={refresh} disabled={pollLoading}>
-                    Refresh
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      }
 
       case 'event':
         return (

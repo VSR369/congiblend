@@ -1,5 +1,5 @@
 import * as React from "react";
-import { X, Image, Video, FileText, Calendar, BarChart3, Hash, AtSign, Smile, Music } from "lucide-react";
+import { X, Image, Video, FileText, Calendar, Hash, AtSign, Smile, Music } from "lucide-react";
 import { Modal, ModalHeader, ModalBody, ModalFooter, ModalTitle } from "./modal";
 import { Button } from "./button";
 import { Input } from "./input";
@@ -40,7 +40,6 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
     mentions,
     isPosting,
     selectedFiles,
-    pollOptions,
     eventData,
     eventSpeakers,
   } = state;
@@ -52,14 +51,6 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
   const [endDate, setEndDate] = React.useState<Date | undefined>(undefined);
   const [endTime, setEndTime] = React.useState<string>("");
 
-  // Poll duration (expires_at)
-  const [pollDurationPreset, setPollDurationPreset] = React.useState<'1d' | '3d' | '7d' | '14d' | '28d' | 'custom'>('7d');
-  const [pollCustomDays, setPollCustomDays] = React.useState<number>(7);
-  const computePollExpiresAt = React.useCallback(() => {
-    const days = pollDurationPreset === 'custom' ? Math.max(1, Number(pollCustomDays) || 7) : parseInt(pollDurationPreset);
-    const ms = days * 24 * 60 * 60 * 1000;
-    return new Date(Date.now() + ms).toISOString();
-  }, [pollDurationPreset, pollCustomDays]);
 
   // Ensure active tab aligns with provided initialType/allowedTypes
   React.useEffect(() => {
@@ -128,7 +119,6 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
     { type: "video", label: "Video", icon: Video, description: "Upload videos" },
     { type: "audio", label: "Audio", icon: Music, description: "Share audio files" },
     { type: "article", label: "Article", icon: FileText, description: "Write long-form content" },
-    { type: "poll", label: "Poll", icon: BarChart3, description: "Ask your network" },
     { type: "event", label: "Event", icon: Calendar, description: "Announce events" },
   ];
 
@@ -280,19 +270,6 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
         media_urls: mediaUrls, // Include uploaded media URLs
       };
 
-      // Add poll data if it's a poll post
-      if (activeTab === 'poll') {
-        const optionTexts = pollOptions.map((o) => o.trim()).filter(Boolean);
-        if (optionTexts.length < 2) {
-          throw new Error('At least two poll options are required');
-        }
-        const expiresAt = computePollExpiresAt();
-        postData.poll_data = {
-          options: optionTexts.map((text) => ({ text, votes: 0 })),
-          multiple_choice: false,
-          expires_at: expiresAt,
-        };
-      }
 
       // Add event data if it's an event post
       if (activeTab === 'event') {

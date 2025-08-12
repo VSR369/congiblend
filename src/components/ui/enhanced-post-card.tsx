@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from './card';
 import { useFeedStore } from '@/stores/feedStore';
 import { cn } from '@/lib/utils';
 import type { Post } from '@/types/feed';
-import { usePollResults } from '@/hooks/usePolls';
+
 import { toast } from '@/hooks/use-toast';
 import { PostContent } from './post-content';
 import { buildPreview } from '@/utils/formatters';
@@ -41,43 +41,7 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
     }
   };
 
-  // Poll handling with server RPCs
-  const { results, voting, statusLabel, castVote, refresh } = usePollResults(
-    post.type === 'poll' ? post.id : undefined
-  );
 
-  const handlePollVote = async (optionIndex: number) => {
-    try {
-      await castVote(optionIndex);
-      toast({
-        title: "Vote submitted",
-        description: "Your vote has been recorded.",
-      });
-    } catch (e: any) {
-      if (e?.message === "AUTH_REQUIRED") {
-        toast({
-          title: "Sign in required",
-          description: "Please sign in to vote on polls.",
-          variant: "destructive",
-        });
-        return;
-      }
-      const msg = String(e?.message || '').toLowerCase();
-      if (msg.includes('poll is closed') || msg.includes('closed')) {
-        toast({
-          title: "Poll closed",
-          description: "This poll is closed.",
-          variant: "destructive",
-        });
-        return;
-      }
-      toast({
-        title: "Vote failed",
-        description: e?.message || "Failed to vote.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const renderMedia = () => {
     if (!post.media || post.media.length === 0) return null;
@@ -115,60 +79,6 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
     );
   };
 
-  const renderPoll = () => {
-    // Prefer server results; fallback to existing post.poll if present
-    const closed = results?.closed ?? false;
-    const userSelected = results?.userSelected ?? (post.poll?.userVote?.length ? Number(post.poll?.userVote?.[0]) : null);
-    const opts = results?.options ?? post.poll?.options?.map(o => ({
-      text: o.text,
-      votes: Math.round((o.percentage / 100) * (post.poll?.totalVotes || 0)) || 0,
-      percentage: o.percentage,
-    })) ?? [];
-
-    if (!(post as any).poll && !results) return null;
-
-    return (
-      <div className="mt-3 p-4 border rounded-lg">
-        {post.poll?.question && <h4 className="font-medium mb-3">{post.poll.question}</h4>}
-        <div className="space-y-2">
-          {opts.map((option, index) => (
-            <button
-              key={`${index}-${option.text}`}
-              onClick={() => handlePollVote(index)}
-              className={cn(
-                "w-full relative border rounded-md p-3 text-left transition-colors",
-                userSelected === index ? "border-primary bg-primary/10" : "hover:bg-muted/50"
-              )}
-              disabled={closed || voting}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-sm">{option.text}</span>
-                <span className="text-xs text-muted-foreground">
-                  {typeof option.percentage === "number" ? `${option.percentage}%` : ""}
-                  {typeof option.votes === "number" ? ` • ${option.votes} votes` : ""}
-                </span>
-              </div>
-              <div
-                className="absolute bottom-0 left-0 h-1 bg-primary rounded-b-md transition-all"
-                style={{ width: `${Math.min(100, Math.max(0, option.percentage || 0))}%` }}
-              />
-            </button>
-          ))}
-        </div>
-        {!closed && (
-          <p className="text-xs text-muted-foreground mt-2">
-            You can change your vote until the poll closes.
-          </p>
-        )}
-        <div className="flex items-center justify-between mt-2">
-          <p className="text-xs text-muted-foreground">{statusLabel}</p>
-          <Button variant="ghost" size="sm" className="text-xs" onClick={refresh} disabled={voting}>
-            Refresh
-          </Button>
-        </div>
-      </div>
-    );
-  };
 
   const renderEvent = () => {
     if (!post.event_data && post.type !== 'event') return null;
@@ -319,7 +229,6 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
 
         {renderMedia()}
 
-        {post.type === 'poll' && renderPoll()}
 
         {renderEvent()}
 

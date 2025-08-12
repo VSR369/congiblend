@@ -3029,51 +3029,6 @@ export type Database = {
           },
         ]
       }
-      votes: {
-        Row: {
-          created_at: string
-          id: string
-          is_current: boolean
-          option_index: number
-          post_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_current?: boolean
-          option_index: number
-          post_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_current?: boolean
-          option_index?: number
-          post_id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "votes_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "votes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
@@ -3090,10 +3045,6 @@ export type Database = {
       can_delete_spark: {
         Args: { p_spark_id: string; p_user_id?: string }
         Returns: boolean
-      }
-      cast_poll_vote: {
-        Args: { p_post_id: string; p_option_index: number }
-        Returns: Json
       }
       check_active_challenges_for_user: {
         Args: { user_id_param: string }
@@ -3134,10 +3085,6 @@ export type Database = {
       }
       get_membership_workflow_status: {
         Args: { user_id_param: string }
-        Returns: Json
-      }
-      get_poll_results: {
-        Args: { p_post_id: string }
         Returns: Json
       }
       get_pricing_configuration: {

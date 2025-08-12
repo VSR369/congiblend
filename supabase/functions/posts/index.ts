@@ -24,7 +24,7 @@ const createAuthenticatedClient = (token: string) => {
 interface CreatePostData {
   content: string;
   visibility: 'public' | 'connections' | 'private';
-  post_type: 'text' | 'image' | 'video' | 'article' | 'poll' | 'event' | 'job' | 'carousel' | 'audio' | 'podcast';
+  post_type: 'text' | 'image' | 'video' | 'article' | 'event' | 'job' | 'carousel' | 'audio' | 'podcast';
   images?: string[];
   videos?: string[];
   media_urls?: string[];
@@ -154,7 +154,7 @@ serve(async (req) => {
           visibility: postData.visibility || 'public',
           media_urls: postData.media_urls || null,
           thumbnail_url: postData.thumbnail_url || null,
-          poll_data: postData.poll_data || null,
+          
           event_data: postData.event_data || null,
           metadata: {
             hashtags,
@@ -355,39 +355,6 @@ serve(async (req) => {
       }
     }
 
-    // VOTE ON POLL ENDPOINT
-    if (req.method === 'POST' && pathParts.length >= 3 && pathParts[pathParts.length - 1] === 'vote') {
-      const postId = pathParts[pathParts.length - 2];
-      const { option_index } = await req.json();
-
-      // Validate option_index
-      if (typeof option_index !== 'number' || option_index < 0) {
-        return new Response(
-          JSON.stringify({ error: 'Invalid option index' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Use server-side RPC to safely cast vote (allows changing vote)
-      const { data: voteResult, error: voteError } = await authenticatedSupabase
-        .rpc('cast_poll_vote', { p_post_id: postId, p_option_index: option_index });
-
-      if (voteError) {
-        console.error('cast_poll_vote error:', voteError);
-        return new Response(
-          JSON.stringify({ error: voteError.message || 'Failed to record vote' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      return new Response(
-        JSON.stringify(voteResult),
-        { 
-          status: 200, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
 
     // RSVP TO EVENT ENDPOINT
     if (req.method === 'POST' && pathParts.length >= 3 && pathParts[pathParts.length - 1] === 'rsvp') {

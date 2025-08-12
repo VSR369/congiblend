@@ -20,7 +20,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 import { PostContent } from "./post-content";
 import { buildPreview } from "@/utils/formatters";
-import { usePollResults } from "@/hooks/usePolls";
+
 interface PostCardProps {
   post: Post;
   className?: string;
@@ -37,9 +37,6 @@ export const PostCard = React.memo(({ post, className, virtualized = false }: Po
     threshold: 0,
   });
 
-  const { results: pollResults, loading: pollLoading, voting: pollVoting, castVote, statusLabel, refresh: refreshPoll } = usePollResults(
-    post.type === 'poll' ? post.id : undefined
-  );
 
   const handleSaveToggle = React.useCallback(() => {
     toggleSave(post.id);
@@ -47,50 +44,6 @@ export const PostCard = React.memo(({ post, className, virtualized = false }: Po
 
   const isTempPost = post.id.startsWith('post-');
 
-  // Poll vote handler using server RPCs
-  const handlePollVote = React.useCallback(
-    async (optionIndex: number) => {
-      try {
-        if (isTempPost) {
-          toast({
-            title: 'Please wait',
-            description: 'Your post is still publishing. Try again in a moment.',
-          });
-          return;
-        }
-        await castVote(optionIndex);
-        toast({
-          title: 'Vote submitted',
-          description: 'Your vote has been recorded successfully.',
-        });
-      } catch (e: any) {
-        console.error('Poll voting error:', e);
-        const msg = String(e?.message || '').toLowerCase();
-        if (msg.includes('auth_required') || msg.includes('not authenticated')) {
-          toast({
-            title: 'Sign in required',
-            description: 'Please sign in to vote in polls.',
-            action: (
-              <ToastAction altText="Sign in" onClick={() => navigate('/login')}>
-                Sign in
-              </ToastAction>
-            ),
-          });
-          return;
-        }
-        if (msg.includes('poll is closed') || msg.includes('closed')) {
-          toast({ title: 'Poll closed', description: 'This poll is closed.', variant: 'destructive' });
-          return;
-        }
-        toast({
-          title: 'Vote failed',
-          description: e?.message || 'Failed to submit your vote. Please try again.',
-          variant: 'destructive',
-        });
-      }
-    },
-    [castVote, isTempPost, navigate]
-  );
 
   const handleRSVPChoice = React.useCallback(async (status: 'attending' | 'interested' | 'not_attending') => {
     if (isTempPost) {
@@ -210,74 +163,6 @@ export const PostCard = React.memo(({ post, className, virtualized = false }: Po
           </div>
         );
 
-      case 'poll':
-        // Polls use server-authoritative results via RPC
-        return (
-          <div className="space-y-4">
-            <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
-            {post.type === 'poll' ? (
-              <div className="space-y-3 p-4 border rounded-lg">
-                <h4 className="font-medium">{post.content}</h4>
-                {!pollResults && (
-                  <p className="text-sm text-muted-foreground">{pollLoading ? 'Loading poll…' : 'Poll unavailable'}</p>
-                )}
-                {pollResults && (
-                  <div className="space-y-2">
-                    {pollResults.options.map((option, index) => {
-                      const isSelected = pollResults.userSelected === index;
-                      const closed = pollResults.closed;
-                      return (
-                        <button
-                          key={index}
-                          className={cn(
-                            'w-full text-left space-y-2 p-4 border-2 rounded-lg transition-colors bg-card',
-                            isSelected ? 'border-primary bg-primary/10' : 'hover:bg-primary/5 hover:border-primary'
-                          )}
-                          onClick={() => handlePollVote(index)}
-                          disabled={closed || pollVoting}
-                        >
-                          <div className="flex justify-between items-center mb-2">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm font-medium text-foreground">{option.text}</span>
-                              {isSelected && (
-                                <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">✓ Selected</span>
-                              )}
-                            </div>
-                            <span className="text-xs text-muted-foreground font-medium">
-                              {option.percentage}% ({option.votes} vote{option.votes !== 1 ? 's' : ''})
-                            </span>
-                          </div>
-                          <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
-                            <div
-                              className={cn(
-                                'h-full rounded-full transition-all duration-500 ease-out',
-                                isSelected ? 'bg-primary' : 'bg-primary/70'
-                              )}
-                              style={{ width: `${Math.max(option.percentage, 2)}%` }}
-                            />
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-                {pollResults && !pollResults.closed && (
-                  <p className="text-xs text-muted-foreground mt-1">You can change your vote until the poll closes.</p>
-                )}
-                <div className="flex justify-between items-center text-xs text-muted-foreground pt-2 border-t">
-                  <span className="font-medium">{statusLabel}</span>
-                  <Button variant="ghost" size="sm" className="text-xs" onClick={refreshPoll} disabled={pollVoting || pollLoading}>
-                    Refresh
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="p-4 border rounded-lg">
-                <p className="text-muted-foreground">Poll data not available</p>
-              </div>
-            )}
-          </div>
-        );
 
       case 'event':
         return (

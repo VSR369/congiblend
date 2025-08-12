@@ -130,7 +130,7 @@ describe('Reactions System', () => {
       ...(global.imagePosts || []),
       ...(global.videoPosts || []),
       ...(global.audioPosts || []),
-      ...(global.pollPosts || []),
+      
       ...(global.eventPosts || [])
     ];
     
