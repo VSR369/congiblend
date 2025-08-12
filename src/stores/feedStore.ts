@@ -1090,97 +1090,19 @@ export const useFeedStore = create<FeedState>((set, get) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
-        console.log('Voting on poll:', { postId, optionIndex, userId: user.id });
+        console.log('Voting on poll via RPC:', { postId, optionIndex, userId: user.id });
 
-        // First, check if user has already voted
-        const { data: existingVote } = await supabase
-          .from('votes')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('post_id', postId)
-          .maybeSingle();
-
-        console.log('Existing vote:', existingVote);
-
-        // Insert or update vote in the votes table without relying on DB constraints
-        let voteData;
-        if (existingVote) {
-          const { data: updated, error: updateError } = await supabase
-            .from('votes')
-            .update({ option_index: optionIndex, updated_at: new Date().toISOString() })
-            .eq('id', existingVote.id)
-            .select();
-          if (updateError) {
-            console.error('Vote update error:', updateError);
-            throw updateError;
-          }
-          voteData = updated;
-        } else {
-          const { data: inserted, error: insertError } = await supabase
-            .from('votes')
-            .insert({ user_id: user.id, post_id: postId, option_index: optionIndex })
-            .select();
-          if (insertError) {
-            console.error('Vote insert error:', insertError);
-            throw insertError;
-          }
-          voteData = inserted;
-        }
-
-        console.log('Vote saved:', voteData);
-
-        // Get all votes for this post to calculate accurate counts
-        const { data: allVotes, error: votesError } = await supabase
-          .from('votes')
-          .select('option_index')
-          .eq('post_id', postId);
-
-        if (votesError) {
-          console.error('Error fetching votes:', votesError);
-          throw votesError;
-        }
-
-        console.log('All votes for post:', allVotes);
-
-        // Count votes per option
-        const voteCounts: Record<number, number> = {};
-        allVotes?.forEach(vote => {
-          voteCounts[vote.option_index] = (voteCounts[vote.option_index] || 0) + 1;
+        const { data, error } = await supabase.rpc('cast_poll_vote', {
+          p_post_id: postId,
+          p_option_index: optionIndex,
         });
+        if (error) {
+          console.error('cast_poll_vote error:', error);
+          throw error;
+        }
 
-        console.log('Vote counts:', voteCounts);
-
-        // Update local state with accurate vote counts
-        set(state => ({
-          posts: state.posts.map(post => {
-            if (post.id !== postId || !post.poll) return post;
-            
-            // Update vote counts based on actual database data
-            const updatedOptions = post.poll.options.map((option, index) => ({
-              ...option,
-              votes: voteCounts[index] || 0
-            }));
-
-            // Recalculate percentages
-            const totalVotes = Object.values(voteCounts).reduce((sum, count) => sum + count, 0);
-            const optionsWithPercentages = updatedOptions.map(option => ({
-              ...option,
-              percentage: totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0
-            }));
-
-            return {
-              ...post,
-              poll: {
-                ...post.poll,
-                options: optionsWithPercentages,
-                totalVotes,
-                userVote: [optionIndex.toString()]
-              }
-            };
-          })
-        }));
-
-        return voteData;
+        // No local state mutation here; UI components use usePollResults() and can refresh as needed
+        return data;
       } catch (error) {
         console.error('Error voting on poll:', error);
         throw error;
