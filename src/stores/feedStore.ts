@@ -778,6 +778,7 @@ export const useFeedStore = create<FeedState>((set, get) => {
           media_urls: mediaUrls,
           thumbnail_url: thumbnailUrl,
           event_data: data.event_data,
+          poll_data: data.poll_data,
           metadata: data.metadata || {}
         };
 

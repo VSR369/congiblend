@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from './card';
 import { useFeedStore } from '@/stores/feedStore';
 import { cn } from '@/lib/utils';
 import type { Post } from '@/types/feed';
+import { PollCard } from './poll-card';
 
 import { toast } from '@/hooks/use-toast';
 import { PostContent } from './post-content';
@@ -231,6 +232,13 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
 
 
         {renderEvent()}
+
+        {/* Render poll if it's a poll post */}
+        {post.type === 'poll' && post.poll && (
+          <div className="mt-3">
+            <PollCard poll={post.poll} />
+          </div>
+        )}
 
         <div className="flex items-center justify-between pt-4 mt-4 border-t">
           <div className="flex items-center space-x-4">

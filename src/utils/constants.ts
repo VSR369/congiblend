@@ -117,7 +117,7 @@ export const ALL_POST_TYPES: PostType[] = [
   'video',
   'audio',
   'article',
-  
+  'poll',
   'event',
   'document',
   'link',

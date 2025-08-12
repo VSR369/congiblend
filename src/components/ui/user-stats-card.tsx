@@ -79,7 +79,7 @@ export const UserStatsCard: React.FC = () => {
         video_posts: postStats?.filter(p => p.post_type === 'video').length || 0,
         voice_posts: postStats?.filter(p => p.post_type === 'audio').length || 0,
         article_posts: postStats?.filter(p => p.post_type === 'article').length || 0,
-        
+        poll_posts: postStats?.filter(p => p.post_type === 'poll').length || 0,
         event_posts: postStats?.filter(p => p.post_type === 'event').length || 0,
         job_posts: postStats?.filter(p => p.post_type === 'job').length || 0,
         document_posts: postStats?.filter(p => p.post_type === 'document').length || 0,

@@ -24,16 +24,16 @@ const createAuthenticatedClient = (token: string) => {
 interface CreatePostData {
   content: string;
   visibility: 'public' | 'connections' | 'private';
-  post_type: 'text' | 'image' | 'video' | 'article' | 'event' | 'job' | 'carousel' | 'audio' | 'podcast';
+  post_type: 'text' | 'image' | 'video' | 'article' | 'event' | 'job' | 'carousel' | 'audio' | 'podcast' | 'poll';
   images?: string[];
   videos?: string[];
   media_urls?: string[];
   thumbnail_url?: string;
   duration?: number;
   poll_data?: {
-    options: Array<{ text: string; votes: number }>;
-    multiple_choice: boolean;
-    expires_at?: string;
+    question: string;
+    options: string[];
+    duration_days: number;
   };
   event_data?: {
     title: string;
@@ -106,16 +106,21 @@ serve(async (req) => {
     if (req.method === 'POST' && (endpoint === 'posts' || pathParts[pathParts.length - 2] === 'api')) {
       const postData: CreatePostData = await req.json();
 
-      // Validate required fields
-      if (!postData.content || !postData.content.trim()) {
-        return new Response(
-          JSON.stringify({ error: 'Content is required' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Validate event data if it's an event post
-      if (postData.post_type === 'event') {
+      // Validate required fields based on post type
+      if (postData.post_type === 'poll') {
+        if (!postData.poll_data?.question?.trim()) {
+          return new Response(
+            JSON.stringify({ error: 'Poll question is required' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (!postData.poll_data?.options || postData.poll_data.options.length < 2) {
+          return new Response(
+            JSON.stringify({ error: 'Poll must have at least 2 options' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } else if (postData.post_type === 'event') {
         if (!postData.event_data?.title?.trim()) {
           return new Response(
             JSON.stringify({ error: 'Event title is required' }),
@@ -134,6 +139,11 @@ serve(async (req) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
+      } else if (!postData.content || !postData.content.trim()) {
+        return new Response(
+          JSON.stringify({ error: 'Content is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       // Extract hashtags and mentions
@@ -187,6 +197,29 @@ serve(async (req) => {
           JSON.stringify({ error: 'Failed to create post', code: (postError as any).code, message: (postError as any).message, details: (postError as any).details ?? null }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
+
+      // Create poll if it's a poll post
+      if (postData.post_type === 'poll' && postData.poll_data) {
+        const endTime = new Date();
+        endTime.setDate(endTime.getDate() + postData.poll_data.duration_days);
+
+        const { error: pollError } = await authenticatedSupabase.rpc('poll_create', {
+          p_post_id: newPost.id,
+          p_question: postData.poll_data.question,
+          p_end_time: endTime.toISOString(),
+          p_options: postData.poll_data.options.filter(opt => opt.trim())
+        });
+
+        if (pollError) {
+          console.error('Poll creation error:', pollError);
+          // Delete the post if poll creation fails
+          await authenticatedSupabase.from('posts').delete().eq('id', newPost.id);
+          return new Response(
+            JSON.stringify({ error: 'Failed to create poll' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
 
       return new Response(
