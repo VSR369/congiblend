@@ -505,8 +505,9 @@ export const useFeedStore = create<FeedState>((set, get) => {
         if (pollPostIds.length > 0) {
           const { data: allVotes } = await supabase
             .from('votes')
-            .select('post_id, option_index, user_id')
-            .in('post_id', pollPostIds);
+            .select('post_id, option_index, user_id, is_current')
+            .in('post_id', pollPostIds)
+            .eq('is_current', true);
           (allVotes || []).forEach((v: any) => {
             (votesByPost[v.post_id] ||= []).push(v);
           });
