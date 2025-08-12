@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { FileText, Image, Video, Music, BarChart3, Calendar, Briefcase } from 'lucide-react';
+import { FileText, Image, Video, Music, Calendar, Briefcase } from 'lucide-react';
 import { Button } from './button';
 import { cn } from '@/lib/utils';
 import type { PostType } from '@/types/feed';
@@ -10,12 +11,12 @@ interface PostTypeSelectorProps {
   className?: string;
 }
 
+// Removed "poll" from the available post types
 const postTypes: { type: PostType; label: string; icon: React.ComponentType<any>; description: string }[] = [
   { type: "text", label: "Text", icon: FileText, description: "Share your thoughts" },
   { type: "image", label: "Photo", icon: Image, description: "Share images" },
   { type: "video", label: "Video", icon: Video, description: "Upload videos" },
   { type: "audio", label: "Audio", icon: Music, description: "Share audio files" },
-  { type: "poll", label: "Poll", icon: BarChart3, description: "Ask your network" },
   { type: "event", label: "Event", icon: Calendar, description: "Announce events" },
 ];
 
@@ -25,7 +26,7 @@ export const PostTypeSelector: React.FC<PostTypeSelectorProps> = ({
   className
 }) => {
   return (
-    <div className={cn("grid grid-cols-6 gap-2", className)}>
+    <div className={cn("grid grid-cols-5 gap-2", className)}>
       {postTypes.map((type) => {
         const Icon = type.icon;
         const isActive = activeType === type.type;
