@@ -79,7 +79,7 @@ export const UserStatsCard: React.FC = () => {
         video_posts: postStats?.filter(p => p.post_type === 'video').length || 0,
         voice_posts: postStats?.filter(p => p.post_type === 'audio').length || 0,
         article_posts: postStats?.filter(p => p.post_type === 'article').length || 0,
-        poll_posts: postStats?.filter(p => p.post_type === 'poll').length || 0,
+        
         event_posts: postStats?.filter(p => p.post_type === 'event').length || 0,
         job_posts: postStats?.filter(p => p.post_type === 'job').length || 0,
         document_posts: postStats?.filter(p => p.post_type === 'document').length || 0,
@@ -200,17 +200,6 @@ export const UserStatsCard: React.FC = () => {
                   <span className="text-sm font-bold text-accent">{stats.voice_posts}</span>
                 </div>
                 <span className="text-xs text-muted-foreground text-center">Voice</span>
-              </div>
-            )}
-            
-            {/* Poll Posts */}
-            {stats.poll_posts > 0 && (
-              <div className="flex flex-col items-center p-2 rounded-lg bg-muted/30">
-                <div className="flex items-center space-x-1 mb-1">
-                  <BarChart className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-bold text-primary">{stats.poll_posts}</span>
-                </div>
-                <span className="text-xs text-muted-foreground text-center">Polls</span>
               </div>
             )}
             

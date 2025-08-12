@@ -210,7 +210,7 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
         });
         return;
       }
-    } else if (activeTab !== 'poll' && !content.trim()) {
+    } else if (!content.trim()) {
       console.log('❌ Submission blocked - content required');
       return;
     }
@@ -325,7 +325,7 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
     } finally {
       dispatch({ type: 'SET_IS_POSTING', payload: false });
     }
-  }, [content, selectedFiles, activeTab, pollOptions, eventData, startDate, startTime, hasEnd, endDate, endTime, hashtags, mentions, createPost, onClose, dispatch, toLocalTimestampString]);
+  }, [content, selectedFiles, activeTab, eventData, startDate, startTime, hasEnd, endDate, endTime, hashtags, mentions, createPost, onClose, dispatch, toLocalTimestampString]);
 
   const extractHashtags = React.useCallback((text: string) => {
     const start = performance.now();
@@ -768,7 +768,6 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
               !eventData.description || !eventData.description.trim() ||
               !startDate || !startTime || (hasEnd && (!endDate || !endTime))
             );
-            const pollCheck = activeTab === 'poll' && (!content.trim() || !pollOptions.some(opt => opt.trim()));
             const mediaCheck = ['image', 'video', 'audio'].includes(activeTab) && selectedFiles.length === 0 && !content.trim();
             
             if (activeTab === 'event') {
@@ -790,7 +789,7 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
               });
             }
             
-            return isPostingCheck || characterCheck || textCheck || eventCheck || pollCheck || mediaCheck;
+            return isPostingCheck || characterCheck || textCheck || eventCheck || mediaCheck;
           })()}
           loading={isPosting}
           loadingText="Posting..."

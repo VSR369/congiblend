@@ -16,7 +16,7 @@ const contentTypeConfig = {
   video: { label: "Videos", icon: Video },
   audio: { label: "Audio", icon: Volume2 },
   article: { label: "Articles", icon: FileType },
-  poll: { label: "Polls", icon: MessageSquare },
+  
   event: { label: "Events", icon: Calendar },
   document: { label: "Documents", icon: FileText },
   link: { label: "Links", icon: Link },

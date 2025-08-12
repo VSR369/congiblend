@@ -17,7 +17,7 @@ export interface SearchPost {
   id: string;
   content: string;
   author: SearchUser;
-  type: 'text' | 'image' | 'video' | 'article' | 'poll' | 'event';
+  type: 'text' | 'image' | 'video' | 'article' | 'event';
   hashtags: string[];
   reactions: number;
   comments: number;

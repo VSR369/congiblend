@@ -73,10 +73,6 @@ export const AdaptiveContentFeed: React.FC<AdaptiveContentFeedProps> = ({ classN
       }
     }
     
-    // Poll/event content
-    if (post.poll) {
-      height += post.poll.options.length * 40 + 40;
-    }
     if (post.event) {
       height += 120;
     }

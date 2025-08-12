@@ -55,10 +55,6 @@ export function useAdaptivePostHeight(post: Post, expanded: boolean = false, con
       }
     }
 
-    // Add poll/event content height
-    if (post.poll) {
-      height += post.poll.options.length * fullConfig.pollOptionHeight + fullConfig.padding;
-    }
     if (post.event) {
       height += 120; // estimated event content height
     }

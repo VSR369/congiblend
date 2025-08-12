@@ -168,7 +168,7 @@ const transformDbPost = (dbPost: any, author: any, currentUserId?: string): Post
     },
     content: dbPost.content,
     media,
-    poll,
+    
     event,
     event_data: dbPost.event_data, // Include the raw event_data
     hashtags: Array.from(new Set([
@@ -1001,29 +1001,6 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
     // Comment functions removed - comments functionality not implemented
 
-    votePoll: async (postId: string, optionIndex: number) => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('User not authenticated');
-
-        console.log('Voting on poll via RPC:', { postId, optionIndex, userId: user.id });
-
-        const { data, error } = await supabase.rpc('cast_poll_vote', {
-          p_post_id: postId,
-          p_option_index: optionIndex,
-        });
-        if (error) {
-          console.error('cast_poll_vote error:', error);
-          throw error;
-        }
-
-        // No local state mutation here; UI components use usePollResults() and can refresh as needed
-        return data;
-      } catch (error) {
-        console.error('Error voting on poll:', error);
-        throw error;
-      }
-    },
 
     rsvpEvent: async (postId: string, status: 'attending' | 'interested' | 'not_attending') => {
       try {

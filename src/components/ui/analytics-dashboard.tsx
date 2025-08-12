@@ -396,7 +396,7 @@ export const AnalyticsDashboard = () => {
                     { type: 'Image', engagement: 3.1, posts: 45 },
                     { type: 'Video', engagement: 6.8, posts: 8 },
                     { type: 'Text', engagement: 2.3, posts: 67 },
-                    { type: 'Poll', engagement: 4.5, posts: 12 },
+                    { type: 'Events', engagement: 4.5, posts: 12 },
                   ]}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="type" />

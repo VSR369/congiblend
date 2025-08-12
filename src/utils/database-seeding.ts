@@ -99,7 +99,7 @@ const createTestPosts = async (users: any[], count: number) => {
     "Simple things bring the most joy ✨ #gratitude #mindfulness"
   ];
   
-  const postTypes = ['text', 'image', 'article', 'poll'];
+  const postTypes = ['text', 'image', 'article', 'event'];
   const visibilityOptions = ['public', 'connections', 'private'];
   
   const testPosts = [];

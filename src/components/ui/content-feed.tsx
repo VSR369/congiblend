@@ -94,7 +94,7 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
           </Button>
 
           {showChooser && (
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -123,20 +123,6 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
                 <span className="text-xs">Articles</span>
               </Button>
 
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setModalAllowedTypes(["poll"] as PostType[]);
-                  setModalInitialType("poll");
-                  setShowCreateModal(true);
-                  setShowChooser(false);
-                }}
-                className="h-20 flex flex-col items-center justify-center"
-                title="Create a poll"
-              >
-                <BarChart3 className="h-5 w-5 mb-1" />
-                <span className="text-xs">Polls</span>
-              </Button>
 
               <Button
                 variant="outline"

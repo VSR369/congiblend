@@ -23,7 +23,7 @@ export interface UserAnalytics {
 export interface ContentAnalytics {
   postId: string;
   title: string;
-  type: 'text' | 'image' | 'video' | 'article' | 'poll';
+  type: 'text' | 'image' | 'video' | 'article' | 'event';
   publishedAt: string;
   likes: number;
   // comments: number; - removed, comments functionality not implemented
