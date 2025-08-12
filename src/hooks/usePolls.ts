@@ -1,13 +1,20 @@
 
 import { useCallback } from "react";
 
-/**
- * Polls have been removed from the app. This hook is a no-op shim so existing
- * components that still import/use it can compile and show a "polls disabled"
- * state without enabling any functionality.
- */
+type PollOption = {
+  text: string;
+  votes: number;
+  percentage: number;
+};
+
+type PollResults = {
+  options: PollOption[];
+  userSelected: number | null;
+  closed: boolean;
+};
+
 type UsePollResultsReturn = {
-  results: null;
+  results: PollResults; // Always non-null to satisfy existing components
   loading: boolean;
   voting: boolean;
   statusLabel: string;
@@ -15,11 +22,15 @@ type UsePollResultsReturn = {
   refresh: () => void;
 };
 
+/**
+ * Polls have been removed from the app.
+ * This hook returns a non-null, closed, empty result so existing components compile,
+ * while still preventing any poll interaction.
+ */
 export function usePollResults(_pollId?: string): UsePollResultsReturn {
   const statusLabel = "Polls are disabled";
 
   const castVote = useCallback(async (_optionIndex: number) => {
-    // Intentionally reject to prevent any optimistic UI like "Vote submitted"
     console.warn("Poll vote attempted while polls are disabled.");
     throw new Error("Polls disabled");
   }, []);
@@ -28,8 +39,14 @@ export function usePollResults(_pollId?: string): UsePollResultsReturn {
     console.info("Poll refresh attempted while polls are disabled.");
   }, []);
 
+  const results: PollResults = {
+    options: [],
+    userSelected: null,
+    closed: true,
+  };
+
   return {
-    results: null,
+    results,
     loading: false,
     voting: false,
     statusLabel,
@@ -37,3 +54,4 @@ export function usePollResults(_pollId?: string): UsePollResultsReturn {
     refresh,
   };
 }
+
