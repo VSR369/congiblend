@@ -30,7 +30,7 @@ interface UserStats {
   video_posts: number;
   voice_posts: number;
   article_posts: number;
-  poll_posts: number;
+  
   event_posts: number;
   job_posts: number;
   document_posts: number;
