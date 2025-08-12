@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,18 @@ export const SparkComments: React.FC<SparkCommentsProps> = ({ sparkId }) => {
   const qc = useQueryClient();
   const { isAuthenticated } = useAuthStore();
   const [content, setContent] = useState("");
+  const [open, setOpen] = useState(false);
+  const panelId = `spark-comments-panel-${sparkId}`;
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => {
+        const el = panelRef.current?.querySelector('textarea') as HTMLTextAreaElement | null;
+        el?.focus();
+      }, 0);
+    }
+  }, [open]);
   
   const { data, isLoading } = useQuery({
     queryKey: ["spark", sparkId, "comments"],
@@ -54,41 +66,60 @@ export const SparkComments: React.FC<SparkCommentsProps> = ({ sparkId }) => {
 
   return (
     <section aria-label="Spark comments" className="mt-8">
-      <h3 className="text-sm font-medium mb-2">Comments</h3>
+      <h3 className="sr-only">Comments</h3>
 
-      {isAuthenticated && (
-        <div className="mb-4 space-y-2">
-          <Textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Share feedback or discuss this spark..."
-            rows={3}
-          />
-          <div className="flex justify-end">
-            <Button size="sm" onClick={handleSubmit} disabled={!content.trim()}>Post</Button>
+      <div className="mb-2">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((v) => !v)}
+          className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+        >
+          <span>
+            {open ? "Hide comments" : "View/Add comments"}
+            {data && data.length > 0 ? ` (${data.length})` : ""}
+          </span>
+        </button>
+      </div>
+
+      <div id={panelId} ref={panelRef} role="region" aria-label="Spark comments panel">
+        {isAuthenticated && (
+          <div className={`mb-4 space-y-2 ${open ? "" : "hidden"}`}>
+            <Textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Share feedback or discuss this spark..."
+              rows={3}
+            />
+            <div className="flex justify-end">
+              <Button size="sm" onClick={handleSubmit} disabled={!content.trim()}>Post</Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {isLoading ? (
-        <div className="space-y-2">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-        </div>
-      ) : data && data.length > 0 ? (
-        <ul className="space-y-3">
-          {data.map((c: any) => (
-            <li key={c.id} className="rounded-md border border-border p-3 bg-muted/30">
-              <div className="text-sm whitespace-pre-wrap">{c.content}</div>
-              <div className="mt-1 text-[11px] text-muted-foreground">
-                {new Date(c.created_at).toLocaleString()}
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="text-sm text-muted-foreground">No comments yet. Be the first to comment.</div>
-      )}
+        {open ? (
+          isLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : data && data.length > 0 ? (
+            <ul className="space-y-3">
+              {data.map((c: any) => (
+                <li key={c.id} className="rounded-md border border-border p-3 bg-muted/30">
+                  <div className="text-sm whitespace-pre-wrap">{c.content}</div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">
+                    {new Date(c.created_at).toLocaleString()}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-sm text-muted-foreground">No comments yet. Be the first to comment.</div>
+          )
+        ) : null}
+      </div>
     </section>
   );
 };

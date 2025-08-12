@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useCommentsStore } from "@/stores/commentsStore";
 import { CommentComposer } from "@/components/ui/comment-composer";
 import { CommentItem } from "@/components/ui/comment-item";
@@ -21,6 +21,19 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
     return () => unsubscribe(postId);
   }, [postId, load, subscribe, unsubscribe]);
 
+  const [open, setOpen] = useState(false);
+  const panelId = `comments-panel-${postId}`;
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => {
+        const el = panelRef.current?.querySelector('textarea') as HTMLTextAreaElement | null;
+        el?.focus();
+      }, 0);
+    }
+  }, [open]);
+
   if (!state || state.loading) {
     return (
       <div className="p-6 text-center">
@@ -38,36 +51,46 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
     <section aria-label="Comments" className="border-t border-border/50">
       {/* Comments Header */}
       <div className="px-6 py-4 border-b border-border/50">
-        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((v) => !v)}
+          className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+        >
           <MessageCircle className="h-4 w-4" />
-          {commentCount > 0 ? (
-            <span>{commentCount} {commentCount === 1 ? 'comment' : 'comments'}</span>
-          ) : (
-            <span>Comments</span>
-          )}
+          <span>
+            {open ? "Hide comments" : "View/Add comments"}
+            {commentCount > 0 ? ` (${commentCount})` : ""}
+          </span>
+        </button>
+      </div>
+
+      {/* Comments Panel */}
+      <div id={panelId} ref={panelRef} role="region" aria-label="Comments panel">
+        {/* Comment Composer */}
+        <div className={`px-6 py-4 border-b border-border/30 ${open ? "" : "hidden"}`}>
+          <CommentComposer postId={postId} />
         </div>
-      </div>
 
-      {/* Comment Composer */}
-      <div className="px-6 py-4 border-b border-border/30">
-        <CommentComposer postId={postId} />
-      </div>
-
-      {/* Comments List */}
-      <div className="px-6 py-4">
-        {commentCount === 0 ? (
-          <div className="text-center py-8">
-            <MessageCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">No comments yet</p>
-            <p className="text-xs text-muted-foreground mt-1">Be the first to share your thoughts</p>
+        {/* Comments List */}
+        {open ? (
+          <div className="px-6 py-4 animate-fade-in">
+            {commentCount === 0 ? (
+              <div className="text-center py-8">
+                <MessageCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">No comments yet</p>
+                <p className="text-xs text-muted-foreground mt-1">Be the first to share your thoughts</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {state.comments.map((comment) => (
+                  <CommentItem key={comment.id} comment={comment} postId={postId} />
+                ))}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="space-y-4">
-            {state.comments.map((comment) => (
-              <CommentItem key={comment.id} comment={comment} postId={postId} />
-            ))}
-          </div>
-        )}
+        ) : null}
       </div>
     </section>
   );
