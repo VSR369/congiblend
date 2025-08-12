@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { FileText } from "lucide-react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+
 
 interface ArticleListItem {
   id: string;
@@ -113,42 +115,58 @@ const Articles: React.FC = () => {
       ) : viewMode === 'grid' ? (
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {items.map((a) => (
-            <article key={a.id} className="glass-card rounded-xl border border-white/10 p-4 flex flex-col">
-              <h2 className="font-semibold text-lg mb-2">
-                <Link to={`/articles/${a.id}`} className="hover:text-primary">
-                  {a.title}
-                </Link>
-              </h2>
-              <p className="text-sm text-muted-foreground line-clamp-3 mb-3">{a.snippet}</p>
-              {(a.metadata?.category || a.tags.length > 0) && (
-                <div className="mt-auto flex flex-wrap gap-2">
-                  {typeof a.metadata?.category === 'string' && a.metadata?.category.trim() && (
-                    <Badge variant="secondary">{a.metadata.category.trim()}</Badge>
+            <Link
+              key={a.id}
+              to={`/articles/${a.id}`}
+              aria-label={`Read article: ${a.title}`}
+              className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
+            >
+              <Card className="h-full transition-shadow duration-200 hover:shadow-md">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg group-hover:text-primary transition-colors">{a.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-sm text-muted-foreground line-clamp-3">{a.snippet}</p>
+                  {(a.metadata?.category || a.tags.length > 0) && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {typeof a.metadata?.category === 'string' && a.metadata?.category.trim() && (
+                        <Badge variant="secondary">{a.metadata.category.trim()}</Badge>
+                      )}
+                      {a.tags.slice(0, 3).map((t) => (
+                        <Badge key={t} variant="outline">#{String(t).replace(/^#/, '')}</Badge>
+                      ))}
+                    </div>
                   )}
-                  {a.tags.slice(0, 3).map((t) => (
-                    <Badge key={t} variant="outline">#{t.replace(/^#/, '')}</Badge>
-                  ))}
-                </div>
-              )}
-              <div className="mt-3 text-xs text-muted-foreground">{new Date(a.created_at).toLocaleString()}</div>
-            </article>
+                </CardContent>
+                <CardFooter className="pt-0">
+                  <div className="text-xs text-muted-foreground">{new Date(a.created_at).toLocaleString()}</div>
+                </CardFooter>
+              </Card>
+            </Link>
           ))}
         </section>
       ) : (
         <section className="space-y-3">
           {items.map((a) => (
-            <article key={a.id} className="glass-card rounded-lg border border-white/10 p-3">
-              <Link to={`/articles/${a.id}`} className="flex items-start gap-3">
-                <div className="mt-0.5">
-                  <FileText className="h-5 w-5 text-primary" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h2 className="font-medium text-base truncate">{a.title}</h2>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{a.snippet}</p>
-                  <div className="mt-1 text-xs text-muted-foreground">{new Date(a.created_at).toLocaleString()}</div>
-                </div>
-              </Link>
-            </article>
+            <Link
+              key={a.id}
+              to={`/articles/${a.id}`}
+              aria-label={`Read article: ${a.title}`}
+              className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
+            >
+              <Card className="transition-colors hover:bg-accent">
+                <CardContent className="p-4 flex items-start gap-3">
+                  <div className="mt-0.5">
+                    <FileText className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="font-medium text-base truncate group-hover:text-primary transition-colors">{a.title}</h2>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{a.snippet}</p>
+                    <div className="mt-1 text-xs text-muted-foreground">{new Date(a.created_at).toLocaleString()}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </section>
       )}
