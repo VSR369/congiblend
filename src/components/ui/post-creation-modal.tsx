@@ -52,6 +52,15 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
   const [endDate, setEndDate] = React.useState<Date | undefined>(undefined);
   const [endTime, setEndTime] = React.useState<string>("");
 
+  // Poll duration (expires_at)
+  const [pollDurationPreset, setPollDurationPreset] = React.useState<'1d' | '3d' | '7d' | '14d' | '28d' | 'custom'>('7d');
+  const [pollCustomDays, setPollCustomDays] = React.useState<number>(7);
+  const computePollExpiresAt = React.useCallback(() => {
+    const days = pollDurationPreset === 'custom' ? Math.max(1, Number(pollCustomDays) || 7) : parseInt(pollDurationPreset);
+    const ms = days * 24 * 60 * 60 * 1000;
+    return new Date(Date.now() + ms).toISOString();
+  }, [pollDurationPreset, pollCustomDays]);
+
   // Ensure active tab aligns with provided initialType/allowedTypes
   React.useEffect(() => {
     if (!open) return;
@@ -272,12 +281,16 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
       };
 
       // Add poll data if it's a poll post
-      if (activeTab === 'poll' && pollOptions.some(opt => opt.trim())) {
+      if (activeTab === 'poll') {
+        const optionTexts = pollOptions.map((o) => o.trim()).filter(Boolean);
+        if (optionTexts.length < 2) {
+          throw new Error('At least two poll options are required');
+        }
+        const expiresAt = computePollExpiresAt();
         postData.poll_data = {
-          options: pollOptions
-            .filter(opt => opt.trim())
-            .map(text => ({ text: text.trim(), votes: 0 })),
-          multiple_choice: false
+          options: optionTexts.map((text) => ({ text, votes: 0 })),
+          multiple_choice: false,
+          expires_at: expiresAt,
         };
       }
 
@@ -413,6 +426,44 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
               >
                 Add Option
               </Button>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Poll duration</label>
+              <div className="flex flex-wrap gap-2">
+                {(['1d','3d','7d','14d','28d'] as const).map((p) => (
+                  <Button
+                    key={p}
+                    type="button"
+                    variant={pollDurationPreset === p ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPollDurationPreset(p)}
+                  >
+                    {p}
+                  </Button>
+                ))}
+                <Button
+                  type="button"
+                  variant={pollDurationPreset === 'custom' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setPollDurationPreset('custom')}
+                >
+                  Custom
+                </Button>
+              </div>
+              {pollDurationPreset === 'custom' && (
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={1}
+                    value={pollCustomDays}
+                    onChange={(e) => setPollCustomDays(parseInt(e.target.value || '1', 10))}
+                    className="w-24"
+                  />
+                  <span className="text-sm text-muted-foreground">days</span>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">People can vote and change their vote until the poll closes.</p>
             </div>
           </div>
         );
