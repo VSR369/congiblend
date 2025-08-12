@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -94,30 +93,48 @@ export function usePollResults(postId?: string) {
     if (postId) refresh();
   }, [postId, refresh]);
 
+  // Humanize remaining time in weeks/days only, per requirement
   const statusLabel = useMemo(() => {
     if (!results) return "";
-    if (results.closed) {
-      const closedOn = results.expiresAt
-        ? results.expiresAt.toLocaleString([], { dateStyle: "medium", timeStyle: "short" })
+    const totalVotes = results.total ?? 0;
+
+    const fmtEnd = (d: Date | null | undefined) =>
+      d
+        ? d.toLocaleString([], {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
         : "";
-      return `${results.total} votes · Closed${closedOn ? ` on ${closedOn}` : ""}`;
+
+    if (results.closed) {
+      const closedOn = fmtEnd(results.expiresAt ?? null);
+      return `${totalVotes} votes · Closed${closedOn ? ` on ${closedOn}` : ""}`;
     }
+
     // Active
     const now = new Date();
     const end = results.expiresAt ? results.expiresAt : null;
+
     let endsIn = "";
     if (end) {
-      const diff = end.getTime() - now.getTime();
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      if (days >= 1) {
-        endsIn = `${days}d${hours > 0 ? ` ${hours}h` : ""}`;
+      const diffMs = Math.max(0, end.getTime() - now.getTime());
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      if (days >= 14) {
+        const weeks = Math.floor(days / 7);
+        endsIn = `${weeks}w`;
+      } else if (days >= 1) {
+        endsIn = `${days}d`;
       } else {
-        const mins = Math.max(1, Math.floor((diff / (1000 * 60)) % 60));
-        endsIn = `${hours}h ${mins}m`;
+        // Keep it strictly days/weeks per requirement; show less-than-1-day hint
+        endsIn = "<1d";
       }
     }
-    return `${results.total} votes${endsIn ? ` · Ends in ${endsIn}` : ""}`;
+
+    const endStamp = fmtEnd(end);
+    return `${totalVotes} votes · Ends in ${endsIn}${endStamp ? ` (End: ${endStamp})` : ""}`;
   }, [results]);
 
   return {

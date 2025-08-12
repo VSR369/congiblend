@@ -62,6 +62,15 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
         });
         return;
       }
+      const msg = String(e?.message || '').toLowerCase();
+      if (msg.includes('poll is closed') || msg.includes('closed')) {
+        toast({
+          title: "Poll closed",
+          description: "This poll is closed.",
+          variant: "destructive",
+        });
+        return;
+      }
       toast({
         title: "Vote failed",
         description: e?.message || "Failed to vote.",
@@ -146,6 +155,11 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ post, classN
             </button>
           ))}
         </div>
+        {!closed && (
+          <p className="text-xs text-muted-foreground mt-2">
+            You can change your vote until the poll closes.
+          </p>
+        )}
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-muted-foreground">{statusLabel}</p>
           <Button variant="ghost" size="sm" className="text-xs" onClick={refresh} disabled={voting}>
