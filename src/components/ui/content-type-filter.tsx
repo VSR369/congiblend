@@ -15,7 +15,7 @@ const contentTypeLabels: Record<PostType, string> = {
   video: "Videos", 
   audio: "Audio",
   article: "Articles",
-  
+  poll: "Polls",
   event: "Events",
   document: "Documents",
   link: "Links",

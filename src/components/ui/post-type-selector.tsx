@@ -11,13 +11,14 @@ interface PostTypeSelectorProps {
   className?: string;
 }
 
-// Removed "poll" from the available post types
+// Updated post types to include polls
 const postTypes: { type: PostType; label: string; icon: React.ComponentType<any>; description: string }[] = [
   { type: "text", label: "Text", icon: FileText, description: "Share your thoughts" },
   { type: "image", label: "Photo", icon: Image, description: "Share images" },
   { type: "video", label: "Video", icon: Video, description: "Upload videos" },
   { type: "audio", label: "Audio", icon: Music, description: "Share audio files" },
   { type: "event", label: "Event", icon: Calendar, description: "Announce events" },
+  { type: "poll", label: "Poll", icon: Briefcase, description: "Create polls" },
 ];
 
 export const PostTypeSelector: React.FC<PostTypeSelectorProps> = ({
@@ -26,7 +27,7 @@ export const PostTypeSelector: React.FC<PostTypeSelectorProps> = ({
   className
 }) => {
   return (
-    <div className={cn("grid grid-cols-5 gap-2", className)}>
+    <div className={cn("grid grid-cols-6 gap-2", className)}>
       {postTypes.map((type) => {
         const Icon = type.icon;
         const isActive = activeType === type.type;

@@ -1938,6 +1938,129 @@ export type Database = {
           },
         ]
       }
+      poll_options: {
+        Row: {
+          id: string
+          idx: number
+          option_text: string
+          poll_id: string
+        }
+        Insert: {
+          id?: string
+          idx: number
+          option_text: string
+          poll_id: string
+        }
+        Update: {
+          id?: string
+          idx?: number
+          option_text?: string
+          poll_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_options_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      poll_votes: {
+        Row: {
+          created_at: string
+          id: string
+          option_id: string
+          poll_id: string
+          updated_at: string
+          voter_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_id: string
+          poll_id: string
+          updated_at?: string
+          voter_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_id?: string
+          poll_id?: string
+          updated_at?: string
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_votes_voter_id_fkey"
+            columns: ["voter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      polls: {
+        Row: {
+          created_at: string
+          created_by: string
+          end_time: string
+          id: string
+          post_id: string
+          question: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          end_time: string
+          id?: string
+          post_id: string
+          question: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          end_time?: string
+          id?: string
+          post_id?: string
+          question?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "polls_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "polls_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_bookmarks: {
         Row: {
           created_at: string
@@ -3150,6 +3273,28 @@ export type Database = {
           p_section_type?: string
         }
         Returns: string
+      }
+      poll_create: {
+        Args: {
+          p_post_id: string
+          p_question: string
+          p_end_time: string
+          p_options: string[]
+        }
+        Returns: string
+      }
+      poll_results: {
+        Args: { p_poll_id: string }
+        Returns: {
+          option_id: string
+          option_text: string
+          votes: number
+          pct: number
+        }[]
+      }
+      poll_vote: {
+        Args: { p_poll_id: string; p_option_id: string }
+        Returns: undefined
       }
       recalc_spark_collaboration: {
         Args: { p_spark_id: string }

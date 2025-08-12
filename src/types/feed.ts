@@ -61,7 +61,7 @@ export interface LinkPreview {
   domain: string;
 }
 
-export type PostType = 'text' | 'image' | 'video' | 'audio' | 'article' | 'event' | 'document' | 'link' | 'carousel';
+export type PostType = 'text' | 'image' | 'video' | 'audio' | 'article' | 'event' | 'document' | 'link' | 'carousel' | 'poll';
 
 export type ReactionType = 'innovative' | 'practical' | 'well_researched';
 
@@ -80,6 +80,22 @@ export interface Post {
   author: User;
   content: string;
   media?: PostMedia[];
+  
+  // Poll data
+  poll?: {
+    id: string;
+    question: string;
+    options: Array<{
+      id: string;
+      text: string;
+      votes: number;
+      percentage: number;
+    }>;
+    endTime: Date;
+    totalVotes: number;
+    userVote?: string; // option id if user voted
+    hasEnded: boolean;
+  };
   
   event?: Event;
   event_data?: {
@@ -134,6 +150,12 @@ export interface CreatePostData {
   post_type?: PostType;
   visibility?: 'public' | 'connections' | 'private';
   media_urls?: string[];
+  // Poll data
+  poll_data?: {
+    question: string;
+    options: string[];
+    duration_days: number;
+  };
   event_data?: {
     title: string;
     description?: string;

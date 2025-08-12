@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, Search, Settings, User, Menu, Sun, Moon, PanelLeft, Lightbulb, Home, Sparkles } from 'lucide-react';
+import { Bell, Search, Settings, User, Menu, Sun, Moon, PanelLeft, Lightbulb, Home, Sparkles, FileText, BarChart } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -309,6 +309,18 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false, onDisc
                     >
                       <Lightbulb className="mr-3 h-5 w-5" />
                       Knowledge Sparks
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="p-3">
+                    <Link to="/articles" className="flex items-center">
+                      <FileText className="mr-3 h-5 w-5" />
+                      Articles
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="p-3">
+                    <Link to="/polls" className="flex items-center">
+                      <BarChart className="mr-3 h-5 w-5" />
+                      Polls
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

@@ -19,6 +19,9 @@ import { usePostCreationReducer } from "@/hooks/usePostCreationReducer";
 import type { PostType, CreatePostData } from "@/types/feed";
 import { EventDateTimeFields } from "./event-date-time-fields";
 
+// Import poll composer
+import { PollComposer } from './poll-composer';
+
 interface PostCreationModalProps {
   open: boolean;
   onClose: () => void;
@@ -43,6 +46,11 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
     eventData,
     eventSpeakers,
   } = state;
+
+  // Poll state
+  const [pollQuestion, setPollQuestion] = React.useState('');
+  const [pollOptions, setPollOptions] = React.useState(['', '']);
+  const [pollDuration, setPollDuration] = React.useState(7); // days
 
   // Local state for improved Event date/time UX (does not change global logic)
   const [startDate, setStartDate] = React.useState<Date | undefined>(undefined);
@@ -120,6 +128,7 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
     { type: "audio", label: "Audio", icon: Music, description: "Share audio files" },
     { type: "article", label: "Article", icon: FileText, description: "Write long-form content" },
     { type: "event", label: "Event", icon: Calendar, description: "Announce events" },
+    { type: "poll", label: "Poll", icon: Hash, description: "Create polls" },
   ];
 
   const postTypes = React.useMemo(() => {
@@ -210,6 +219,13 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
         });
         return;
       }
+    } else if (activeTab === 'poll') {
+      // For polls, validate question and options
+      const validOptions = pollOptions.filter(opt => opt.trim()).length;
+      if (!pollQuestion.trim() || validOptions < 2) {
+        console.log('❌ Poll submission blocked - missing required fields');
+        return;
+      }
     } else if (!content.trim()) {
       console.log('❌ Submission blocked - content required');
       return;
@@ -264,7 +280,8 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
       }
 
       const postData: CreatePostData = {
-        content: activeTab === 'event' ? (content.trim() || `Event: ${eventData.title}`) : content.trim(),
+        content: activeTab === 'event' ? (content.trim() || `Event: ${eventData.title}`) : 
+                 activeTab === 'poll' ? pollQuestion : content.trim(),
         post_type: activeTab,
         visibility: "public",
         media_urls: mediaUrls, // Include uploaded media URLs
@@ -307,10 +324,24 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
         };
       }
 
+      // Add poll data if it's a poll post
+      if (activeTab === 'poll') {
+        const validOptions = pollOptions.filter(opt => opt.trim());
+        postData.poll_data = {
+          question: pollQuestion.trim(),
+          options: validOptions,
+          duration_days: pollDuration
+        };
+      }
+
       await createPost(postData);
       
       // Reset form using reducer
       dispatch({ type: 'RESET_FORM' });
+      // Reset poll state
+      setPollQuestion('');
+      setPollOptions(['', '']);
+      setPollDuration(7);
       onClose();
       
       toast.success("Post created successfully!");
@@ -325,7 +356,7 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
     } finally {
       dispatch({ type: 'SET_IS_POSTING', payload: false });
     }
-  }, [content, selectedFiles, activeTab, eventData, startDate, startTime, hasEnd, endDate, endTime, hashtags, mentions, createPost, onClose, dispatch, toLocalTimestampString]);
+  }, [content, selectedFiles, activeTab, eventData, startDate, startTime, hasEnd, endDate, endTime, hashtags, mentions, createPost, onClose, dispatch, toLocalTimestampString, pollQuestion, pollOptions, pollDuration]);
 
   const extractHashtags = React.useCallback((text: string) => {
     const start = performance.now();
@@ -371,6 +402,17 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
 
   const renderContentEditor = () => {
     switch (activeTab) {
+      case "poll":
+        return (
+          <PollComposer
+            question={pollQuestion}
+            onQuestionChange={setPollQuestion}
+            options={pollOptions}
+            onOptionsChange={setPollOptions}
+            duration={pollDuration}
+            onDurationChange={setPollDuration}
+          />
+        );
 
       case "event":
         return (
@@ -686,6 +728,7 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
             const isPostingCheck = isPosting;
             const characterCheck = characterCount > characterLimit;
             const textCheck = activeTab === 'text' && !content.trim();
+            const pollCheck = activeTab === 'poll' && (!pollQuestion.trim() || pollOptions.filter(opt => opt.trim()).length < 2);
             // Updated event validation to use improved local fields (keeps original logic intent)
             const eventCheck = activeTab === 'event' && (
               !eventData.title || !eventData.title.trim() ||
@@ -713,7 +756,7 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
               });
             }
             
-            return isPostingCheck || characterCheck || textCheck || eventCheck || mediaCheck;
+            return isPostingCheck || characterCheck || textCheck || pollCheck || eventCheck || mediaCheck;
           })()}
           loading={isPosting}
           loadingText="Posting..."

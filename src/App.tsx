@@ -26,6 +26,8 @@ const KnowledgeSparkView = lazy(() => import("./pages/KnowledgeSparkView"));
 const Articles = lazy(() => import("./pages/Articles"));
 const ArticleCreate = lazy(() => import("./pages/ArticleCreate"));
 const ArticleView = lazy(() => import("./pages/ArticleView"));
+// Polls
+const Polls = lazy(() => import("./pages/Polls"));
 
 // React Query client
 const queryClient = new QueryClient();
@@ -82,10 +84,12 @@ const AppContent = () => {
               <Route path="knowledge-sparks" element={<KnowledgeSparks />} />
               <Route path="knowledge-sparks/new" element={<KnowledgeSparkCreate />} />
               <Route path="knowledge-sparks/:slug" element={<KnowledgeSparkView />} />
-{/* Articles */}
-<Route path="articles" element={<Articles />} />
-<Route path="articles/new" element={<ArticleCreate />} />
-<Route path="articles/:id" element={<ArticleView />} />
+              {/* Articles */}
+              <Route path="articles" element={<Articles />} />
+              <Route path="articles/new" element={<ArticleCreate />} />
+              <Route path="articles/:id" element={<ArticleView />} />
+              {/* Polls */}
+              <Route path="polls" element={<Polls />} />
             </Route>
             <Route path="/login" element={<Auth />} />
             <Route path="/register" element={<Auth />} />
