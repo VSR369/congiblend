@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { ArrowLeft } from "lucide-react";
 
 const LikeButtonLazy = React.lazy(() =>
   import("@/components/ui/like-button").then((m) => ({ default: m.LikeButton }))
@@ -134,6 +136,30 @@ const ArticleView: React.FC = () => {
   return (
     <main className="max-w-3xl mx-auto px-4 py-6">
       <header className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <Button asChild variant="ghost" size="sm" aria-label="Back to Articles">
+            <Link to="/articles"><ArrowLeft className="mr-2 h-4 w-4" />Back to Articles</Link>
+          </Button>
+        </div>
+        <Breadcrumb className="mb-3">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/">Home</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/articles">Articles</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{title}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
         <h1 className="text-3xl font-bold leading-tight mb-4">{title}</h1>
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex items-center justify-center">
