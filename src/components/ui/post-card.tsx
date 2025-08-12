@@ -92,7 +92,6 @@ export const PostCard = React.memo(({ post, className, virtualized = false }: Po
     [castVote, isTempPost, navigate]
   );
 
-  const isTempPost = post.id.startsWith('post-');
   const handleRSVPChoice = React.useCallback(async (status: 'attending' | 'interested' | 'not_attending') => {
     if (isTempPost) {
       toast({
