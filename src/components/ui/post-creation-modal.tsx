@@ -463,6 +463,9 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
                   <span className="text-sm text-muted-foreground">days</span>
                 </div>
               )}
+              <p className="text-xs text-muted-foreground">
+                End date: {new Date(computePollExpiresAt()).toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </p>
               <p className="text-xs text-muted-foreground">People can vote and change their vote until the poll closes.</p>
             </div>
           </div>
