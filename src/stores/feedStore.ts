@@ -28,7 +28,7 @@ interface FeedState {
   loadUsers: () => Promise<void>;
   createPost: (data: CreatePostData) => Promise<void>;
   updatePost: (postId: string, updates: Partial<Post>) => void;
-  deletePost: (postId: string) => void;
+  deletePost: (postId: string) => Promise<void>;
   
   // Engagement actions
   toggleLike: (postId: string) => Promise<void>;
@@ -988,7 +988,11 @@ export const useFeedStore = create<FeedState>((set, get) => {
 
         if (error) throw error;
 
-        // Post will be removed via real-time subscription
+        // Remove from local state immediately
+        set((state) => ({
+          posts: state.posts.filter((p) => p.id !== postId),
+          pendingNewPosts: state.pendingNewPosts.filter((p) => p.id !== postId),
+        }));
       } catch (error) {
         console.error('Error deleting post:', error);
         throw error;
