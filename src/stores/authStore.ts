@@ -30,6 +30,7 @@ export const useAuthStore = create<AuthState>()(
           // Set up auth state listener FIRST
           supabase.auth.onAuthStateChange(
             (event, session) => {
+              console.log('🔒 Auth state changed:', event, !!session);
               set({
                 session,
                 user: session?.user ?? null,
@@ -41,6 +42,7 @@ export const useAuthStore = create<AuthState>()(
 
           // THEN check for existing session
           const { data: { session } } = await supabase.auth.getSession();
+          console.log('🔒 Initial session check:', !!session);
           set({
             session,
             user: session?.user ?? null,

@@ -35,10 +35,12 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
 
   // Load initial posts
   React.useEffect(() => {
-    if (posts.length === 0) {
+    console.log('🚀 ContentFeed: Initial posts effect', { postsLength: posts.length, loading });
+    if (posts.length === 0 && !loading) {
+      console.log('🚀 Loading initial posts...');
       loadPosts(true);
     }
-  }, [posts.length, loadPosts]);
+  }, [posts.length, loadPosts, loading]);
 
   // Optimized load more with request animation frame
   const debouncedLoadMore = React.useCallback(() => {
@@ -168,6 +170,13 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
         <div className="linkedin-feed">
           {posts.length === 0 && loading ? (
             <FeedSkeleton />
+          ) : posts.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground mb-4">No posts to display</p>
+              <Button variant="outline" onClick={() => loadPosts(true)}>
+                Refresh Feed
+              </Button>
+            </div>
           ) : (
             posts.map((post) => (
               <PostCard key={post.id} post={post} />
