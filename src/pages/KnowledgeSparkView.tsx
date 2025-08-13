@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { SparkAuthorControls } from "@/components/knowledge-sparks/SparkAuthorControls";
 import { useRealtimeStatus } from "@/hooks/useRealtimeStatus";
 import { FeedErrorBoundary } from "@/components/ui/feed-error-boundary";
+import AutoScaleSection from "@/components/ui/auto-scale-section";
 
 const setMetaTag = (name: string, content: string) => {
   let tag = document.querySelector(`meta[name="${name}"]`);
@@ -124,13 +125,15 @@ const KnowledgeSparkViewPage: React.FC = () => {
   if (isLoading) {
     return (
       <FeedErrorBoundary>
-        <main className="w-full max-w-screen-lg mx-auto px-4 py-6">
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-2/3" />
-            <Skeleton className="h-5 w-1/3" />
-            <Skeleton className="h-64 w-full" />
-          </div>
-        </main>
+        <AutoScaleSection viewportPadding={16} minScale={0.7}>
+          <main className="w-full max-w-screen-lg mx-auto px-4 py-6">
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-2/3" />
+              <Skeleton className="h-5 w-1/3" />
+              <Skeleton className="h-64 w-full" />
+            </div>
+          </main>
+        </AutoScaleSection>
       </FeedErrorBoundary>
     );
   }
@@ -138,15 +141,17 @@ const KnowledgeSparkViewPage: React.FC = () => {
   if (!spark) {
     return (
       <FeedErrorBoundary>
-        <main className="w-full max-w-screen-lg mx-auto px-4 py-6">
-          <header className="mb-6">
-            <h1 className="text-2xl font-bold">Spark not found</h1>
-            <p className="text-sm text-muted-foreground">The requested Knowledge Spark could not be found.</p>
-          </header>
-          <Button asChild>
-            <Link to="/knowledge-sparks">Back to Browse</Link>
-          </Button>
-        </main>
+        <AutoScaleSection viewportPadding={16} minScale={0.7}>
+          <main className="w-full max-w-screen-lg mx-auto px-4 py-6">
+            <header className="mb-6">
+              <h1 className="text-2xl font-bold">Spark not found</h1>
+              <p className="text-sm text-muted-foreground">The requested Knowledge Spark could not be found.</p>
+            </header>
+            <Button asChild>
+              <Link to="/knowledge-sparks">Back to Browse</Link>
+            </Button>
+          </main>
+        </AutoScaleSection>
       </FeedErrorBoundary>
     );
   }
@@ -154,49 +159,51 @@ const KnowledgeSparkViewPage: React.FC = () => {
 
   return (
     <FeedErrorBoundary>
-      <main className="w-full max-w-screen-xl mx-auto px-4 py-6">
-        <header className="mb-4">
-          <div className="mb-2 flex items-center justify-between">
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/knowledge-sparks" aria-label="Back to all Knowledge Sparks">
-                <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
-                Back to all sparks
-              </Link>
-            </Button>
-            <div className="text-xs text-muted-foreground" aria-live="polite">
-              Realtime: {realtimeStatus}
+      <AutoScaleSection viewportPadding={16} minScale={0.7}>
+        <main className="w-full max-w-screen-xl mx-auto px-4 py-6">
+          <header className="mb-4">
+            <div className="mb-2 flex items-center justify-between">
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/knowledge-sparks" aria-label="Back to all Knowledge Sparks">
+                  <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Back to all sparks
+                </Link>
+              </Button>
+              <div className="text-xs text-muted-foreground" aria-live="polite">
+                Realtime: {realtimeStatus}
+              </div>
             </div>
-          </div>
-          <Breadcrumb className="mb-2">
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link to="/knowledge-sparks">Knowledge Sparks</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>{spark.title}</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            {spark.title}
-            {spark.status === 'collaborative' ? (
-              <Badge variant="secondary" aria-label="Collaborative spark">Collaborative</Badge>
+            <Breadcrumb className="mb-2">
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link to="/knowledge-sparks">Knowledge Sparks</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{spark.title}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              {spark.title}
+              {spark.status === 'collaborative' ? (
+                <Badge variant="secondary" aria-label="Collaborative spark">Collaborative</Badge>
+              ) : null}
+            </h1>
+            {spark.description ? (
+              <p className="text-sm text-muted-foreground">{spark.description}</p>
             ) : null}
-          </h1>
-          {spark.description ? (
-            <p className="text-sm text-muted-foreground">{spark.description}</p>
-          ) : null}
-          <div className="mt-2">
-            <SparkAuthorControls sparkId={spark.id} />
-          </div>
-        </header>
-        <section>
-          <SparkViewer spark={spark} />
-        </section>
-      </main>
+            <div className="mt-2">
+              <SparkAuthorControls sparkId={spark.id} />
+            </div>
+          </header>
+          <section>
+            <SparkViewer spark={spark} />
+          </section>
+        </main>
+      </AutoScaleSection>
     </FeedErrorBoundary>
   );
 };

@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import CreateSparkForm from "@/components/knowledge-sparks/CreateSparkForm";
-
+import AutoScaleSection from "@/components/ui/auto-scale-section";
 const setMetaTag = (name: string, content: string) => {
   let tag = document.querySelector(`meta[name="${name}"]`);
   if (!tag) {
@@ -33,25 +33,27 @@ const KnowledgeSparkCreatePage: React.FC = () => {
   }, []);
 
   return (
-    <main className="w-full max-w-screen-lg mx-auto px-4 py-6">
-      <header className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Create Knowledge Spark</h1>
-          <p className="text-sm text-muted-foreground">Start a new collaborative knowledge thread.</p>
-        </div>
-        <Button asChild variant="secondary">
-          <Link to="/knowledge-sparks">Back to Browse</Link>
-        </Button>
-      </header>
+    <AutoScaleSection viewportPadding={16} minScale={0.7}>
+      <main className="w-full max-w-screen-lg mx-auto px-4 py-6">
+        <header className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Create Knowledge Spark</h1>
+            <p className="text-sm text-muted-foreground">Start a new collaborative knowledge thread.</p>
+          </div>
+          <Button asChild variant="secondary">
+            <Link to="/knowledge-sparks">Back to Browse</Link>
+          </Button>
+        </header>
 
-      <section aria-label="Create spark form">
-        <CreateSparkForm
-          onCreated={(spark) => {
-            if (spark?.slug) navigate(`/knowledge-sparks/${spark.slug}`);
-          }}
-        />
-      </section>
-    </main>
+        <section aria-label="Create spark form">
+          <CreateSparkForm
+            onCreated={(spark) => {
+              if (spark?.slug) navigate(`/knowledge-sparks/${spark.slug}`);
+            }}
+          />
+        </section>
+      </main>
+    </AutoScaleSection>
   );
 };
 

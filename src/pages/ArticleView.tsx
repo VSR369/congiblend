@@ -12,7 +12,7 @@ import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { ArrowLeft } from "lucide-react";
-
+import AutoScaleSection from "@/components/ui/auto-scale-section";
 const LikeButtonLazy = React.lazy(() =>
   import("@/components/ui/like-button").then((m) => ({ default: m.LikeButton }))
 );
@@ -112,21 +112,25 @@ const ArticleView: React.FC = () => {
 
   if (loading) {
     return (
-      <main className="max-w-3xl mx-auto px-4 py-10">
-        <p className="text-muted-foreground">Loading article...</p>
-      </main>
+      <AutoScaleSection viewportPadding={16} minScale={0.7}>
+        <main className="max-w-3xl mx-auto px-4 py-10">
+          <p className="text-muted-foreground">Loading article...</p>
+        </main>
+      </AutoScaleSection>
     );
   }
 
   if (error || !article) {
     return (
-      <main className="max-w-3xl mx-auto px-4 py-10">
-        <div className="space-y-4">
-          <h1 className="text-2xl font-bold">Article</h1>
-          <p className="text-destructive">{error || "Article not found"}</p>
-          <Button variant="outline" onClick={() => navigate(-1)}>Go back</Button>
-        </div>
-      </main>
+      <AutoScaleSection viewportPadding={16} minScale={0.7}>
+        <main className="max-w-3xl mx-auto px-4 py-10">
+          <div className="space-y-4">
+            <h1 className="text-2xl font-bold">Article</h1>
+            <p className="text-destructive">{error || "Article not found"}</p>
+            <Button variant="outline" onClick={() => navigate(-1)}>Go back</Button>
+          </div>
+        </main>
+      </AutoScaleSection>
     );
   }
 
@@ -134,93 +138,95 @@ const ArticleView: React.FC = () => {
   const html = article.metadata?.article_html || "";
 
   return (
-    <main className="max-w-3xl mx-auto px-4 py-6">
-      <header className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <Button asChild variant="ghost" size="sm" aria-label="Back to Articles">
-            <Link to="/articles"><ArrowLeft className="mr-2 h-4 w-4" />Back to Articles</Link>
-          </Button>
-        </div>
-        <Breadcrumb className="mb-3">
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to="/">Home</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to="/articles">Articles</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>{title}</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-        <h1 className="text-3xl font-bold leading-tight mb-4">{title}</h1>
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-            {author?.avatar_url ? (
-              <img src={author.avatar_url} alt={author.display_name || author.username || "Author"} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-xs font-medium">{(author?.display_name || author?.username || "U").charAt(0)}</span>
-            )}
+    <AutoScaleSection viewportPadding={16} minScale={0.7}>
+      <main className="max-w-3xl mx-auto px-4 py-6">
+        <header className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <Button asChild variant="ghost" size="sm" aria-label="Back to Articles">
+              <Link to="/articles"><ArrowLeft className="mr-2 h-4 w-4" />Back to Articles</Link>
+            </Button>
           </div>
-          <div>
-            <div className="font-medium text-foreground">
-              {author?.display_name || author?.username || "User"}
+          <Breadcrumb className="mb-3">
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/">Home</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/articles">Articles</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{title}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+          <h1 className="text-3xl font-bold leading-tight mb-4">{title}</h1>
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+              {author?.avatar_url ? (
+                <img src={author.avatar_url} alt={author.display_name || author.username || "Author"} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-xs font-medium">{(author?.display_name || author?.username || "U").charAt(0)}</span>
+              )}
             </div>
-            <div>{new Date(article.created_at).toLocaleString()}</div>
+            <div>
+              <div className="font-medium text-foreground">
+                {author?.display_name || author?.username || "User"}
+              </div>
+              <div>{new Date(article.created_at).toLocaleString()}</div>
+            </div>
           </div>
-        </div>
 
-        {(article.metadata?.category || (Array.isArray(article.metadata?.tags) && article.metadata.tags.length > 0) || typeof article.metadata?.tags === 'string') && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {typeof article.metadata?.category === 'string' && article.metadata.category.trim() && (
-              <Badge variant="secondary">{article.metadata.category.trim()}</Badge>
+          {(article.metadata?.category || (Array.isArray(article.metadata?.tags) && article.metadata.tags.length > 0) || typeof article.metadata?.tags === 'string') && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {typeof article.metadata?.category === 'string' && article.metadata.category.trim() && (
+                <Badge variant="secondary">{article.metadata.category.trim()}</Badge>
+              )}
+              {(
+                Array.isArray(article.metadata?.tags)
+                  ? article.metadata.tags
+                  : typeof article.metadata?.tags === 'string'
+                    ? article.metadata.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+                    : []
+              ).map((t: string) => (
+                <Badge key={t} variant="outline">#{String(t).trim().replace(/^#/, '')}</Badge>
+              ))}
+            </div>
+          )}
+        </header>
+
+        <article className="prose prose-neutral dark:prose-invert max-w-none">
+          {/* We trust content from our own editor */}
+          <div dangerouslySetInnerHTML={{ __html: html }} />
+        </article>
+
+        <section className="mt-8">
+          <div className="border-t pt-4" ref={likeRef as any}>
+            {likeInView ? (
+              <React.Suspense fallback={<Skeleton className="h-8 w-32" />}>
+                <LikeButtonLazy targetId={article.id} targetType="post" reactions={[]} />
+              </React.Suspense>
+            ) : (
+              <Skeleton className="h-8 w-32" />
             )}
-            {(
-              Array.isArray(article.metadata?.tags)
-                ? article.metadata.tags
-                : typeof article.metadata?.tags === 'string'
-                  ? article.metadata.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
-                  : []
-            ).map((t: string) => (
-              <Badge key={t} variant="outline">#{String(t).trim().replace(/^#/, '')}</Badge>
-            ))}
           </div>
-        )}
-      </header>
-
-      <article className="prose prose-neutral dark:prose-invert max-w-none">
-        {/* We trust content from our own editor */}
-        <div dangerouslySetInnerHTML={{ __html: html }} />
-      </article>
-
-      <section className="mt-8">
-        <div className="border-t pt-4" ref={likeRef as any}>
-          {likeInView ? (
-            <React.Suspense fallback={<Skeleton className="h-8 w-32" />}>
-              <LikeButtonLazy targetId={article.id} targetType="post" reactions={[]} />
-            </React.Suspense>
-          ) : (
-            <Skeleton className="h-8 w-32" />
-          )}
-        </div>
-        <div className="mt-6" ref={commentsRef as any}>
-          {commentsInView ? (
-            <React.Suspense fallback={<Skeleton className="h-20 w-full" />}>
-              <CommentsSectionLazy postId={article.id} />
-            </React.Suspense>
-          ) : (
-            <Skeleton className="h-20 w-full" />
-          )}
-        </div>
-      </section>
-    </main>
+          <div className="mt-6" ref={commentsRef as any}>
+            {commentsInView ? (
+              <React.Suspense fallback={<Skeleton className="h-20 w-full" />}>
+                <CommentsSectionLazy postId={article.id} />
+              </React.Suspense>
+            ) : (
+              <Skeleton className="h-20 w-full" />
+            )}
+          </div>
+        </section>
+      </main>
+    </AutoScaleSection>
   );
 };
 
