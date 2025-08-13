@@ -112,8 +112,8 @@ const ArticleView: React.FC = () => {
 
   if (loading) {
     return (
-      <AutoScaleSection viewportPadding={16} minScale={0.7}>
-        <main className="max-w-3xl mx-auto px-4 py-10">
+      <AutoScaleSection viewportPadding={8} minScale={1}>
+        <main className="max-w-3xl mx-auto px-2 sm:px-3 md:px-4 py-10">
           <p className="text-muted-foreground">Loading article...</p>
         </main>
       </AutoScaleSection>
@@ -122,8 +122,8 @@ const ArticleView: React.FC = () => {
 
   if (error || !article) {
     return (
-      <AutoScaleSection viewportPadding={16} minScale={0.7}>
-        <main className="max-w-3xl mx-auto px-4 py-10">
+      <AutoScaleSection viewportPadding={8} minScale={1}>
+        <main className="max-w-3xl mx-auto px-2 sm:px-3 md:px-4 py-10">
           <div className="space-y-4">
             <h1 className="text-2xl font-bold">Article</h1>
             <p className="text-destructive">{error || "Article not found"}</p>
@@ -138,8 +138,8 @@ const ArticleView: React.FC = () => {
   const html = article.metadata?.article_html || "";
 
   return (
-    <AutoScaleSection viewportPadding={16} minScale={0.7}>
-      <main className="max-w-3xl mx-auto px-4 py-6">
+    <AutoScaleSection viewportPadding={8} minScale={1}>
+      <main className="max-w-3xl mx-auto px-2 sm:px-3 md:px-4 py-6">
         <header className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <Button asChild variant="ghost" size="sm" aria-label="Back to Articles">

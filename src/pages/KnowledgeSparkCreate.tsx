@@ -33,8 +33,8 @@ const KnowledgeSparkCreatePage: React.FC = () => {
   }, []);
 
   return (
-    <AutoScaleSection viewportPadding={16} minScale={0.7}>
-      <main className="w-full max-w-screen-lg mx-auto px-4 py-6">
+    <AutoScaleSection viewportPadding={8} minScale={1}>
+      <main className="w-full max-w-screen-lg mx-auto px-2 sm:px-3 md:px-4 py-6">
         <header className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Create Knowledge Spark</h1>

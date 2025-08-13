@@ -125,8 +125,8 @@ const KnowledgeSparkViewPage: React.FC = () => {
   if (isLoading) {
     return (
       <FeedErrorBoundary>
-        <AutoScaleSection viewportPadding={16} minScale={0.7}>
-          <main className="w-full max-w-screen-lg mx-auto px-4 py-6">
+        <AutoScaleSection viewportPadding={8} minScale={1}>
+          <main className="w-full max-w-screen-lg mx-auto px-2 sm:px-3 md:px-4 py-6">
             <div className="space-y-4">
               <Skeleton className="h-8 w-2/3" />
               <Skeleton className="h-5 w-1/3" />
@@ -141,8 +141,8 @@ const KnowledgeSparkViewPage: React.FC = () => {
   if (!spark) {
     return (
       <FeedErrorBoundary>
-        <AutoScaleSection viewportPadding={16} minScale={0.7}>
-          <main className="w-full max-w-screen-lg mx-auto px-4 py-6">
+        <AutoScaleSection viewportPadding={8} minScale={1}>
+          <main className="w-full max-w-screen-lg mx-auto px-2 sm:px-3 md:px-4 py-6">
             <header className="mb-6">
               <h1 className="text-2xl font-bold">Spark not found</h1>
               <p className="text-sm text-muted-foreground">The requested Knowledge Spark could not be found.</p>
@@ -159,8 +159,8 @@ const KnowledgeSparkViewPage: React.FC = () => {
 
   return (
     <FeedErrorBoundary>
-      <AutoScaleSection viewportPadding={16} minScale={0.7}>
-        <main className="w-full max-w-screen-xl mx-auto px-4 py-6">
+      <AutoScaleSection viewportPadding={8} minScale={1}>
+        <main className="w-full max-w-screen-xl mx-auto px-2 sm:px-3 md:px-4 py-6">
           <header className="mb-4">
             <div className="mb-2 flex items-center justify-between">
               <Button asChild variant="ghost" size="sm">

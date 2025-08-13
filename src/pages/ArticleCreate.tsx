@@ -54,8 +54,8 @@ const ArticleCreate: React.FC = () => {
   };
 
   return (
-    <AutoScaleSection viewportPadding={16} minScale={0.7}>
-      <main className="max-w-3xl mx-auto px-4 py-6">
+    <AutoScaleSection viewportPadding={8} minScale={1}>
+      <main className="max-w-3xl mx-auto px-2 sm:px-3 md:px-4 py-6">
         <header className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold">Write an article</h1>
           <div className="flex items-center gap-2">

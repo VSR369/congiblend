@@ -678,7 +678,7 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
   }, [editing, editMode, contentHtmlDraft, currentHtml]);
 
   return (
-    <Card className="p-4">
+    <Card className="p-3 md:p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
           <h2 className="text-lg font-semibold">{spark.title}</h2>

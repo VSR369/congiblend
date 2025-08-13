@@ -8,6 +8,8 @@ interface AutoScaleSectionProps {
   viewportPadding?: number;
   /** Minimum scale allowed when shrinking content */
   minScale?: number; // e.g., 0.7
+  /** How to compute scaling: 'width' (default) scales by width only; 'both' scales by width and height */
+  scaleMode?: "width" | "both";
 }
 
 /**
@@ -25,6 +27,7 @@ export function AutoScaleSection({
   className,
   viewportPadding = 16,
   minScale = 0.7,
+  scaleMode = "width",
 }: AutoScaleSectionProps) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -48,15 +51,22 @@ export function AutoScaleSection({
     const contentW = content.scrollWidth || content.offsetWidth || 0;
     const contentH = content.scrollHeight || content.offsetHeight || 0;
 
-    if (contentW === 0 || contentH === 0 || availableW === 0 || availableH === 0) {
-      setScale(1);
-      return;
+    if (scaleMode === "width") {
+      if (contentW === 0 || availableW === 0) {
+        setScale(1);
+        return;
+      }
+    } else {
+      if (contentW === 0 || contentH === 0 || availableW === 0 || availableH === 0) {
+        setScale(1);
+        return;
+      }
     }
 
     const scaleW = availableW / contentW;
     const scaleH = availableH / contentH;
 
-    const computed = Math.min(1, scaleW, scaleH);
+    const computed = scaleMode === "width" ? Math.min(1, scaleW) : Math.min(1, scaleW, scaleH);
     const next = computed < 1 ? Math.max(minScale, computed) : 1;
 
     setScale(next);
@@ -86,7 +96,7 @@ export function AutoScaleSection({
       window.removeEventListener("orientationchange", schedule);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewportPadding, minScale]);
+  }, [viewportPadding, minScale, scaleMode]);
 
   // Also recompute once after paint to catch fonts/images
   useEffect(() => {
