@@ -8,12 +8,12 @@ import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { ScrollToTop } from '@/components/ui/scroll-to-top';
 import { useScrollManager } from '@/hooks/useScrollManager';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsBelowLg } from '@/hooks/useBreakpoint';
 
 export const MainLayout = () => {
   // Initialize global scroll manager for performance
   useScrollManager();
-  const isMobile = useIsMobile();
+  const isCompactNav = useIsBelowLg();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileRightOpen, setMobileRightOpen] = useState(false);
   const location = useLocation();
@@ -24,23 +24,23 @@ export const MainLayout = () => {
   }, [location.pathname]);
   // Ensure sheet is closed and unmounted on desktop to prevent invisible overlay
   useEffect(() => {
-    if (!isMobile && mobileOpen) setMobileOpen(false);
-    if (!isMobile && mobileRightOpen) setMobileRightOpen(false);
-  }, [isMobile, mobileOpen, mobileRightOpen]);
+    if (!isCompactNav && mobileOpen) setMobileOpen(false);
+    if (!isCompactNav && mobileRightOpen) setMobileRightOpen(false);
+  }, [isCompactNav, mobileOpen, mobileRightOpen]);
   return (
     <div className="min-h-screen flex flex-col overflow-x-hidden">
-      <Header showMenuButton={isMobile} onMenuToggle={() => setMobileOpen(true)} showDiscoverButton={isMobile} onDiscoverToggle={() => setMobileRightOpen(true)} />
+      <Header showMenuButton={isCompactNav} onMenuToggle={() => setMobileOpen(true)} showDiscoverButton={isCompactNav} onDiscoverToggle={() => setMobileRightOpen(true)} />
       
-      {/* Mobile sidebar sheets - render only on mobile to avoid overlay issues */}
-      {isMobile ? (
+      {/* Mobile/Tablet sidebar sheets - render on widths below lg */}
+      {isCompactNav ? (
         <>
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetContent side="left" className="p-0 w-[85vw] sm:max-w-sm lg:hidden">
+            <SheetContent side="left" className="p-0 w-[85vw] sm:max-w-sm md:max-w-md lg:hidden">
               <LeftSidebar />
             </SheetContent>
           </Sheet>
           <Sheet open={mobileRightOpen} onOpenChange={setMobileRightOpen}>
-            <SheetContent side="right" className="p-0 w-[85vw] sm:max-w-sm lg:hidden">
+            <SheetContent side="right" className="p-0 w-[85vw] sm:max-w-sm md:max-w-lg lg:hidden">
               <RightSidebar />
             </SheetContent>
           </Sheet>

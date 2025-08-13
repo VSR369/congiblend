@@ -113,7 +113,7 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false, onDisc
               variant="ghost"
               size="sm"
               onClick={onMenuToggle}
-              className="md:hidden h-10 w-10 rounded-xl hover-glow transition-all duration-300 glass-card border-0"
+              className="lg:hidden h-10 w-10 rounded-xl hover-glow transition-all duration-300 glass-card border-0"
               aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
@@ -159,7 +159,7 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false, onDisc
               variant="ghost"
               size="sm"
               onClick={onDiscoverToggle}
-              className="md:hidden h-10 w-10 md:h-12 md:w-12 rounded-xl hover-glow transition-all duration-300 glass-card border-0"
+              className="lg:hidden h-10 w-10 md:h-12 md:w-12 rounded-xl hover-glow transition-all duration-300 glass-card border-0"
               aria-label="Open Discover"
             >
               <Sparkles className="h-5 w-5" />
