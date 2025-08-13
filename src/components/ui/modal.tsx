@@ -15,6 +15,10 @@ export interface ModalProps {
   closeOnEscape?: boolean
   className?: string
   overlayClassName?: string
+  // New optional auto-scaling props (opt-in only)
+  autoScaleToViewport?: boolean
+  viewportPadding?: number
+  minScale?: number
 }
 
 const sizeClasses = {
@@ -35,6 +39,9 @@ export const Modal = ({
   closeOnEscape = true,
   className,
   overlayClassName,
+  autoScaleToViewport = false,
+  viewportPadding = 16,
+  minScale = 0.75,
 }: ModalProps) => {
   React.useEffect(() => {
     if (!closeOnEscape) return
@@ -56,6 +63,50 @@ export const Modal = ({
     }
   }, [open, closeOnEscape, onClose])
 
+  // Auto scale to viewport (opt-in)
+  const contentRef = React.useRef<HTMLDivElement>(null)
+  const [scale, setScale] = React.useState(1)
+
+  React.useLayoutEffect(() => {
+    if (!open) return
+    if (!autoScaleToViewport) {
+      setScale(1)
+      return
+    }
+
+    const measure = () => {
+      const el = contentRef.current
+      if (!el) return
+      const padding = viewportPadding ?? 16
+      const minS = minScale ?? 0.75
+
+      const prev = el.style.transform
+      el.style.transform = 'none'
+      const rect = el.getBoundingClientRect()
+      const availW = window.innerWidth - padding * 2
+      const availH = window.innerHeight - padding * 2
+      let s = Math.min(availW / rect.width, availH / rect.height, 1)
+      if (!isFinite(s) || s <= 0) s = 1
+      s = Math.max(s, minS)
+      setScale(s)
+      el.style.transform = prev
+    }
+
+    const onResize = () => {
+      window.requestAnimationFrame(measure)
+    }
+
+    const raf = window.requestAnimationFrame(measure)
+    window.addEventListener('resize', onResize)
+    window.addEventListener('orientationchange', onResize)
+
+    return () => {
+      window.cancelAnimationFrame(raf)
+      window.removeEventListener('resize', onResize)
+      window.removeEventListener('orientationchange', onResize)
+    }
+  }, [open, autoScaleToViewport, viewportPadding, minScale, size, children])
+
   if (!open) return null
 
   return (
@@ -63,7 +114,7 @@ export const Modal = ({
       <ModalErrorBoundary onReset={onClose}>
         <div 
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-          style={{ pointerEvents: 'auto' }}
+          style={{ pointerEvents: 'auto', padding: autoScaleToViewport ? viewportPadding : undefined }}
         >
           {/* Backdrop */}
           <div
@@ -76,11 +127,13 @@ export const Modal = ({
 
           {/* Modal Content */}
           <div
+            ref={contentRef}
             className={cn(
               "relative w-full bg-background rounded-lg shadow-lg border animate-scale-in z-[10000]",
               sizeClasses[size],
               className
             )}
+            style={autoScaleToViewport ? { transform: `scale(${scale})`, transformOrigin: 'center' } : undefined}
             onClick={(e) => e.stopPropagation()}
           >
             {showCloseButton && (

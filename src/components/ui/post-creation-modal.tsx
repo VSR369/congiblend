@@ -620,7 +620,7 @@ export const PostCreationModal = React.memo(({ open, onClose, allowedTypes, init
   };
 
   return (
-    <Modal open={open} onClose={onClose} size="lg">
+    <Modal open={open} onClose={onClose} size="lg" autoScaleToViewport viewportPadding={16} minScale={0.6}>
       <ModalHeader>
         <ModalTitle>Create a post</ModalTitle>
       </ModalHeader>
