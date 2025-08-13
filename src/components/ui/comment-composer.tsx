@@ -28,6 +28,18 @@ export const CommentComposer: React.FC<CommentComposerProps> = ({
   const { add } = useCommentsStore();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // UI state for LinkedIn-style composer
+  const [isFocused, setIsFocused] = useState(false);
+  const active = isFocused || value.trim().length > 0;
+
+  // Autosize textarea to fit content up to a max height
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 192) + 'px'; // cap at 12rem
+  }, [value]);
+
   // Mention autocomplete state
   const [open, setOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
@@ -135,16 +147,18 @@ export const CommentComposer: React.FC<CommentComposerProps> = ({
                 ref={textareaRef}
                 value={value}
                 onChange={handleChange}
+                rows={1}
                 placeholder={parentId ? "Write a reply..." : "Add a comment..."}
-                className="min-h-[60px] resize-none border-0 bg-transparent p-0 text-sm placeholder:text-muted-foreground focus-visible:ring-0"
+                className="min-h-[40px] max-h-48 overflow-auto resize-none rounded-2xl border border-border bg-muted/40 px-4 py-2 text-sm placeholder:text-muted-foreground focus-visible:ring-0"
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') setOpen(false);
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                  if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     handleSubmit();
                   }
                 }}
-                
               />
             </PopoverTrigger>
             <PopoverContent align="start" className="p-0 w-80" onOpenAutoFocus={(e) => e.preventDefault()}>
@@ -175,9 +189,9 @@ export const CommentComposer: React.FC<CommentComposerProps> = ({
             </PopoverContent>
           </Popover>
           
-          <div className="flex items-center justify-between">
+          <div className={cn("flex items-center justify-between mt-2", !active && "hidden")}> 
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-primary">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-primary" aria-label="Add emoji">
                 <Smile className="h-4 w-4" />
               </Button>
             </div>

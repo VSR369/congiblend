@@ -50,7 +50,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
   return (
     <section aria-label="Comments" className="border-t border-border/50">
       {/* Comments Header */}
-      <div className="px-6 py-4 border-b border-border/50">
+      <div className="px-4 sm:px-6 py-3 border-b border-border/50">
         <button
           type="button"
           aria-expanded={open}
@@ -60,7 +60,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
         >
           <MessageCircle className="h-4 w-4" />
           <span>
-            {open ? "Hide comments" : "View/Add comments"}
+            {open ? "Hide comments" : "Comments"}
             {commentCount > 0 ? ` (${commentCount})` : ""}
           </span>
         </button>
@@ -69,13 +69,13 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
       {/* Comments Panel */}
       <div id={panelId} ref={panelRef} role="region" aria-label="Comments panel">
         {/* Comment Composer */}
-        <div className={`px-6 py-4 border-b border-border/30 ${open ? "" : "hidden"}`}>
+        <div className="px-4 sm:px-6 py-3 border-b border-border/30">
           <CommentComposer postId={postId} />
         </div>
 
         {/* Comments List */}
         {open ? (
-          <div className="px-6 py-4 animate-fade-in">
+          <div className="px-4 sm:px-6 py-3 animate-fade-in">
             {commentCount === 0 ? (
               <div className="text-center py-8">
                 <MessageCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />

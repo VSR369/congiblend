@@ -19,8 +19,8 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, postId, depth
   const [likeCount, setLikeCount] = useState(0);
   
   // Maximum depth for visual indentation
-  const indent = Math.min(depth, 3) * 24;
   const isNested = depth > 0;
+  const paddingLeft = Math.min(depth, 4) * 16;
 
   // Format timestamp
   const timeAgo = useMemo(() => {
@@ -69,8 +69,8 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, postId, depth
   if (comment.is_deleted) {
     return (
       <div 
-        className="flex items-center text-sm text-muted-foreground py-2"
-        style={{ marginLeft: indent }}
+        className={cn("flex items-center text-sm text-muted-foreground py-2", isNested && "border-l border-border/50")}
+        style={{ paddingLeft }}
       >
         <div className="w-10 h-10 mr-3" /> {/* Avatar placeholder */}
         <em>This comment has been deleted</em>
@@ -82,9 +82,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, postId, depth
     <div 
     className={cn(
         "linkedin-comment-item group",
-        isNested && "ml-6 border-l border-border/50 pl-4"
+        isNested && "border-l border-border/50"
       )}
-      style={{ marginLeft: indent }}
+      style={{ paddingLeft }}
     >
       <div className="flex items-start gap-3">
         <Avatar className="w-10 h-10 shrink-0">
@@ -113,7 +113,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, postId, depth
           </div>
           
           {/* Comment Content */}
-          <div className="text-sm text-foreground leading-relaxed mb-2 whitespace-pre-wrap">
+          <div className="text-sm text-foreground leading-relaxed mb-2 whitespace-pre-wrap break-words">
             {contentNodes}
           </div>
           
