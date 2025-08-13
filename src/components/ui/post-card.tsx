@@ -1,5 +1,5 @@
 import * as React from "react";
-import { MoreHorizontal, Bookmark, Heart } from "lucide-react";
+import { MoreHorizontal, Bookmark, Heart, Trash2 } from "lucide-react";
 import { formatRelativeTime } from "@/utils/formatters";
 import { LikeButton } from "./like-button";
 import { PostErrorBoundary } from "./post-error-boundary";
@@ -21,6 +21,7 @@ import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 import { PostContent } from "./post-content";
 import { buildPreview } from "@/utils/formatters";
 import { PollCard } from "./poll-card";
+import { PostDeleteDialog } from "./post-delete-dialog";
 
 interface PostCardProps {
   post: Post;
@@ -29,8 +30,8 @@ interface PostCardProps {
 }
 
 export const PostCard = React.memo(({ post, className, virtualized = false }: PostCardProps) => {
-  const { toggleSave, rsvpEvent, updatePost } = useFeedStore();
-  const { isAuthenticated } = useAuthStore();
+  const { toggleSave, rsvpEvent, updatePost, deletePost } = useFeedStore();
+  const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
 
   const { ref: commentsRef, isIntersecting: showComments } = useIntersectionObserver({
@@ -45,6 +46,28 @@ export const PostCard = React.memo(({ post, className, virtualized = false }: Po
 
   const isTempPost = post.id.startsWith('post-');
 
+  const isOwner = Boolean(user?.id && post.author?.id && user!.id === post.author.id);
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+
+  const handleConfirmDelete = React.useCallback(async () => {
+    if (!isOwner) {
+      toast({ title: 'Not allowed', description: 'Only the author can delete this post.', variant: 'destructive' });
+      return;
+    }
+    if (isTempPost) return;
+    try {
+      setDeleting(true);
+      await deletePost(post.id);
+      setDeleteOpen(false);
+      toast({ title: 'Post deleted' });
+    } catch (err) {
+      console.error('Delete failed', err);
+      toast({ title: 'Delete failed', description: 'Please try again.', variant: 'destructive' });
+    } finally {
+      setDeleting(false);
+    }
+  }, [isOwner, isTempPost, deletePost, post.id]);
 
   const handleRSVPChoice = React.useCallback(async (status: 'attending' | 'interested' | 'not_attending') => {
     if (isTempPost) {
@@ -360,6 +383,15 @@ export const PostCard = React.memo(({ post, className, virtualized = false }: Po
                 <Bookmark className="h-4 w-4 mr-2" />
                 {post.userSaved ? "Remove from saved" : "Save post"}
               </DropdownMenuItem>
+              {isOwner && !isTempPost && (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -432,6 +464,15 @@ export const PostCard = React.memo(({ post, className, virtualized = false }: Po
           <CommentsSection postId={post.id} />
         ) : (
           <div className="px-4 pb-4 text-xs text-muted-foreground">Comments will load when in view</div>
+        )}
+        {isOwner && (
+          <PostDeleteDialog
+            post={post}
+            open={deleteOpen}
+            onOpenChange={setDeleteOpen}
+            onConfirm={handleConfirmDelete}
+            loading={deleting}
+          />
         )}
       </article>
     </PostErrorBoundary>
