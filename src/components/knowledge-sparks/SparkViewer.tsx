@@ -679,59 +679,69 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
 
   return (
     <Card className="p-3 md:p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <h2 className="text-lg font-semibold">{spark.title}</h2>
-          <div className="text-xs text-muted-foreground">/{spark.slug}</div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={articleWidth} onValueChange={(v) => setArticleWidth(v as any)}>
-            <SelectTrigger className="h-8 w-[140px]">
-              <SelectValue placeholder="Width" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="narrow">Width: Narrow</SelectItem>
-              <SelectItem value="comfortable">Width: Comfortable</SelectItem>
-              <SelectItem value="wide">Width: Wide</SelectItem>
-              <SelectItem value="full">Width: Full</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button size="sm" variant="outline" onClick={handleToggleBookmark} aria-label={bookmarked ? "Remove from saved" : "Save spark"}>
-            {bookmarked ? <BookmarkCheck className="h-4 w-4 mr-1" /> : <Bookmark className="h-4 w-4 mr-1" />}
-            <span className="hidden sm:inline">{bookmarked ? "Saved" : "Save"}</span>
-          </Button>
-          {isAuthor && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      disabled={isLoading || !!spark.is_archived || !canReplace}
-                      onClick={() => {
-                        if (!canReplace) return;
-                        setEditing(true);
-                        setEditMode("replace");
-                        setContentHtmlDraft(currentHtml || "");
-                        setShowPreview(false);
-                      }}
-                    >
-                      Edit full content (author only)
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                {!canReplace && (
-                  <TooltipContent>
-                    Full replacement is disabled after external contributions. Use Edit section or Contribute (append).
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-          )}
-          <Button size="sm" variant={editing ? "secondary" : "default"} disabled={!!spark.is_archived} onClick={() => setEditing(true)}>
-            Contribute (append)
-          </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">{spark.title}</h2>
+            <div className="text-xs text-muted-foreground">/{spark.slug}</div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={articleWidth} onValueChange={(v) => setArticleWidth(v as any)}>
+              <SelectTrigger className="h-8 w-[110px] sm:w-[140px]">
+                <SelectValue placeholder="Width" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="narrow">Narrow</SelectItem>
+                <SelectItem value="comfortable">Comfortable</SelectItem>
+                <SelectItem value="wide">Wide</SelectItem>
+                <SelectItem value="full">Full</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="sm" variant="outline" onClick={handleToggleBookmark} aria-label={bookmarked ? "Remove from saved" : "Save spark"}>
+              {bookmarked ? <BookmarkCheck className="h-4 w-4 mr-1" /> : <Bookmark className="h-4 w-4 mr-1" />}
+              <span className="hidden sm:inline">{bookmarked ? "Saved" : "Save"}</span>
+            </Button>
+            {isAuthor && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={isLoading || !!spark.is_archived || !canReplace}
+                        onClick={() => {
+                          if (!canReplace) return;
+                          setEditing(true);
+                          setEditMode("replace");
+                          setContentHtmlDraft(currentHtml || "");
+                          setShowPreview(false);
+                        }}
+                        aria-label="Edit full content"
+                      >
+                        <span className="sm:hidden">Edit</span>
+                        <span className="hidden sm:inline">Edit full</span>
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!canReplace && (
+                    <TooltipContent>
+                      Full replacement is disabled after external contributions. Use Edit section or Contribute (append).
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            <Button
+              size="sm"
+              variant={editing ? "secondary" : "default"}
+              disabled={!!spark.is_archived}
+              onClick={() => setEditing(true)}
+              aria-label="Contribute (append)"
+            >
+              <span className="sm:hidden">Contribute</span>
+              <span className="hidden sm:inline">Contribute (append)</span>
+            </Button>
+          </div>
         </div>
       </div>
       {spark.is_archived && (
