@@ -96,14 +96,14 @@ export function AutoScaleSection({
   }, []);
 
   return (
-    <section ref={wrapperRef} className={cn("relative", className)} aria-live="polite">
+    <section ref={wrapperRef} className={cn("relative w-full min-w-0 overflow-x-hidden", className)} aria-live="polite">
       <div
         ref={contentRef}
         style={{
           transform: scale < 1 ? `scale(${scale})` : undefined,
           transformOrigin: "top center",
         }}
-        className="origin-top will-change-transform"
+        className="origin-top will-change-transform max-w-full"
       >
         {children}
       </div>

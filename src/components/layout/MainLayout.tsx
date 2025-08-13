@@ -28,7 +28,7 @@ export const MainLayout = () => {
     if (!isMobile && mobileRightOpen) setMobileRightOpen(false);
   }, [isMobile, mobileOpen, mobileRightOpen]);
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col overflow-x-hidden">
       <Header showMenuButton={isMobile} onMenuToggle={() => setMobileOpen(true)} showDiscoverButton={isMobile} onDiscoverToggle={() => setMobileRightOpen(true)} />
       
       {/* Mobile sidebar sheets - render only on mobile to avoid overlay issues */}
@@ -48,13 +48,13 @@ export const MainLayout = () => {
       ) : null}
 
       <div className="flex-1">
-        <div className="grid grid-cols-1 lg:grid-cols-[20rem_1fr_22rem]">
+        <div className="grid grid-cols-1 lg:grid-cols-[20rem_1fr_22rem] max-w-screen-2xl w-full mx-auto">
           <aside className="hidden lg:block border-r">
             <LeftSidebar />
           </aside>
 
           <ErrorBoundary>
-            <main className="min-w-0 animate-fade-in">
+            <main className="min-w-0 w-full overflow-x-hidden animate-fade-in">
               <Outlet />
             </main>
           </ErrorBoundary>

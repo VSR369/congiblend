@@ -118,6 +118,12 @@
   }
 }
 
+/* Responsive content safety */
+.prose, .ql-editor { overflow-wrap: anywhere; word-break: break-word; }
+.prose img, .prose video, .ql-editor img, .ql-editor video { max-width: 100%; height: auto; }
+.prose table, .ql-editor table { display: block; max-width: 100%; overflow-x: auto; }
+.prose pre, .ql-editor pre, .prose code, .ql-editor code { inline-size: 100%; overflow-x: auto; }
+
 @layer components {
   /* LinkedIn-Style Post Cards - Clean & Robust */
   .linkedin-post-card {

@@ -37,7 +37,7 @@ export const PostContent = ({
     <div className={cn("space-y-3", className)}>
       {content && (
         <div className="relative">
-          <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+          <p className="text-foreground whitespace-pre-wrap leading-relaxed break-words hyphens-auto">
             {displayContent}
           </p>
           

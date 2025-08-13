@@ -57,9 +57,9 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
 
   return (
     <FeedErrorBoundary>
-      <div className={cn("max-w-2xl mx-auto", className)}>
+      <div className={cn("w-full max-w-2xl mx-auto px-4 overflow-x-hidden", className)}>
         {/* Feed Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold">
               {filters.userFilter === 'all' ? 'Community Feed' :

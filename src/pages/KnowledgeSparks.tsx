@@ -80,8 +80,8 @@ const KnowledgeSparksBrowsePage: React.FC = () => {
 
   return (
     <FeedErrorBoundary>
-      <main className="w-full max-w-screen-2xl mx-auto px-4 py-6">
-        <header className="mb-6 flex items-center justify-between">
+      <main className="w-full max-w-screen-2xl mx-auto px-4 py-6 overflow-x-hidden">
+        <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold">Knowledge Sparks</h1>
             <p className="text-sm text-muted-foreground">Browse and search sparks. Click a card to read and contribute.</p>
