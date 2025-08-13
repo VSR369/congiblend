@@ -743,7 +743,6 @@ export const SparkViewer: React.FC<SparkViewerProps> = ({ spark }) => {
             </Button>
           </div>
         </div>
-      </div>
       {spark.is_archived && (
         <div className="mt-3 rounded-md border border-border bg-muted p-3 text-sm flex items-center gap-2" role="status" aria-live="polite">
           <Lock className="h-4 w-4" aria-hidden="true" />
