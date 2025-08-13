@@ -122,7 +122,7 @@ export const Header = React.memo(({ onMenuToggle, showMenuButton = false, onDisc
           
           <Link to="/" className="flex items-center space-x-3 hover-glow transition-all duration-300 rounded-xl p-2">
             <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center shadow-elegant">
-              <span className="text-white font-bold text-lg">{APP_CONFIG.name.charAt(0)}</span>
+              <span className="text-foreground font-bold text-lg">{APP_CONFIG.name.charAt(0)}</span>
             </div>
             <span className="hidden sm:block font-bold text-xl gradient-text-hero">
               {APP_CONFIG.name}
