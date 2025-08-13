@@ -57,7 +57,7 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
 
   return (
     <FeedErrorBoundary>
-      <div className={cn("w-full max-w-2xl mx-auto px-4 overflow-x-hidden", className)}>
+      <div className={cn("w-full max-w-2xl mx-auto px-2 md:px-4 overflow-x-hidden", className)}>
         {/* Feed Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div className="space-y-1">
@@ -83,7 +83,7 @@ export const ContentFeed = ({ className }: ContentFeedProps) => {
         </div>
 
         {/* Create Post Button */}
-        <div className="bg-card border rounded-lg p-4 mb-6">
+        <div className="bg-card border rounded-lg p-3 md:p-4 mb-6">
           <Button
             onClick={() => setShowChooser((v) => !v)}
             className="w-full justify-start text-muted-foreground"

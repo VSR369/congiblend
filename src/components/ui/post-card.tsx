@@ -349,7 +349,7 @@ export const PostCard = React.memo(({ post, className, virtualized = false }: Po
     <PostErrorBoundary>
       <article className={cn("linkedin-post-card", virtualized ? "" : "[content-visibility:auto] [contain-intrinsic-size:600px]", className)}>
         {/* Post Header */}
-        <div className="flex items-start justify-between p-4">
+        <div className="flex items-start justify-between p-3 md:p-4">
           <div className="flex items-start space-x-3">
             <Avatar className="h-12 w-12">
               <AvatarImage src={post.author.avatar || undefined} alt={post.author.name} />
@@ -397,7 +397,7 @@ export const PostCard = React.memo(({ post, className, virtualized = false }: Po
         </div>
 
         {/* Post Content */}
-        <div className="px-4 pb-3">
+        <div className="px-3 md:px-4 pb-2 md:pb-3">
           {renderPostContent()}
           
           {/* Hashtags */}
@@ -414,7 +414,7 @@ export const PostCard = React.memo(({ post, className, virtualized = false }: Po
 
         {/* LinkedIn-Style Engagement Stats */}
         {totalReactions > 0 && (
-          <div className="px-4 pb-3">
+          <div className="px-3 md:px-4 pb-2 md:pb-3">
             {/* LinkedIn-style engagement summary */}
             {totalReactions > 0 && (
               <div className="flex items-center text-sm text-muted-foreground mb-2">
@@ -434,7 +434,7 @@ export const PostCard = React.memo(({ post, className, virtualized = false }: Po
         )}
 
         {/* LinkedIn-Style Actions */}
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-3 md:px-4 py-2.5 md:py-3">
           <div className="flex items-center space-x-0">
             <LikeButton
               targetId={post.id}
@@ -463,7 +463,7 @@ export const PostCard = React.memo(({ post, className, virtualized = false }: Po
         {showComments ? (
           <CommentsSection postId={post.id} />
         ) : (
-          <div className="px-4 pb-4 text-xs text-muted-foreground">Comments will load when in view</div>
+          <div className="px-3 md:px-4 pb-3 md:pb-4 text-xs text-muted-foreground">Comments will load when in view</div>
         )}
         {isOwner && (
           <PostDeleteDialog
