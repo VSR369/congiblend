@@ -18,8 +18,8 @@ const Index = () => {
       {/* Main Content */}
       <div className="flex-1 relative">
           {/* Main Content Tabs - Start with Your Feed */}
-          <section className="py-8 px-4">
-            <div className="container mx-auto max-w-4xl">
+          <section className="py-6 px-2 sm:px-3 md:px-4">
+            <div className="w-full mx-auto max-w-4xl px-0">
               <div className="animate-fade-in">
               
                 <EnhancedTabs value={activeTab} onValueChange={setActiveTab} className="w-full">
